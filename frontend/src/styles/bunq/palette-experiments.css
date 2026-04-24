@@ -1,0 +1,429 @@
+/* ============================================================
+   Palette experiments — theme overrides for Main Views
+   Each theme re-declares the full token set from styles.css
+   plus themed chat bubbles + spectrum labels so there are no
+   warm-orange leaks anywhere.
+   ============================================================ */
+
+/* ---- Spectrum tint (prism-hero image) -------------------
+   Driven by CSS vars the App sets from the Tweaks panel.
+   Defaults below leave the image untouched. Themes can
+   override these for a baked-in harmonization.
+   -------------------------------------------------------- */
+:root {
+  --spectrum-hue: 0deg;
+  --spectrum-saturate: 1;
+  --spectrum-brightness: 1;
+  --spectrum-tint: transparent;
+  --spectrum-tint-mode: normal;
+  --spectrum-tint-opacity: 0;
+}
+
+.askalt__bg {
+  filter:
+    hue-rotate(var(--spectrum-hue))
+    saturate(var(--spectrum-saturate))
+    brightness(var(--spectrum-brightness));
+}
+/* Overlay scrim that blends with the image for true re-tinting */
+.askalt__bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--spectrum-tint);
+  mix-blend-mode: var(--spectrum-tint-mode);
+  opacity: var(--spectrum-tint-opacity);
+  pointer-events: none;
+}
+
+/* ---- Themed chat user bubble (replaces the inline override) -- */
+.msg--user {
+  background: var(--bg-2) !important;
+  color: var(--ink-0) !important;
+  border: 1px solid var(--line-1) !important;
+  border-left: 2px solid var(--orange) !important;
+  font-weight: 500;
+}
+
+/* ---- Themed spectrum labels (Ask/Landing) -- */
+.askalt__spectrum-labels span:nth-child(1) { color: var(--priv) !important; }
+.askalt__spectrum-labels span:nth-child(2) { color: var(--aml) !important; }
+.askalt__spectrum-labels span:nth-child(3) { color: var(--lic) !important; }
+.askalt__spectrum-labels span:nth-child(4) { color: var(--tc) !important; }
+.askalt__spectrum-labels span:nth-child(5) { color: var(--concept) !important; }
+.askalt__spectrum-labels span:nth-child(6) { color: var(--danger) !important; }
+
+/* Graph canvas bg dots inherit ink-0 (works on any theme) */
+/* Graph edge dim (non-active) is already var(--line-0/1) now — theme inherits */
+
+/* =============== THEME 1 · BUNQ SIGNAL =====================
+   bunq official green (#309B47) anchors action. Cool near-
+   black. Most "bunq" option.
+   =========================================================== */
+body.theme-bunq-signal {
+  --bg-0: #0a0d0c;
+  --bg-1: #111614;
+  --bg-2: #171d1b;
+  --bg-3: #1f2624;
+  --bg-inset: #07090a;
+
+  --ink-0: #eef2f0;
+  --ink-1: #c4ccc8;
+  --ink-2: #7f8884;
+  --ink-3: #545b57;
+  --ink-4: #363b39;
+
+  --line-0: #1d2422;
+  --line-1: #273030;
+  --line-soft: rgba(238, 242, 240, 0.06);
+
+  --orange: #309B47;       /* bunq deep green */
+  --orange-hi: #61B650;    /* bunq mid green */
+  --orange-deep: #238648;  /* bunq darkest green */
+  --orange-ink: #041910;
+  --orange-wash: rgba(48, 155, 71, 0.14);
+
+  /* Doc family — from bunq palette */
+  --tc:      #309B47;                    /* Terms — green anchor */
+  --aml:     #E22F30;                    /* AML — bunq red */
+  --priv:    #3395D8;                    /* Privacy — bunq blue */
+  --lic:     #3DBAAC;                    /* Licensing — bunq teal */
+  --concept: #8aa098;                    /* Concept — cool stone */
+
+  --success: #61B650;
+  --warning: #F5C836;
+  --danger:  #E22F30;
+
+  /* Spectrum: no tint — image is already green-teal-blue-red */
+  --spectrum-hue: 0deg;
+  --spectrum-saturate: 0.95;
+  --spectrum-brightness: 1;
+}
+
+/* =============== THEME 2 · PRISM NEUTRAL ===================
+   Pure grayscale surfaces. The prism itself carries all the
+   color. Monochrome anchor; spectrum image stays vivid.
+   =========================================================== */
+body.theme-prism-neutral {
+  --bg-0: #0b0b0c;
+  --bg-1: #141415;
+  --bg-2: #1c1c1e;
+  --bg-3: #252527;
+  --bg-inset: #070708;
+
+  --ink-0: #f2f2f3;
+  --ink-1: #c9cacc;
+  --ink-2: #858689;
+  --ink-3: #55565a;
+  --ink-4: #353638;
+
+  --line-0: #202022;
+  --line-1: #2a2a2c;
+  --line-soft: rgba(242, 242, 243, 0.06);
+
+  --orange: #d4d4d8;
+  --orange-hi: #e8e8eb;
+  --orange-deep: #a1a1a5;
+  --orange-ink: #0e0e10;
+  --orange-wash: rgba(212, 212, 216, 0.08);
+
+  --tc:      oklch(0.74 0.12 35);
+  --aml:     oklch(0.74 0.14 25);
+  --priv:    oklch(0.72 0.13 230);
+  --lic:     oklch(0.74 0.10 175);
+  --concept: oklch(0.74 0.10 300);
+
+  --success: #7ec592;
+  --warning: #d4b766;
+  --danger:  #cc7878;
+
+  /* Spectrum: desaturate the hero a touch so it feels quieter */
+  --spectrum-hue: 0deg;
+  --spectrum-saturate: 0.7;
+  --spectrum-brightness: 0.95;
+}
+
+/* =============== THEME 3 · PRISM MIST ======================
+   Cool slate. Periwinkle anchor. Spectrum re-tinted blue.
+   =========================================================== */
+body.theme-prism-mist {
+  --bg-0: #0c0e13;
+  --bg-1: #141720;
+  --bg-2: #1b1f2a;
+  --bg-3: #232836;
+  --bg-inset: #090a0f;
+
+  --ink-0: #eef0f7;
+  --ink-1: #c3c7d4;
+  --ink-2: #828799;
+  --ink-3: #545969;
+  --ink-4: #363a47;
+
+  --line-0: #1e2230;
+  --line-1: #282d3d;
+  --line-soft: rgba(238, 240, 247, 0.06);
+
+  --orange: #2973BB;        /* bunq deep blue as anchor */
+  --orange-hi: #3395D8;     /* bunq mid blue */
+  --orange-deep: #1E5C85;   /* bunq darkest blue */
+  --orange-ink: #04101e;
+  --orange-wash: rgba(41, 115, 187, 0.12);
+
+  --tc:      #3395D8;
+  --aml:     #9A3333;
+  --priv:    #2973BB;
+  --lic:     #3DBAAC;
+  --concept: oklch(0.62 0.02 260);
+
+  --success: #61B650;
+  --warning: #F5C836;
+  --danger:  #E22F30;
+
+  /* Spectrum: shift green/red toward blue family; light tint */
+  --spectrum-hue: -20deg;
+  --spectrum-saturate: 0.85;
+  --spectrum-brightness: 0.95;
+  --spectrum-tint: #2973BB;
+  --spectrum-tint-mode: soft-light;
+  --spectrum-tint-opacity: 0.35;
+}
+
+/* =============== THEME 4 · BUNQ MUTED ======================
+   Warm surfaces retained; bunq green as accent. Smallest
+   visual delta from the original Main Views.
+   =========================================================== */
+body.theme-bunq-muted {
+  --bg-0: #0c0a09;
+  --bg-1: #141110;
+  --bg-2: #1c1815;
+  --bg-3: #252018;
+  --bg-inset: #0a0807;
+
+  --ink-0: #f6f1ea;
+  --ink-1: #d6cec2;
+  --ink-2: #8a8278;
+  --ink-3: #5a544c;
+  --ink-4: #3a3631;
+
+  --line-0: #241f1b;
+  --line-1: #2e2823;
+  --line-soft: rgba(246, 241, 234, 0.06);
+
+  --orange: #61B650;
+  --orange-hi: #88CC53;
+  --orange-deep: #309B47;
+  --orange-ink: #08200e;
+  --orange-wash: rgba(97, 182, 80, 0.12);
+
+  --tc:      #61B650;
+  --aml:     #F28827;
+  --priv:    #3395D8;
+  --lic:     #3DBAAC;
+  --concept: #8a7f6a;
+
+  --success: #61B650;
+  --warning: #F5C836;
+  --danger:  #E22F30;
+
+  /* Spectrum: warm tint to marry with warm surfaces */
+  --spectrum-hue: 5deg;
+  --spectrum-saturate: 0.85;
+  --spectrum-brightness: 1;
+  --spectrum-tint: #F28827;
+  --spectrum-tint-mode: soft-light;
+  --spectrum-tint-opacity: 0.2;
+}
+
+/* =============== THEME 5 · BUNQ PRISM (full palette) =======
+   Uses the WHOLE official bunq palette as document family.
+   Green anchor, deep navy surfaces. Most vibrant option.
+   =========================================================== */
+body.theme-bunq-prism {
+  --bg-0: #0a0e11;
+  --bg-1: #11171c;
+  --bg-2: #171f26;
+  --bg-3: #1f2830;
+  --bg-inset: #070a0d;
+
+  --ink-0: #eff3f4;
+  --ink-1: #c1cbcd;
+  --ink-2: #7a8589;
+  --ink-3: #505a5e;
+  --ink-4: #333a3f;
+
+  --line-0: #1c242a;
+  --line-1: #262f36;
+  --line-soft: rgba(239, 243, 244, 0.06);
+
+  --orange: #309B47;       /* bunq green anchor */
+  --orange-hi: #61B650;
+  --orange-deep: #238648;
+  --orange-ink: #041910;
+  --orange-wash: rgba(48, 155, 71, 0.14);
+
+  /* Every doc type = a different official bunq color */
+  --tc:      #88CC53;      /* Terms — bright green */
+  --aml:     #E22F30;      /* AML — bunq red */
+  --priv:    #3395D8;      /* Privacy — bunq blue */
+  --lic:     #3DBAAC;      /* Licensing — bunq teal */
+  --concept: #F28827;      /* Concepts — bunq orange */
+
+  --success: #61B650;
+  --warning: #F5C836;
+  --danger:  #E22F30;
+
+  /* Spectrum: keep vivid, slight saturate up — matches the vibe */
+  --spectrum-hue: 0deg;
+  --spectrum-saturate: 1.1;
+  --spectrum-brightness: 1;
+}
+
+/* =============== THEME 6 · BUNQ FOREST =====================
+   Deep forest green surfaces (drawn from #1E5C85 cousin).
+   Bold, brand-forward, unexpected.
+   =========================================================== */
+body.theme-bunq-forest {
+  --bg-0: #0a1210;
+  --bg-1: #111b17;
+  --bg-2: #17231e;
+  --bg-3: #1e2c26;
+  --bg-inset: #070e0c;
+
+  --ink-0: #eef4f0;
+  --ink-1: #bfccc4;
+  --ink-2: #788880;
+  --ink-3: #4e5c55;
+  --ink-4: #323d37;
+
+  --line-0: #1a2622;
+  --line-1: #24322c;
+  --line-soft: rgba(238, 244, 240, 0.06);
+
+  --orange: #88CC53;       /* bright bunq green */
+  --orange-hi: #a7dc72;
+  --orange-deep: #61B650;
+  --orange-ink: #0a1f0c;
+  --orange-wash: rgba(136, 204, 83, 0.14);
+
+  --tc:      #88CC53;
+  --aml:     #F28827;
+  --priv:    #3DBAAC;
+  --lic:     #3395D8;
+  --concept: #9A3333;
+
+  --success: #61B650;
+  --warning: #F5C836;
+  --danger:  #E22F30;
+
+  --spectrum-hue: 15deg;
+  --spectrum-saturate: 0.95;
+  --spectrum-brightness: 1.05;
+  --spectrum-tint: #88CC53;
+  --spectrum-tint-mode: soft-light;
+  --spectrum-tint-opacity: 0.25;
+}
+
+/* =============== THEME SWITCHER (floating, left side) ====== */
+.theme-switcher {
+  position: fixed;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9998;
+  background: rgba(12, 10, 9, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 220px;
+  font-family: "Geist", system-ui, sans-serif;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+}
+
+.theme-switcher__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+.theme-switcher__title {
+  font-family: "Geist Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+.theme-switcher__count {
+  font-family: "Geist Mono", monospace;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.theme-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s ease, border-color .15s ease;
+}
+.theme-option:hover { background: rgba(255, 255, 255, 0.04); }
+.theme-option--active {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.theme-option__swatches { display: flex; gap: 2px; }
+.theme-option__swatch {
+  width: 10px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.theme-option__swatch:first-child { border-radius: 3px 2px 2px 3px; }
+.theme-option__swatch:last-child  { border-radius: 2px 3px 3px 2px; }
+
+.theme-option__meta {
+  display: flex; flex-direction: column; gap: 1px; min-width: 0;
+}
+.theme-option__name {
+  font-size: 12px; font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.005em; line-height: 1.2;
+}
+.theme-option__desc {
+  font-family: "Geist Mono", monospace;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.02em; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.theme-option__dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background .15s ease;
+}
+.theme-option--active .theme-option__dot {
+  background: var(--orange, #ef6a2a);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+.theme-switcher__note {
+  padding: 8px 10px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+  font-family: "Geist Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em; line-height: 1.5;
+}

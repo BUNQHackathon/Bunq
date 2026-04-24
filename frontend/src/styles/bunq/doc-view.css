@@ -1,0 +1,219 @@
+/* ============================================================
+   Document view
+   ============================================================ */
+
+.docview {
+  display: grid;
+  grid-template-columns: 280px 1fr 340px;
+  height: 100%;
+  background: var(--bg-0);
+  position: relative;
+}
+
+/* ---- Floating references minimap (Google-Maps-style) ---- */
+.docview__minimap {
+  position: absolute;
+  bottom: 18px;
+  right: calc(340px + 18px);
+  width: 240px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 28px rgba(20,14,8,0.35), 0 2px 6px rgba(20,14,8,0.25);
+  padding: 10px 12px 10px;
+  z-index: 4;
+}
+.docview__minimap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.docview__minimap-count {
+  font: 500 10.5px/1 var(--mono);
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+.docview__minimap-svg { display: block; max-height: 120px; }
+.docview__minimap-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.docview__minimap-hint {
+  font: 400 10.5px/1 var(--ui);
+  color: var(--ink-3);
+}
+
+.docview__rail {
+  padding: 18px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.docview__rail-head { display: flex; align-items: center; justify-content: space-between; }
+
+.docview__toc { display: flex; flex-direction: column; gap: 1px; }
+.docview__tree { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; min-height: 0; }
+.toc {
+  text-align: left;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 4px;
+  color: var(--ink-2);
+  font: 400 12.5px/1.3 var(--ui);
+  cursor: pointer;
+}
+.toc:hover { color: var(--ink-0); background: var(--bg-1); }
+.toc--active {
+  color: var(--orange);
+  border-left-color: var(--orange);
+  background: var(--orange-wash);
+  font-weight: 500;
+}
+
+.docview__meta {
+  border-top: 1px solid var(--line-0);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.docview__meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink-1);
+}
+.docview__status { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-0); }
+.docview__status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--lic);
+  box-shadow: 0 0 8px var(--lic);
+}
+
+/* ---- Main article ---- */
+.docview__main {
+  overflow-y: auto;
+  padding: 32px 56px 80px;
+  position: relative;
+}
+.docview__header { margin-bottom: 32px; }
+.docview__eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.docview__title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 54px;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--ink-0);
+  margin: 0 0 12px;
+}
+
+/* ---- Alt gradient header ---- */
+.docview__header--gradient {
+  position: relative;
+  background: #0b0908;
+  margin: -32px -56px 32px;
+  padding: 80px 56px 28px;
+  overflow: hidden;
+  min-height: 340px;
+}
+.docview__title--gradient {
+  /* Match MiniMeld 02: warm cream tint with a fade-to-transparent mask */
+  background: linear-gradient(to bottom, #deceba 30%, #e6dacc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-mask-image: linear-gradient(to bottom, black 10%, transparent 110%);
+  mask-image: linear-gradient(to bottom, black 10%, transparent 110%);
+  font-weight: 500;
+}
+
+/* Sub + crumbs pulled out under the dark header */
+.docview__header-meta {
+  margin: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.docview__header-meta .docview__sub { margin-bottom: 0; padding-bottom: 14px; }
+.docview__header-meta .docview__crumbs { border-top: 1px solid var(--line-0); }
+.docview__sub {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.docview__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-0);
+  border-bottom: 1px solid var(--line-0);
+  color: var(--ink-1);
+  font-size: 12.5px;
+}
+
+.docview__article {
+  max-width: 680px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-1);
+}
+.docview__article h2 {
+  font-family: var(--ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-0);
+  letter-spacing: -0.005em;
+  margin: 28px 0 10px;
+}
+.docview__article p { margin: 0 0 14px; text-wrap: pretty; }
+
+.callout {
+  margin: 22px 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--orange-wash);
+  background: var(--orange-wash);
+}
+.callout__head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--orange); }
+.callout__body { font-size: 13px; color: var(--ink-1); line-height: 1.55; }
+
+/* User message override for doc chat (same warm cream) */
+.docview__chat .msg--user {
+  background: #f0ebe2;
+  color: #1a1410;
+  font-weight: 500;
+  border: none;
+}
+.docview__chat {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-inset);
+}
+.docview__chat-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--line-0);
+}
+.docview__chat-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.msg__ul { margin: 0; padding-left: 18px; }
+.msg__ul li { margin-bottom: 6px; font-size: 14px; line-height: 1.5; }

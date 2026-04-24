@@ -1,0 +1,246 @@
+/* ============================================================
+   Graph view
+   ============================================================ */
+
+.graph {
+  display: grid;
+  grid-template-columns: 260px 1fr 380px;
+  height: 100%;
+  background: var(--bg-0);
+}
+.graph__folders {
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-right: 1px solid var(--line-0);
+  overflow: hidden;
+}
+.graph__folders-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 4px 6px;
+}
+.graph__folders-tree { flex: 1; overflow-y: auto; padding-right: 4px; }
+
+/* Left chat rail inside Graph view (now on the right) */
+.graph__rail {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px 16px;
+  background: var(--bg-0);
+  gap: 16px;
+  overflow: hidden;
+  border-left: 1px solid var(--line-0);
+}
+.graph__rail-head { display: flex; align-items: center; justify-content: space-between; }
+.graph__rail-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 10px var(--orange);
+}
+
+.graph__suggests { display: flex; flex-direction: column; gap: 6px; }
+.graph__suggest {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-md);
+  color: var(--ink-1);
+  font: 400 13.5px/1.4 var(--ui);
+  cursor: pointer;
+}
+.graph__suggest:hover { background: var(--bg-2); color: var(--ink-0); }
+
+.graph__thread {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px;
+  margin: 0 -2px;
+}
+
+.msg {
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 92%;
+}
+.msg--ai {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  color: var(--ink-0);
+  align-self: flex-start;
+  border-radius: 14px 14px 14px 3px;
+}
+.msg--user {
+  background: #f0ebe2;
+  color: #1a1410;
+  font-weight: 500;
+  align-self: flex-end;
+  font-size: 13.5px;
+  border: none;
+  border-radius: 14px 14px 3px 14px;
+  max-width: 86%;
+}
+.msg__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.msg__body { margin-bottom: 0; }
+.msg__action {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: var(--r-pill);
+  color: #1a0a02;
+  font: 600 13px/1 var(--ui);
+  cursor: pointer;
+}
+
+.graph__composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+}
+.graph__composer-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink-0);
+  font: 400 14px/1 var(--ui);
+}
+.graph__composer-input::placeholder { color: var(--ink-2); }
+
+/* ---- Canvas ---- */
+.graph__canvas {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #17120e 0%, #0c0a09 70%);
+}
+.graph__canvas-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(246, 241, 234, 0.06) 1px, transparent 1.2px);
+  background-size: 32px 32px;
+  background-position: 0 0;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, #000 50%, transparent 92%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 50%, transparent 92%);
+}
+
+.graph__toolbar {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+.graph__toolbar-group { display: flex; align-items: center; gap: 8px; }
+
+.graph__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.graph__legend {
+  position: absolute;
+  top: 70px;
+  right: 22px;
+  width: 220px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-md);
+  padding: 14px;
+  z-index: 2;
+}
+.legrow {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 12px;
+  color: var(--ink-1);
+}
+.legrow__dot { width: 8px; height: 8px; border-radius: 50%; }
+.legrow__l { font-size: 12px; color: var(--ink-1); }
+.legrow__n { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); }
+
+.graph__focus {
+  position: absolute;
+  bottom: 26px;
+  left: 22px;
+  width: 340px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  z-index: 2;
+}
+.graph__focus-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.graph__focus-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-2);
+  margin-left: auto;
+}
+.graph__focus-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  margin-bottom: 8px;
+}
+.graph__focus-body {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-1);
+  margin-bottom: 14px;
+}
+.graph__focus-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line-0);
+  border-bottom: 1px solid var(--line-0);
+  margin-bottom: 14px;
+}
+.graph__focus-stats > div { display: flex; flex-direction: column; gap: 3px; }
+.graph__focus-stats > div > span:last-child { font-size: 13px; color: var(--ink-0); font-weight: 500; }
+.graph__focus-actions { display: flex; gap: 8px; }
+
+.graph__hint {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-2);
+  z-index: 1;
+}
+.graph__hint-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-3); }

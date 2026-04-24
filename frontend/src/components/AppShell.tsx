@@ -4,6 +4,31 @@ import TopNav from './TopNav';
 import ChatRail from './ChatRail';
 import { ChatNavContext, type ChatNav } from '../lib/chatNav';
 
+const frameStyles = `
+.frame {
+  width: 100%;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--bg-0);
+  overflow: hidden;
+  color: var(--ink-0);
+  font-family: var(--ui);
+}
+.frame__body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 0;
+  height: 100%;
+}
+.frame__view {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  height: 100%;
+}
+`;
+
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window === 'undefined' ? false : window.innerWidth < breakpoint,
@@ -61,29 +86,24 @@ export default function AppShell() {
 
   return (
     <ChatNavContext.Provider value={chatNav}>
-      <div className="min-h-screen bg-prism-bg text-white">
+      <style>{frameStyles}</style>
+      <div className="frame">
         <TopNav />
-        {!isMobile && (
-          <ChatRail
-            expanded={expanded}
-            onToggle={() => setSticky((v) => !v)}
-            onHoverChange={setHover}
-            activeChatId={activeChatId}
-            onSelect={selectChat}
-            onNewChat={newChat}
-          />
-        )}
-        <main
-          className="overflow-auto"
-          style={{
-            marginLeft: isMobile ? 0 : expanded ? '300px' : '48px',
-            marginTop: '56px',
-            minHeight: 'calc(100vh - 56px)',
-            transition: 'margin-left 200ms ease',
-          }}
-        >
-          <Outlet />
-        </main>
+        <div className="frame__body">
+          {!isMobile && (
+            <ChatRail
+              expanded={expanded}
+              onToggle={() => setSticky((v) => !v)}
+              onHoverChange={setHover}
+              activeChatId={activeChatId}
+              onSelect={selectChat}
+              onNewChat={newChat}
+            />
+          )}
+          <div className="frame__view">
+            <Outlet />
+          </div>
+        </div>
       </div>
     </ChatNavContext.Provider>
   );

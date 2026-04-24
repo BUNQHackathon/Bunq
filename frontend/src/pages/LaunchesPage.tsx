@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listLaunches, getLaunch, jurisdictionFlag, type Launch, type JurisdictionRun } from '../api/launch';
+import { listLaunches, getLaunch, type Launch, type LaunchKind, type JurisdictionRun } from '../api/launch';
 import type { Verdict } from '../api/launch';
-import KindBadge from '../components/KindBadge';
 import VerdictPill from '../components/VerdictPill';
-
-const VERDICT_EMOJI: Record<Verdict, string> = {
-  GREEN: '🟢',
-  AMBER: '🟡',
-  RED: '🔴',
-  PENDING: '⏳',
-};
+import { IconPlus } from '../components/icons';
 
 const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1 };
+
 function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
   const valid = rs.filter(r => VERDICT_RANK[r.verdict] >= 0);
   if (valid.length === 0) return rs.length > 0 ? 'PENDING' : null;
@@ -23,6 +17,18 @@ interface LaunchRow {
   launch: Launch;
   jurisdictions: JurisdictionRun[];
 }
+
+function kindDotClass(kind: LaunchKind | undefined): string {
+  if (!kind) return 'tc';
+  switch (kind) {
+    case 'PRODUCT': return 'lic';
+    case 'POLICY':  return 'priv';
+    case 'PROCESS': return 'tc';
+    default:        return 'tc';
+  }
+}
+
+const placeholderKeys = [0, 1, 2] as const;
 
 export default function LaunchesPage() {
   const [rows, setRows] = useState<LaunchRow[]>([]);
@@ -60,145 +66,98 @@ export default function LaunchesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto" style={{ color: '#E8E8E8' }}>
-      <div className="flex items-center justify-between mb-8">
+    <div className="folders" style={{ display: 'block', padding: '40px 60px 80px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <h1 className="text-2xl font-semibold text-white mb-1">Launches</h1>
-          <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: '#6B6B6B' }}>
-            Product launches across markets
-          </p>
+          <div className="mono-label mono-label--ink" style={{ marginBottom: 10 }}>
+            LAUNCHES · {loading ? '…' : rows.length} ACTIVE
+          </div>
+          <h1 className="serif-display" style={{ fontSize: 56, margin: 0 }}>
+            Product launches<span style={{ color: 'var(--orange)' }}>.</span>
+          </h1>
         </div>
-        <Link
-          to="/launches/new"
-          className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-          style={{
-            background: 'rgba(255,120,25,0.14)',
-            border: '1px solid rgba(255,120,25,0.35)',
-            color: '#FF9F55',
-          }}
-        >
-          + New Launch
+        <Link to="/launches/new" className="btn btn--orange">
+          <IconPlus size={14} /> New launch
         </Link>
       </div>
 
-      {loading && (
-        <div
-          className="rounded-xl px-6 py-12 text-center"
-          style={{ background: '#0D0D0D', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <p className="text-[13px] font-mono animate-pulse" style={{ color: '#6B6B6B' }}>
-            Loading…
-          </p>
-        </div>
-      )}
-
+      {/* Error state */}
       {error && (
         <div
-          className="rounded-xl px-6 py-6"
-          style={{ background: 'rgba(224,80,80,0.08)', border: '1px solid rgba(224,80,80,0.25)' }}
+          style={{
+            background: 'rgba(217,74,74,0.08)',
+            border: '1px solid rgba(217,74,74,0.3)',
+            color: 'var(--danger, #d94a4a)',
+            borderRadius: 8,
+            padding: '14px 20px',
+            marginBottom: 24,
+            fontSize: 13,
+            fontFamily: 'var(--mono)',
+          }}
         >
-          <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
+          {error}
         </div>
       )}
 
-      {!loading && !error && rows.length === 0 && (
-        <div
-          className="rounded-xl px-6 py-12 text-center"
-          style={{ background: '#0D0D0D', border: '1px solid rgba(255,255,255,0.06)' }}
-        >
-          <p className="text-[13px] mb-4" style={{ color: '#6B6B6B' }}>
-            No launches yet.
-          </p>
-          <Link to="/launches/new" className="text-[13px] font-medium" style={{ color: '#FF9F55' }}>
-            Create your first launch →
-          </Link>
-        </div>
-      )}
+      {/* Card grid */}
+      <div className="folders__grid">
+        {/* Loading placeholders */}
+        {loading && placeholderKeys.map((k) => (
+          <div key={k} className="doccard" style={{ opacity: 0.5, animation: 'pulse 1.5s ease-in-out infinite' }}>
+            <div className="doccard__head">
+              <span className="srcrow__dot srcrow__dot--tc" />
+              <span className="mono-label">LOADING</span>
+            </div>
+            <div className="doccard__title" style={{ width: '60%', height: 18, background: 'var(--line-0)', borderRadius: 4 }} />
+            <div className="doccard__meta" style={{ minHeight: 36 }} />
+            <div className="doccard__foot" />
+          </div>
+        ))}
 
-      {!loading && !error && rows.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {rows.map(({ launch, jurisdictions }) => (
+        {/* Empty state */}
+        {!loading && !error && rows.length === 0 && (
+          <div className="doccard" style={{ gridColumn: '1 / -1', textAlign: 'center', cursor: 'default' }}>
+            <div className="doccard__title" style={{ color: 'var(--ink-2)', marginBottom: 16 }}>
+              No launches yet.
+            </div>
+            <Link to="/launches/new" className="btn btn--orange btn--sm">
+              <IconPlus size={12} /> Create your first launch
+            </Link>
+          </div>
+        )}
+
+        {/* Launch cards */}
+        {!loading && !error && rows.map(({ launch, jurisdictions }) => {
+          const agg: Verdict | null = launch.aggregateVerdict ?? worstVerdict(jurisdictions);
+          return (
             <Link
               key={launch.id}
               to={`/launches/${launch.id}`}
-              className="block rounded-xl px-5 py-4 transition-all"
-              style={{
-                background: '#0D0D0D',
-                border: '1px solid rgba(255,255,255,0.06)',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,120,25,0.2)';
-                (e.currentTarget as HTMLAnchorElement).style.background = '#111';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.06)';
-                (e.currentTarget as HTMLAnchorElement).style.background = '#0D0D0D';
-              }}
+              className="doccard"
+              style={{ textDecoration: 'none' }}
             >
-              {(() => {
-                const agg: Verdict | null = launch.aggregateVerdict ?? worstVerdict(jurisdictions);
-                return (
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-[15px] font-semibold text-white">{launch.name}</span>
-                        {launch.kind && <KindBadge kind={launch.kind} />}
-                        {launch.license && (
-                          <span
-                            className="text-[10px] font-mono rounded-full px-2.5 py-0.5"
-                            style={{
-                              background: 'rgba(110,183,232,0.12)',
-                              color: '#6EB7E8',
-                              border: '1px solid rgba(110,183,232,0.25)',
-                            }}
-                          >
-                            {launch.license}
-                          </span>
-                        )}
-                        {agg && <VerdictPill verdict={agg} />}
-                        {jurisdictions.length > 0 && (
-                          <span className="text-[11px] font-mono" style={{ color: '#6B6B6B' }}>
-                            {jurisdictions.length} markets
-                          </span>
-                        )}
-                      </div>
-                      {launch.brief && (
-                        <p className="text-[13px] mt-1 line-clamp-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                          {launch.brief}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-[11px] font-mono shrink-0" style={{ color: '#6B6B6B' }}>
-                      {new Date(launch.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {jurisdictions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {jurisdictions.map((j) => (
-                    <span
-                      key={j.jurisdictionCode}
-                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px]"
-                      style={{
-                        background: '#1A1A1A',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        color: 'rgba(255,255,255,0.75)',
-                      }}
-                    >
-                      {jurisdictionFlag(j.jurisdictionCode)}
-                      <span className="font-mono text-[11px]">{j.jurisdictionCode}</span>
-                      <span>{VERDICT_EMOJI[j.verdict]}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <div className="doccard__head">
+                <span className={`srcrow__dot srcrow__dot--${kindDotClass(launch.kind)}`} />
+                <span className="mono-label">{launch.kind ?? 'PRODUCT'}</span>
+                {launch.license && (
+                  <span className="mono-label" style={{ color: 'var(--ink-2)' }}>· {launch.license}</span>
+                )}
+              </div>
+              <div className="doccard__title">{launch.name}</div>
+              <div className="doccard__meta" style={{ minHeight: 36 }}>
+                {launch.brief || '—'}
+              </div>
+              <div className="doccard__foot">
+                {agg && <VerdictPill verdict={agg} showEmoji={false} />}
+                <span className="mono-label" style={{ color: 'var(--ink-2)' }}>
+                  {jurisdictions.length} market{jurisdictions.length !== 1 ? 's' : ''}
+                </span>
+              </div>
             </Link>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

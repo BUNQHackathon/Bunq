@@ -5,22 +5,23 @@ import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLin
 import { getComplianceMap } from '../api/jurisdictions';
 import { getLaunch, jurisdictionFlag, jurisdictionLabel } from '../api/launch';
 
-// ─── Compliance-map node type → color ────────────────────────────────────────
+// ─── Compliance-map node type → resolved hex (from CSS token comments) ────────
+// Using resolved hexes keeps D3 attr() calls clean; values mirror styles.css vars.
 const COMPLIANCE_TYPE_COLOR: Record<string, string> = {
-  obligation: '#5ECFA0',  // terms green
-  control:    '#A8D66C',  // licensing
-  gap:        '#E05050',  // aml/red
-  evidence:   '#6EB7E8',  // reports
+  obligation: '#ef6a2a',  // var(--tc)
+  control:    '#5eb5a6',  // var(--lic) approx
+  gap:        '#d94a4a',  // var(--danger) / var(--aml) warm-red approx
+  evidence:   '#6a8fd8',  // var(--priv) approx
 };
 
 const CAT_COLOR: Record<string, string> = {
-  terms: '#FF7819',
-  aml: '#FF9F55',
-  privacy: '#B08AFF',
-  reports: '#5ECFA0',
-  licensing: '#5ECFA0',
-  pricing: '#FFD080',
-  concept: '#445566',
+  terms:     '#ef6a2a',   // var(--tc)
+  aml:       '#c84a3a',   // var(--aml) approx
+  privacy:   '#6a8fd8',   // var(--priv) approx
+  reports:   '#5eb5a6',   // var(--lic)
+  licensing: '#5eb5a6',   // var(--lic)
+  pricing:   '#d9b03d',   // var(--warning)
+  concept:   '#6a6055',   // var(--concept) approx
 };
 
 interface GraphNode extends d3.SimulationNodeDatum {
@@ -162,8 +163,9 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       .force('center', d3.forceCenter(W / 2, H / 2))
       .force('collision', d3.forceCollide<GraphNode>(d => d.size + 22));
 
+    // Link stroke uses a soft warm-white matching the canvas dark bg
     const linkSel = g.append('g').selectAll<SVGLineElement, GraphLink>('line').data(links).join('line')
-      .attr('stroke', 'rgba(255,255,255,0.1)')
+      .attr('stroke', 'var(--line-soft, rgba(246,241,234,0.06))')
       .attr('stroke-width', 0.75);
 
     const nodeG = g.append('g').selectAll<SVGGElement, GraphNode>('g').data(nodes).join('g')
@@ -187,10 +189,10 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
         linkSel.attr('stroke', (l: GraphLink) => {
           const src = (l.source as GraphNode).id;
           const tgt = (l.target as GraphNode).id;
-          return (src === d.id || tgt === d.id) ? 'rgba(255,120,25,0.55)' : 'rgba(255,255,255,0.03)';
+          return (src === d.id || tgt === d.id) ? 'rgba(239,106,42,0.55)' : 'rgba(246,241,234,0.03)';
         });
         nodeG.select<SVGTextElement>('.node-label').attr('fill', (n: GraphNode) =>
-          adj.has(n.id) ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.15)'
+          adj.has(n.id) ? 'var(--ink-0, #f6f1ea)' : 'var(--ink-3, #5a544c)'
         );
 
         const rect = container.getBoundingClientRect();
@@ -204,8 +206,8 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       .on('mouseleave', function (_e: MouseEvent, d: GraphNode) {
         d3.select(this).select<SVGCircleElement>('.core').attr('filter', 'url(#glow2)').attr('r', d.size);
         d3.select(this).select<SVGCircleElement>('.halo').attr('opacity', d.doc ? 0.1 : 0.05);
-        linkSel.attr('stroke', 'rgba(255,255,255,0.1)');
-        nodeG.select<SVGTextElement>('.node-label').attr('fill', 'rgba(255,255,255,0.6)');
+        linkSel.attr('stroke', 'var(--line-soft, rgba(246,241,234,0.06))');
+        nodeG.select<SVGTextElement>('.node-label').attr('fill', 'var(--ink-2, #8a8278)');
         setTooltip(null);
       })
       .on('click', (_e: MouseEvent, d: GraphNode) => {
@@ -214,19 +216,19 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
 
     nodeG.append('circle').attr('class', 'halo')
       .attr('r', d => d.size + 10)
-      .attr('fill', d => CAT_COLOR[d.cat] || '#446')
+      .attr('fill', d => CAT_COLOR[d.cat] || '#445566')
       .attr('opacity', d => d.doc ? 0.1 : 0.05);
 
     nodeG.append('circle').attr('class', 'core')
       .attr('r', d => d.size)
-      .attr('fill', d => CAT_COLOR[d.cat] || '#446')
+      .attr('fill', d => CAT_COLOR[d.cat] || '#445566')
       .attr('filter', 'url(#glow2)')
-      .attr('stroke', d => d.doc ? 'rgba(255,255,255,0.25)' : 'none')
+      .attr('stroke', d => d.doc ? 'rgba(246,241,234,0.2)' : 'none')
       .attr('stroke-width', 1);
 
     nodeG.append('text').attr('class', 'node-label')
       .text(d => d.label)
-      .attr('fill', 'rgba(255,255,255,0.6)')
+      .attr('fill', 'var(--ink-2, #8a8278)')
       .attr('font-size', d => d.doc ? 11.5 : 10)
       .attr('font-weight', d => d.doc ? 500 : 400)
       .attr('dx', d => d.size + 7)
@@ -265,17 +267,20 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
     if (!nodeGRef.current) return;
     nodeGRef.current.select<SVGCircleElement>('.core')
       .attr('stroke', (d: GraphNode) => {
-        if (d.id === selectedId) return '#FF7819';
-        return d.doc ? 'rgba(255,255,255,0.25)' : 'none';
+        if (d.id === selectedId) return 'var(--orange, #ef6a2a)';
+        return d.doc ? 'rgba(246,241,234,0.2)' : 'none';
       })
       .attr('stroke-width', (d: GraphNode) => d.id === selectedId ? 2.5 : 1);
   }, [selectedId]);
 
   return (
-    <div ref={containerRef} className="absolute inset-0" style={{ background: '#080808' }}>
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
+      {/* Dot-grid background matching handoff */}
+      <div className="graph__canvas-bg" />
+
       <svg
         ref={svgRef}
-        className="absolute inset-0 w-full h-full"
+        className="graph__svg"
         style={{ cursor: 'grab' }}
       />
 
@@ -285,45 +290,18 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
           style={{
             left: tooltip.x,
             top: tooltip.y,
-            background: 'rgba(13,13,13,0.95)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-1)',
+            border: '1px solid var(--line-1)',
             padding: '7px 12px',
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--ink-0)',
             maxWidth: 200,
             lineHeight: 1.45,
           }}
         >
           <div className="font-semibold mb-0.5">{tooltip.name}</div>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{tooltip.meta}</div>
+          <div style={{ color: 'var(--ink-2)', fontSize: 11 }}>{tooltip.meta}</div>
         </div>
       )}
-
-      <div
-        className="absolute top-5 right-5 rounded-xl z-20"
-        style={{ background: 'rgba(13,13,13,0.88)', border: '1px solid rgba(255,255,255,0.06)', padding: '14px 16px', backdropFilter: 'blur(12px)' }}
-      >
-        <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2.5" style={{ color: 'rgba(255,255,255,0.3)' }}>Document types</div>
-        {[
-          { color: '#FF7819', label: 'Terms & Conditions' },
-          { color: '#FF9F55', label: 'AML / Sanctions' },
-          { color: '#B08AFF', label: 'Privacy' },
-          { color: '#5ECFA0', label: 'Licensing / Reports' },
-          { color: '#FFD080', label: 'Pricing' },
-          { color: '#445566', label: 'Concept' },
-        ].map(row => (
-          <div key={row.label} className="flex items-center gap-2 mb-1.5 last:mb-0">
-            <div className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: row.color }} />
-            <span className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div
-        className="absolute bottom-5 left-1/2 -translate-x-1/2 text-[11px] pointer-events-none tracking-[0.04em]"
-        style={{ color: 'rgba(255,255,255,0.2)' }}
-      >
-        Drag to pan · Scroll to zoom · Click a node to view details
-      </div>
     </div>
   );
 }
@@ -334,11 +312,12 @@ interface NodeDetailPanelProps {
   onClose: () => void;
 }
 
-const SEVERITY_COLOR: Record<string, string> = {
-  low:      '#A8D66C',
-  medium:   '#FFD080',
-  high:     '#FF9F55',
-  critical: '#E05050',
+// Severity → CSS var token mapping (resolved hexes as fallbacks)
+const SEVERITY_TOKEN: Record<string, { color: string; bg: string; border: string }> = {
+  low:      { color: 'var(--success, #5eb86a)',  bg: 'rgba(94,184,106,0.08)',  border: 'rgba(94,184,106,0.25)'  },
+  medium:   { color: 'var(--warning, #d9b03d)',  bg: 'rgba(217,176,61,0.08)',  border: 'rgba(217,176,61,0.25)'  },
+  high:     { color: 'var(--orange, #ef6a2a)',   bg: 'rgba(239,106,42,0.08)',  border: 'rgba(239,106,42,0.25)'  },
+  critical: { color: 'var(--danger, #d94a4a)',   bg: 'rgba(217,74,74,0.08)',   border: 'rgba(217,74,74,0.25)'   },
 };
 
 function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
@@ -351,33 +330,34 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
       return other;
     });
 
+  const isGap = node.nodeType === 'gap';
+  const sevTokens = node.severity ? SEVERITY_TOKEN[node.severity] : null;
+  const dotColor = CAT_COLOR[node.cat] ?? COMPLIANCE_TYPE_COLOR[node.nodeType ?? ''] ?? 'var(--ink-3)';
+
   return (
-    <div
-      className="absolute right-0 top-0 bottom-0 z-30 flex flex-col"
-      style={{
-        width: 300,
-        background: 'rgba(13,13,13,0.97)',
-        borderLeft: '1px solid rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(16px)',
-      }}
-    >
-      <div
-        className="flex-shrink-0 flex items-center justify-between pt-4 pb-3 px-4"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ background: CAT_COLOR[node.cat] ?? COMPLIANCE_TYPE_COLOR[node.nodeType ?? ''] ?? '#556677' }}
-          />
-          <span className="font-mono text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {node.nodeType ?? node.cat}
+    <div className="graph__focus glow-behind" style={{ bottom: 'auto', top: 62, left: 'auto', right: 22, width: 320, maxHeight: 'calc(100% - 90px)', overflowY: 'auto' }}>
+      {/* Header */}
+      <div className="graph__focus-head">
+        <span
+          className="srcrow__dot"
+          style={{ background: dotColor, width: 8, height: 8, borderRadius: '50%', display: 'inline-block' }}
+        />
+        <span className="mono-label mono-label--ink" style={{ fontSize: 10, letterSpacing: '0.12em' }}>
+          {node.nodeType ?? node.cat}
+        </span>
+        {isGap && node.severity && (
+          <span
+            className="chip chip--sm"
+            style={{ marginLeft: 'auto', color: sevTokens?.color, borderColor: sevTokens?.border, background: sevTokens?.bg, fontSize: 10, padding: '2px 7px' }}
+          >
+            {node.severity}
           </span>
-        </div>
+        )}
         <button
           onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center rounded-full transition-all hover:brightness-125"
-          style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}
+          className="btn btn--icon btn--ghost"
+          style={{ width: 24, height: 24, marginLeft: isGap && node.severity ? 6 : 'auto', color: 'var(--ink-2)', border: '1px solid var(--line-1)' }}
+          aria-label="Close"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -385,95 +365,86 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
+      {/* Title */}
+      <div className="graph__focus-title" style={{ fontSize: isGap ? 18 : 20 }}>
+        {node.label}
+      </div>
+
+      {/* Gap mono label */}
+      {isGap && (
+        <div className="mono-label" style={{ marginBottom: 8, color: 'var(--danger, #d94a4a)' }}>
+          GAP{node.severity ? ` · SEVERITY ${node.severity.toUpperCase()}` : ''}
+        </div>
+      )}
+
+      {/* Recommended action */}
+      {isGap && node.recommendedAction && (
+        <div className="graph__focus-body">
+          {node.recommendedAction}
+        </div>
+      )}
+
+      {/* Stats row */}
+      <div className="graph__focus-stats" style={{ gridTemplateColumns: node.updated ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)' }}>
+        {node.updated && (
+          <div>
+            <span className="mono-label">UPDATED</span>
+            <span>{node.updated}</span>
+          </div>
+        )}
         <div>
-          <div className="text-base font-semibold text-white mb-1">{node.label}</div>
-          {node.updated && (
-            <div className="font-mono text-[10px] tracking-[0.06em]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Updated {node.updated}
-            </div>
-          )}
-          <div
-            className="mt-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono tracking-[0.08em]"
-            style={{
-              background: node.doc ? 'rgba(255,120,25,0.1)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${node.doc ? 'rgba(255,120,25,0.3)' : 'rgba(255,255,255,0.1)'}`,
-              color: node.doc ? '#FF9F55' : 'rgba(255,255,255,0.4)',
-            }}
-          >
-            {node.doc ? 'Document' : 'Concept'}
+          <span className="mono-label">TYPE</span>
+          <span style={{ textTransform: 'capitalize' }}>{node.doc ? 'Document' : 'Concept'}</span>
+        </div>
+        <div>
+          <span className="mono-label">LINKS</span>
+          <span>{connections.length}</span>
+        </div>
+      </div>
+
+      {/* Resolve action for gap nodes */}
+      {isGap && (
+        <div className="graph__focus-actions" style={{ marginTop: 4, marginBottom: 14 }}>
+          <button className="btn btn--orange btn--sm">Mark resolved</button>
+          <button className="btn btn--sm btn--ghost">Dismiss</button>
+        </div>
+      )}
+
+      {/* Connections */}
+      {connections.length > 0 && (
+        <div>
+          <div className="mono-label" style={{ marginBottom: 10 }}>CONNECTIONS ({connections.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {connections.map(conn => (
+              <div
+                key={conn.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 10px',
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-0)',
+                  borderRadius: 'var(--r-sm)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: CAT_COLOR[conn.cat] ?? COMPLIANCE_TYPE_COLOR[conn.nodeType ?? ''] ?? 'var(--ink-3)',
+                    flexShrink: 0,
+                    display: 'inline-block',
+                  }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--ink-1)', flex: 1 }}>{conn.label}</span>
+                <span className="mono-label" style={{ fontSize: 10 }}>{conn.nodeType ?? conn.cat}</span>
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Gap-specific fields (live mode) */}
-        {node.nodeType === 'gap' && (node.severity || node.recommendedAction) && (
-          <div className="flex flex-col gap-3">
-            {node.severity && (
-              <div>
-                <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  Severity
-                </div>
-                <span
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono tracking-[0.08em] capitalize"
-                  style={{
-                    background: `${SEVERITY_COLOR[node.severity] ?? '#FF9F55'}22`,
-                    border: `1px solid ${SEVERITY_COLOR[node.severity] ?? '#FF9F55'}66`,
-                    color: SEVERITY_COLOR[node.severity] ?? '#FF9F55',
-                  }}
-                >
-                  {node.severity}
-                </span>
-              </div>
-            )}
-            {node.recommendedAction && (
-              <div>
-                <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  Recommended action
-                </div>
-                <div
-                  className="text-[12px] leading-relaxed rounded-lg px-3 py-2.5"
-                  style={{
-                    background: 'rgba(224,80,80,0.06)',
-                    border: '1px solid rgba(224,80,80,0.15)',
-                    color: 'rgba(255,255,255,0.75)',
-                  }}
-                >
-                  {node.recommendedAction}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {connections.length > 0 && (
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Connections ({connections.length})
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {connections.map(conn => (
-                <div
-                  key={conn.id}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
-                >
-                  <div
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: CAT_COLOR[conn.cat] ?? COMPLIANCE_TYPE_COLOR[conn.nodeType ?? ''] ?? '#445566' }}
-                  />
-                  <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{conn.label}</span>
-                  <span
-                    className="ml-auto text-[10px] font-mono"
-                    style={{ color: 'rgba(255,255,255,0.25)' }}
-                  >
-                    {conn.nodeType ?? conn.cat}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -482,7 +453,6 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
 
 /** Override CAT_COLOR lookup when in live mode by injecting an ephemeral key. */
 function buildCatKey(type: string): string {
-  // We inject synthetic keys so CAT_COLOR picks up the compliance colors
   return `__compliance_${type}`;
 }
 
@@ -578,83 +548,96 @@ export default function GraphPage() {
     setSelectedNode(null);
   }, []);
 
+  // The graph layout is full-bleed inside the AppShell frame__view.
+  // .graph CSS grid: folders-col | canvas | rail-col.
+  // We skip the folders and rail columns here — just canvas full-width.
+  // Use a single-column grid (1fr) override so canvas fills the view.
   return (
-    <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto" style={{ color: '#E8E8E8' }}>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          {isLive ? (
-            <>
-              {/* Breadcrumb for live compliance-map mode */}
-              <div className="font-mono text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1.5" style={{ color: '#6B6B6B' }}>
+    <div style={{ height: '100%', display: 'grid', gridTemplateColumns: '1fr', background: 'var(--bg-0)' }}>
+      <div className="graph__canvas" style={{ position: 'relative', overflow: 'hidden' }}>
+
+        {/* Toolbar — absolute, top of canvas */}
+        <div className="graph__toolbar">
+          <div className="graph__toolbar-group">
+            {isLive ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Link
                   to={`/jurisdictions/${code}`}
-                  className="hover:text-[#FF9F55] transition-colors"
-                  style={{ color: '#6B6B6B' }}
+                  className="chip chip--sm"
+                  style={{ color: 'var(--ink-2)', textDecoration: 'none' }}
                 >
-                  ← Back to {code}
+                  ←
                 </Link>
-                <span style={{ color: 'rgba(107,107,107,0.5)' }}>·</span>
-                <span>
+                <span className="mono-label" style={{ color: 'var(--ink-2)' }}>
                   {jurisdictionFlag(code!)} {jurisdictionLabel(code!)} / {launchName} / Compliance Graph
                 </span>
               </div>
-              <h1 className="text-2xl font-semibold text-white">Compliance Graph</h1>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-semibold text-white mb-1">Knowledge Graph</h1>
-              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: '#6B6B6B' }}>
-                Compliance concepts and documents
-              </p>
-            </>
-          )}
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link to="/launches" className="chip chip--sm" style={{ textDecoration: 'none', color: 'var(--ink-1)' }}>
+                  ← Launches
+                </Link>
+                <span className="mono-label">Knowledge Graph</span>
+              </div>
+            )}
+          </div>
+
+          <div className="graph__toolbar-group">
+            <span className="mono-label">{`${nodes.length} NODES · ${links.length} LINKS`}</span>
+          </div>
         </div>
-        {!isLive && (
-          <Link
-            to="/launches"
-            className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+
+        {/* Error banner */}
+        {error && (
+          <div
             style={{
-              background: 'rgba(255,120,25,0.14)',
-              border: '1px solid rgba(255,120,25,0.35)',
-              color: '#FF9F55',
+              position: 'absolute',
+              top: 64,
+              left: 22,
+              right: 22,
+              zIndex: 10,
+              padding: '8px 14px',
+              borderRadius: 'var(--r-sm)',
+              background: 'rgba(217,74,74,0.08)',
+              border: '1px solid rgba(217,74,74,0.25)',
+              color: 'var(--danger, #d94a4a)',
+              fontFamily: 'var(--mono)',
+              fontSize: 11,
             }}
           >
-            ← Launches
-          </Link>
+            {error}
+          </div>
         )}
-      </div>
 
-      {/* Error banner */}
-      {error && (
-        <div
-          className="mb-4 px-4 py-2.5 rounded-lg text-[12px] font-mono"
-          style={{
-            background: 'rgba(224,80,80,0.08)',
-            border: '1px solid rgba(224,80,80,0.25)',
-            color: '#E05050',
-          }}
-        >
-          {error}
+        {/* Legend — positioned top-right inside canvas */}
+        <div className="graph__legend">
+          <div className="mono-label mono-label--ink" style={{ marginBottom: 10 }}>DOCUMENT TYPES</div>
+          {[
+            { cat: 'terms',     color: 'var(--tc)',      label: 'Terms & Contracts'   },
+            { cat: 'aml',       color: 'var(--aml)',     label: 'AML / Sanctions'     },
+            { cat: 'privacy',   color: 'var(--priv)',    label: 'Privacy'             },
+            { cat: 'licensing', color: 'var(--lic)',     label: 'Licensing / Reports' },
+            { cat: 'concept',   color: 'var(--concept)', label: 'Concept'             },
+          ].map(row => (
+            <div key={row.cat} className="legrow">
+              <span className="legrow__dot" style={{ background: row.color }} />
+              <span className="legrow__l">{row.label}</span>
+            </div>
+          ))}
         </div>
-      )}
 
-      <div
-        className="rounded-xl overflow-hidden relative"
-        style={{
-          height: 660,
-          background: '#0D0D0D',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
         {/* Loading state */}
         {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#080808' }}>
-            <span
-              className="font-mono text-[11px] uppercase tracking-wider"
-              style={{ color: '#6B6B6B' }}
-            >
-              Loading compliance graph…
-            </span>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span className="mono-label">Loading compliance graph…</span>
           </div>
         ) : (
           <>
@@ -672,21 +655,18 @@ export default function GraphPage() {
                 onClose={handleClose}
               />
             )}
-
-            <div
-              className="absolute z-20 font-mono text-[10px] px-3 py-1.5 rounded-full tracking-[0.08em]"
-              style={{
-                top: 20,
-                left: 20,
-                background: 'rgba(13,13,13,0.92)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.3)',
-                backdropFilter: 'blur(12px)',
-              }}
-            >
-              {`${nodes.length} NODES · ${links.length} LINKS`}
-            </div>
           </>
+        )}
+
+        {/* Hint bar — bottom-center */}
+        {!loading && (
+          <div className="graph__hint">
+            <span className="mono-label">DRAG TO PAN</span>
+            <span className="graph__hint-dot" />
+            <span className="mono-label">SCROLL TO ZOOM</span>
+            <span className="graph__hint-dot" />
+            <span className="mono-label">CLICK NODE TO OPEN</span>
+          </div>
         )}
       </div>
     </div>

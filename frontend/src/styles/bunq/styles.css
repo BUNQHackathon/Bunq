@@ -1,0 +1,247 @@
+/* ============================================================
+   bunq compliance — foundations
+   ============================================================ */
+
+:root {
+  /* Surfaces — warm near-blacks */
+  --bg-0: #0c0a09;          /* deepest */
+  --bg-1: #141110;          /* panel */
+  --bg-2: #1c1815;          /* raised */
+  --bg-3: #252018;          /* hover */
+  --bg-inset: #0a0807;
+
+  /* Ink */
+  --ink-0: #f6f1ea;         /* primary */
+  --ink-1: #d6cec2;         /* secondary */
+  --ink-2: #8a8278;         /* tertiary */
+  --ink-3: #5a544c;         /* quaternary */
+  --ink-4: #3a3631;         /* borders emphasized */
+
+  /* Lines */
+  --line-0: #241f1b;
+  --line-1: #2e2823;
+  --line-soft: rgba(246, 241, 234, 0.06);
+
+  /* Brand orange — slightly warmer than bunq's stock to keep it original */
+  --orange: #ef6a2a;
+  --orange-hi: #ff7a3a;
+  --orange-deep: #c44b17;
+  --orange-ink: #3a1a0a;
+  --orange-wash: rgba(239, 106, 42, 0.10);
+
+  /* Document-type palette — harmonised at L≈0.70 C≈0.13 so they feel like a family */
+  --tc:      #ef6a2a;                    /* primary orange — anchor, kept vivid */
+  --aml:     oklch(0.68 0.15 32);        /* warm red, warmer than before to kin with orange */
+  --priv:    oklch(0.68 0.13 245);       /* denim blue */
+  --lic:     oklch(0.72 0.11 185);       /* muted teal */
+  --concept: oklch(0.55 0.02 60);        /* warm neutral */
+
+  /* Status */
+  --success: #5eb86a;       /* from bunq green */
+  --warning: #d9b03d;       /* from bunq yellow, desaturated */
+  --danger:  #d94a4a;
+
+  /* Radii */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  /* Fonts */
+  --ui: "Geist", "Inter", system-ui, -apple-system, sans-serif;
+  --serif: "Noto Serif Display", "Noto Serif", Georgia, serif;
+  --mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--ui);
+  color: var(--ink-0);
+  background: var(--bg-0);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- Atmosphere (blurred glows behind panels, not on them) ---- */
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.atmosphere::before,
+.atmosphere::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.55;
+}
+.atmosphere::before {
+  width: 640px; height: 640px;
+  left: -160px; top: -200px;
+  background: radial-gradient(closest-side, rgba(239, 106, 42, 0.55), transparent 70%);
+}
+.atmosphere::after {
+  width: 520px; height: 520px;
+  right: -140px; bottom: -180px;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.35), transparent 70%);
+}
+
+/* ---------- Utility text ---------- */
+.mono-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.mono-label--ink { color: var(--ink-0); }
+.mono-label--orange { color: var(--orange); }
+
+.serif-display {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.96;
+}
+
+/* ---------- Column ruler (MiniMeld-style hairlines) ---------- */
+.ruler {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right,
+      transparent 0, transparent calc(100% / 12 - 1px),
+      var(--line-soft) calc(100% / 12 - 1px), var(--line-soft) calc(100% / 12));
+  background-size: calc(100% / 12) 100%;
+  opacity: 0.7;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-1);
+  background: var(--bg-1);
+  color: var(--ink-0);
+  font: 500 13px/1 var(--ui);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.btn:hover { background: var(--bg-2); border-color: var(--ink-4); }
+
+.btn--orange {
+  background: var(--orange);
+  color: var(--orange-ink);
+  border-color: var(--orange);
+  font-weight: 600;
+}
+.btn--orange:hover { background: var(--orange-hi); border-color: var(--orange-hi); }
+
+.btn--ghost { background: transparent; }
+
+.btn--icon {
+  width: 36px; height: 36px; padding: 0;
+  justify-content: center;
+}
+
+.btn--sm { padding: 7px 12px; font-size: 12px; }
+
+/* Orange send circle */
+.send-circle {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--orange-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -8px rgba(239, 106, 42, 0.6);
+}
+.send-circle:hover { background: var(--orange-hi); }
+
+/* ---------- Chip ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-1);
+  background: var(--bg-1);
+  color: var(--ink-1);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.chip:hover { background: var(--bg-2); color: var(--ink-0); border-color: var(--ink-4); }
+
+.chip--orange {
+  background: var(--orange-wash);
+  color: var(--orange-hi);
+  border-color: rgba(239, 106, 42, 0.35);
+}
+.chip--solid-orange {
+  background: var(--orange);
+  color: var(--orange-ink);
+  border-color: var(--orange);
+  font-weight: 500;
+}
+.chip--sm { padding: 4px 10px; font-size: 11px; }
+.chip--tag {
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+}
+
+/* ---------- Scrollbar ---------- */
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--line-1); border-radius: 3px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Key lines ---------- */
+.hairline-b { border-bottom: 1px solid var(--line-0); }
+.hairline-t { border-top: 1px solid var(--line-0); }
+.hairline-r { border-right: 1px solid var(--line-0); }
+.hairline-l { border-left: 1px solid var(--line-0); }
+
+/* ---------- Country flag block ---------- */
+.flag {
+  width: 18px; height: 13px;
+  border-radius: 2px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+}
+
+/* ---------- Blurred ambient panel glow (used behind cards, NOT on them) -- */
+.glow-behind {
+  position: relative;
+}
+.glow-behind::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(239, 106, 42, 0.18), transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}

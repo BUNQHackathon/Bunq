@@ -106,98 +106,104 @@ export default function LaunchDetailPage() {
     : null;
 
   // ── Loading / error states ──────────────────────────────────────────────────
-  const cardStyle: React.CSSProperties = {
-    background: '#0D0D0D',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 16,
-  };
-
   if (!detail && !error) {
     return (
-      <div className="min-h-screen px-6 py-10 max-w-7xl mx-auto" style={{ color: '#E8E8E8' }}>
-        <div style={{ ...cardStyle, padding: '48px 24px', textAlign: 'center' }}>
-          <p className="font-mono text-[13px] animate-pulse" style={{ color: '#6B6B6B' }}>
+      <div style={{ padding: '40px 60px 60px', minHeight: '100%', fontFamily: 'var(--ui)' }}>
+        <div
+          style={{
+            background: 'var(--bg-1)',
+            border: '1px solid var(--line-1)',
+            borderRadius: 'var(--r-lg)',
+            padding: '48px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <span className="mono-label" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>
             Loading launch…
-          </p>
+          </span>
         </div>
       </div>
     );
   }
 
+  const launch = detail?.launch;
+
   return (
-    <div className="min-h-screen px-6 py-6 max-w-7xl mx-auto" style={{ color: '#E8E8E8' }}>
+    <div style={{ padding: '40px 60px 60px', minHeight: '100%', fontFamily: 'var(--ui)' }}>
 
       {/* Error banner */}
       {error && (
         <div
-          className="rounded-xl px-6 py-4 mb-4"
-          style={{ background: 'rgba(224,80,80,0.08)', border: '1px solid rgba(224,80,80,0.25)' }}
+          style={{
+            background: 'rgba(217,74,74,0.08)',
+            border: '1px solid rgba(217,74,74,0.3)',
+            color: 'var(--danger, #d94a4a)',
+            padding: '10px 14px',
+            borderRadius: 'var(--r-md)',
+            marginBottom: 16,
+          }}
         >
-          <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
+          {error}
         </div>
       )}
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="mb-6">
-        <Link
-          to="/launches"
-          className="inline-flex items-center gap-1 text-[12px] font-mono mb-4 transition-opacity hover:opacity-70"
-          style={{ color: '#6B6B6B', textDecoration: 'none' }}
-        >
-          ← Back to launches
-        </Link>
-
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap mb-1">
-              {detail?.launch.kind && <KindBadge kind={detail.launch.kind} />}
-              <h1 className="text-[22px] font-semibold text-white leading-tight">
-                {detail?.launch.name ?? id}
-              </h1>
-              {aggVerdict && <VerdictPill verdict={aggVerdict} />}
-            </div>
-            {detail?.launch.brief && (
-              <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {detail.launch.brief}
-              </p>
-            )}
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div>
+          <Link
+            to="/launches"
+            className="mono-label"
+            style={{ textDecoration: 'none', marginBottom: 10, display: 'inline-block' }}
+          >
+            ← All launches
+          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+            {launch?.kind && <KindBadge kind={launch.kind} />}
+            <h1 className="serif-display" style={{ fontSize: 44, margin: 0 }}>
+              {launch?.name ?? id}
+            </h1>
+            {aggVerdict && <VerdictPill verdict={aggVerdict} />}
           </div>
+          {launch?.brief && (
+            <p style={{ color: 'var(--ink-2)', marginTop: 12, maxWidth: 640, fontSize: 15, margin: '12px 0 0' }}>
+              {launch.brief}
+            </p>
+          )}
+        </div>
+
+        {/* 2D / 3D segmented toggle */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className={`chip chip--sm${view === '2d' ? ' chip--orange' : ''}`}
+            onClick={() => setView('2d')}
+          >
+            2D
+          </button>
+          <button
+            className={`chip chip--sm${view === '3d' ? ' chip--orange' : ''}`}
+            onClick={() => setView('3d')}
+          >
+            Globe
+          </button>
         </div>
       </div>
 
-      {/* ── 2D / 3D Toggle ────────────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-4">
-        {(['2d', '3d'] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className="px-3 py-1 text-[11px] font-mono uppercase rounded-lg transition-all"
-            style={
-              view === v
-                ? {
-                    background: 'rgba(255,120,25,0.18)',
-                    border: '1px solid rgba(255,120,25,0.4)',
-                    color: '#FF9F55',
-                  }
-                : {
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#6B6B6B',
-                  }
-            }
-          >
-            {v}
-          </button>
-        ))}
-      </div>
-
       {/* ── Map + Drawer ───────────────────────────────────────────────────── */}
-      <div className="flex gap-4 items-start">
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
 
-        {/* Map */}
+        {/* Map card */}
         <div
-          className="flex-1 min-w-0 rounded-xl overflow-hidden"
-          style={{ ...cardStyle, flexBasis: '65%' }}
+          className="glow-behind"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: 'var(--bg-1)',
+            border: '1px solid var(--line-1)',
+            borderRadius: 'var(--r-lg)',
+            padding: 24,
+            height: 560,
+            overflow: 'hidden',
+          }}
         >
           {view === '2d' ? (
             <WorldMapD3
@@ -218,58 +224,73 @@ export default function LaunchDetailPage() {
 
         {/* Drawer — only when a country is selected */}
         {selectedRun && selectedIso2 && (
-          <div
-            className="rounded-xl p-5 flex flex-col gap-4"
+          <aside
             style={{
-              ...cardStyle,
-              width: '30%',
-              minWidth: 240,
-              flexShrink: 0,
+              background: 'var(--bg-1)',
+              border: '1px solid var(--line-1)',
+              borderRadius: 'var(--r-lg)',
+              padding: 24,
+              width: 360,
+              flex: 'none',
             }}
           >
             {/* Drawer header */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[22px]">{jurisdictionFlag(selectedIso2)}</span>
-                <span className="text-[15px] font-semibold text-white">
-                  {jurisdictionLabel(selectedIso2)}
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div className="mono-label">
+                {jurisdictionFlag(selectedIso2)} {jurisdictionLabel(selectedIso2)}
               </div>
               <button
                 onClick={() => setSelectedIso3(null)}
-                className="text-[18px] leading-none transition-opacity hover:opacity-60"
-                style={{ color: '#6B6B6B', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--ink-2)',
+                  fontSize: 18,
+                  lineHeight: 1,
+                  padding: 0,
+                }}
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
 
-            {/* Verdict + status */}
-            <div className="flex flex-col gap-2">
-              <VerdictPill verdict={selectedRun.verdict} />
-              {selectedRun.status === 'RUNNING' && (
-                <p
-                  className="text-[12px] font-mono"
-                  style={{
-                    color: '#6B6B6B',
-                    animation: 'ldPulse 1.5s ease-in-out infinite',
-                  }}
-                >
-                  Compliance run in progress…
-                </p>
-              )}
-              {selectedRun.status === 'FAILED' && (
-                <p className="text-[12px] font-mono" style={{ color: '#E05050' }}>
-                  Run failed
-                </p>
-              )}
-            </div>
+            <h3 className="serif-display" style={{ fontSize: 24, margin: 0, marginBottom: 16 }}>
+              {jurisdictionLabel(selectedIso2)}
+            </h3>
+
+            <VerdictPill verdict={selectedRun.verdict} />
+
+            {selectedRun.status === 'RUNNING' && (
+              <span
+                className="chip chip--sm"
+                style={{ marginTop: 10, display: 'inline-flex', animation: 'ldPulse 1.5s ease-in-out infinite' }}
+              >
+                Running…
+              </span>
+            )}
+            {selectedRun.status === 'FAILED' && (
+              <span
+                className="chip chip--sm"
+                style={{ marginTop: 10, display: 'inline-flex', color: 'var(--danger, #d94a4a)', borderColor: 'rgba(217,74,74,0.3)' }}
+              >
+                Run failed
+              </span>
+            )}
 
             {/* Stats */}
             <div
-              className="rounded-lg p-3 flex flex-col gap-2"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{
+                background: 'var(--bg-2)',
+                border: '1px solid var(--line-0)',
+                borderRadius: 'var(--r-md)',
+                padding: '12px 14px',
+                marginTop: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
             >
               <StatRow label="Gaps" value={String(selectedRun.gapsCount)} />
               <StatRow label="Sanctions hits" value={String(selectedRun.sanctionsHits)} />
@@ -288,58 +309,50 @@ export default function LaunchDetailPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col gap-2 mt-1">
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button
+                className="btn btn--orange btn--sm"
                 onClick={() => downloadProofPack(id!, selectedIso2)}
-                className="w-full rounded-lg py-2 text-[12px] font-medium transition-all"
-                style={{
-                  background: 'rgba(255,120,25,0.14)',
-                  border: '1px solid rgba(255,120,25,0.35)',
-                  color: '#FF9F55',
-                  cursor: 'pointer',
-                }}
               >
-                Download Proof Pack
+                Download proof pack
               </button>
               <button
+                className="btn btn--sm"
                 onClick={() => navigate(`/jurisdictions/${selectedIso2}/launches/${id}`)}
-                className="w-full rounded-lg py-2 text-[12px] font-medium transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#E8E8E8',
-                  cursor: 'pointer',
-                }}
               >
-                View compliance graph
+                Open graph →
               </button>
             </div>
-          </div>
+          </aside>
         )}
 
         {/* Placeholder hint when no country selected */}
         {!selectedRun && detail && detail.jurisdictions.length > 0 && (
           <div
-            className="rounded-xl p-5 flex items-center justify-center"
             style={{
-              ...cardStyle,
-              width: '30%',
-              minWidth: 240,
+              background: 'var(--bg-1)',
+              border: '1px solid var(--line-1)',
+              borderRadius: 'var(--r-lg)',
+              padding: 24,
+              width: 360,
+              flex: 'none',
               height: 180,
-              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <p className="text-[12px] font-mono text-center" style={{ color: '#6B6B6B' }}>
+            <span className="mono-label" style={{ textAlign: 'center' }}>
               Click a country on the map
               <br />to view details
-            </p>
+            </span>
           </div>
         )}
       </div>
 
-      {/* ── Jurisdiction list (summary row) ────────────────────────────────── */}
+      {/* ── Jurisdiction strip ─────────────────────────────────────────────── */}
       {detail && detail.jurisdictions.length > 0 && (
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {detail.jurisdictions.map((j) => {
             const iso3 = ISO2_TO_ISO3[j.jurisdictionCode] ?? j.jurisdictionCode;
             const isSelected = iso3 === selectedIso3;
@@ -347,18 +360,13 @@ export default function LaunchDetailPage() {
               <button
                 key={j.jurisdictionCode}
                 onClick={() => setSelectedIso3(isSelected ? null : iso3)}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] transition-all"
-                style={{
-                  background: isSelected ? 'rgba(255,120,25,0.14)' : 'rgba(255,255,255,0.04)',
-                  border: isSelected
-                    ? '1px solid rgba(255,120,25,0.35)'
-                    : '1px solid rgba(255,255,255,0.08)',
-                  color: isSelected ? '#FF9F55' : 'rgba(255,255,255,0.7)',
-                  cursor: 'pointer',
-                }}
+                className={`chip${isSelected ? ' chip--orange' : ''}`}
+                style={{ cursor: 'pointer' }}
               >
                 <span>{jurisdictionFlag(j.jurisdictionCode)}</span>
-                <span className="font-mono text-[11px]">{j.jurisdictionCode}</span>
+                <span className="mono-label" style={{ letterSpacing: '0.04em' }}>
+                  {j.jurisdictionCode}
+                </span>
                 <VerdictPill verdict={j.verdict} showEmoji={false} />
               </button>
             );
@@ -372,9 +380,9 @@ export default function LaunchDetailPage() {
 // ── StatRow helper ────────────────────────────────────────────────────────────
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-[11px] font-mono" style={{ color: '#6B6B6B' }}>{label}</span>
-      <span className="text-[12px] font-mono text-white">{value}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <span className="mono-label">{label}</span>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink-0)' }}>{value}</span>
     </div>
   );
 }

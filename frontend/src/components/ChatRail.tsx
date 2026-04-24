@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { IconPanel, IconPlus, IconSettings } from './icons';
+import { IconPanel, IconPlus, IconSettings, IconSearch } from './icons';
 import { useChatList } from '../hooks/useChatList';
 import type { ChatSummary } from '../api/chat';
 
@@ -10,6 +10,22 @@ export interface ChatRailProps {
   activeChatId: string | null;
   onSelect: (chatId: string) => void;
   onNewChat: () => void;
+}
+
+// ─── Date grouping helpers ────────────────────────────────────────────────────
+
+function getRelativeGroup(iso: string): 'TODAY' | 'EARLIER' {
+  if (!iso) return 'EARLIER';
+  const then = new Date(iso);
+  const now = new Date();
+  if (
+    then.getFullYear() === now.getFullYear() &&
+    then.getMonth() === now.getMonth() &&
+    then.getDate() === now.getDate()
+  ) {
+    return 'TODAY';
+  }
+  return 'EARLIER';
 }
 
 function formatRelative(iso: string): string {
@@ -26,54 +42,9 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-export default function ChatRail({
-  expanded,
-  onToggle,
-  onHoverChange,
-  activeChatId,
-  onSelect,
-  onNewChat,
-}: ChatRailProps) {
-  const { chats, loading, error, refresh } = useChatList();
+// ─── Collapsed state ──────────────────────────────────────────────────────────
 
-  return (
-    <aside
-      className="fixed left-0 top-14 bottom-0 z-40 flex flex-col"
-      style={{
-        width: expanded ? '300px' : '48px',
-        background: '#0D0D0D',
-        borderRight: '1px solid rgba(255,255,255,0.05)',
-        transition: 'width 200ms ease',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={() => onHoverChange(true)}
-      onMouseLeave={() => onHoverChange(false)}
-    >
-      {expanded ? (
-        <ExpandedContent
-          chats={chats}
-          loading={loading}
-          error={error}
-          onRefresh={refresh}
-          activeChatId={activeChatId}
-          onSelect={onSelect}
-          onNewChat={onNewChat}
-          onToggle={onToggle}
-        />
-      ) : (
-        <CollapsedContent
-          chats={chats}
-          activeChatId={activeChatId}
-          onSelect={onSelect}
-          onNewChat={onNewChat}
-          onToggle={onToggle}
-        />
-      )}
-    </aside>
-  );
-}
-
-interface InnerProps {
+interface CollapsedProps {
   chats: ChatSummary[];
   activeChatId: string | null;
   onSelect: (chatId: string) => void;
@@ -81,85 +52,73 @@ interface InnerProps {
   onToggle: () => void;
 }
 
-interface ExpandedInnerProps extends InnerProps {
-  loading: boolean;
-  error: string | null;
-  onRefresh: () => void;
-}
-
-function CollapsedContent({ chats, activeChatId, onSelect, onNewChat, onToggle }: InnerProps) {
+function CollapsedRail({ chats, activeChatId, onSelect, onNewChat, onToggle }: CollapsedProps) {
   const preview = chats.slice(0, 8);
   return (
-    <>
-      {/* Toggle button */}
+    <aside
+      className="chatrail chatrail--collapsed"
+      onMouseEnter={() => {/* hover handled by AppShell */}}
+    >
       <button
-        onClick={onToggle}
-        className="w-12 h-10 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors shrink-0"
-        title="Expand chat history"
         type="button"
+        className="chatrail__toggle"
+        title="Expand chat history"
+        onClick={onToggle}
       >
         <IconPanel size={16} />
       </button>
 
-      {/* New chat */}
       <button
-        onClick={onNewChat}
-        className="mx-auto mt-1 w-8 h-8 flex items-center justify-center rounded-[10px] transition-all hover:opacity-80 shrink-0"
-        style={{
-          background: 'rgba(255,120,25,0.14)',
-          border: '1px solid rgba(255,120,25,0.35)',
-          color: '#FF7819',
-        }}
-        title="New chat"
         type="button"
+        className="chatrail__new"
+        title="New chat"
+        onClick={onNewChat}
       >
         <IconPlus size={14} />
       </button>
 
-      {/* Divider */}
-      {preview.length > 0 && (
-        <div
-          className="mx-auto mt-3 w-6 shrink-0"
-          style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }}
-        />
-      )}
+      {preview.length > 0 && <div className="chatrail__divider" />}
 
-      {/* Chat dots */}
-      <div className="flex flex-col items-center gap-[14px] mt-4 overflow-hidden">
+      <div className="chatrail__stack">
         {preview.map((chat) => {
           const isActive = chat.chatId === activeChatId;
           return (
             <button
               key={chat.chatId}
-              title={chat.title || 'Untitled chat'}
               type="button"
+              className={`chatrail__dot${isActive ? ' chatrail__dot--active' : ''}`}
+              title={chat.title || 'Untitled chat'}
               onClick={() => onSelect(chat.chatId)}
-              className="w-6 h-6 flex items-center justify-center hover:opacity-80 transition-opacity"
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ background: isActive ? '#FF7819' : '#2A2A2A' }}
-              />
+              <span className="chatrail__dot-inner" />
             </button>
           );
         })}
       </div>
 
-      <div className="flex-1" />
+      <div className="chatrail__spacer" />
 
-      {/* Settings */}
-      <button
-        className="w-12 h-10 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors shrink-0 mb-2"
-        title="Settings"
-        type="button"
-      >
+      <button type="button" className="chatrail__toggle" title="Settings">
         <IconSettings size={14} />
       </button>
-    </>
+    </aside>
   );
 }
 
-function ExpandedContent({
+// ─── Expanded state ───────────────────────────────────────────────────────────
+
+interface ExpandedProps {
+  chats: ChatSummary[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+  activeChatId: string | null;
+  onSelect: (chatId: string) => void;
+  onNewChat: () => void;
+  onToggle: () => void;
+}
+
+function ExpandedRail({
   chats,
   loading,
   error,
@@ -168,79 +127,80 @@ function ExpandedContent({
   onSelect,
   onNewChat,
   onToggle,
-}: ExpandedInnerProps) {
+}: ExpandedProps) {
   const [query, setQuery] = useState('');
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return chats;
-    return chats.filter((c) => c.title.toLowerCase().includes(q));
+    return chats.filter((c) => (c.title ?? '').toLowerCase().includes(q));
   }, [chats, query]);
 
+  // Group: PINNED (none from API currently), TODAY, EARLIER
+  const grouped = useMemo(() => {
+    const today: ChatSummary[] = [];
+    const earlier: ChatSummary[] = [];
+    for (const c of filtered) {
+      if (getRelativeGroup(c.updatedAt) === 'TODAY') today.push(c);
+      else earlier.push(c);
+    }
+    return [
+      { label: 'TODAY', items: today },
+      { label: 'EARLIER', items: earlier },
+    ].filter((g) => g.items.length > 0);
+  }, [filtered]);
+
   return (
-    <div className="flex flex-col h-full min-w-[300px]">
-      {/* Header */}
-      <div className="flex items-center px-4 h-10 shrink-0">
-        <span
-          className="font-mono uppercase tracking-wider text-[11px]"
-          style={{ color: 'rgba(255,255,255,0.3)' }}
-        >
-          CHATS
-        </span>
-        <span
-          className="ml-2 text-[11px]"
-          style={{ color: 'rgba(255,255,255,0.3)' }}
-        >
-          {chats.length}
-        </span>
-        <div className="flex-1" />
+    <aside className="chatrail chatrail--expanded">
+      {/* Head */}
+      <div className="chatrail__head">
+        <div className="chatrail__head-title">
+          <span className="mono-label mono-label--ink">CHATS</span>
+          <span className="chatrail__count">{chats.length}</span>
+        </div>
         <button
-          onClick={onToggle}
-          className="w-7 h-7 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors"
-          title="Collapse"
           type="button"
+          className="btn btn--icon btn--sm"
+          title="Collapse"
+          onClick={onToggle}
         >
-          <IconPanel size={16} />
+          <IconPanel size={14} />
         </button>
       </div>
 
-      <div className="px-3 pb-2 shrink-0">
-        {/* New chat button */}
-        <button
-          onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-medium transition-all hover:opacity-90"
-          style={{
-            background: 'rgba(255,120,25,0.14)',
-            border: '1px solid rgba(255,120,25,0.35)',
-            color: '#FF7819',
-          }}
-          type="button"
-        >
-          <IconPlus size={13} />
-          New chat
-        </button>
+      {/* New chat */}
+      <button type="button" className="chatrail__new-btn" onClick={onNewChat}>
+        <IconPlus size={12} />
+        <span>New chat</span>
+        <span className="kbd kbd--sm">⌘N</span>
+      </button>
 
-        {/* Search */}
+      {/* Search */}
+      <div className="chatrail__search">
+        <IconSearch size={12} />
         <input
-          className="w-full mt-2 px-3 py-1.5 rounded-full text-[13px] text-white/80 placeholder:text-white/30 outline-none focus:ring-0"
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            caretColor: '#FF7819',
-          }}
-          placeholder="Search chats"
           type="text"
+          placeholder="Search chats..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
 
-      {/* Chat list */}
-      <div className="flex-1 overflow-y-auto px-2">
+      {/* List */}
+      <div className="chatrail__list thin-scroll">
         {loading && chats.length === 0 && (
-          <div className="px-3 py-6 text-center text-[12px] text-white/35">Loading…</div>
+          <div
+            className="px-3 py-6 text-center"
+            style={{ fontSize: '12px', color: 'var(--ink-2)' }}
+          >
+            Loading…
+          </div>
         )}
         {error && (
-          <div className="px-3 py-4 text-center text-[12px]" style={{ color: '#E05050' }}>
+          <div
+            className="px-3 py-4 text-center"
+            style={{ fontSize: '12px', color: '#E05050' }}
+          >
             {error}
             <button
               type="button"
@@ -252,59 +212,89 @@ function ExpandedContent({
           </div>
         )}
         {!loading && !error && filtered.length === 0 && (
-          <div className="px-3 py-6 text-center text-[12px] text-white/35">
+          <div
+            className="px-3 py-6 text-center"
+            style={{ fontSize: '12px', color: 'var(--ink-2)' }}
+          >
             {chats.length === 0 ? 'No chats yet — start one above.' : 'No matches.'}
           </div>
         )}
-        {filtered.map((chat) => {
-          const isActive = chat.chatId === activeChatId;
-          return (
-            <button
-              key={chat.chatId}
-              type="button"
-              onClick={() => onSelect(chat.chatId)}
-              className="w-full flex flex-col gap-0.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer hover:bg-white/[0.03]"
-              style={{
-                background: isActive ? 'rgba(255,120,25,0.08)' : undefined,
-                border: isActive ? '1px solid rgba(255,120,25,0.25)' : '1px solid transparent',
-              }}
-            >
-              <span
-                className="text-[13px] truncate"
-                style={{
-                  color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.85)',
-                }}
-              >
-                {chat.title || 'Untitled chat'}
-              </span>
-              <span
-                className="text-[11px] flex items-center gap-2"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
-              >
-                <span>{formatRelative(chat.updatedAt)}</span>
-                {chat.messageCount > 0 && (
-                  <span className="font-mono">· {chat.messageCount}</span>
-                )}
-              </span>
-            </button>
-          );
-        })}
-      </div>
 
-      {/* Footer */}
-      <div
-        className="shrink-0 px-2 py-2"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
-      >
-        <button
-          className="w-full h-9 flex items-center gap-2 px-3 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-colors text-[13px]"
-          title="Settings"
-          type="button"
-        >
-          <IconSettings size={14} />
-          <span>Settings</span>
-        </button>
+        {grouped.map((group) => (
+          <div key={group.label} className="chatrail__group">
+            <div className="mono-label chatrail__group-label">{group.label}</div>
+            {group.items.map((chat) => {
+              const isActive = chat.chatId === activeChatId;
+              return (
+                <button
+                  key={chat.chatId}
+                  type="button"
+                  className={`chatitem${isActive ? ' chatitem--active' : ''}`}
+                  onClick={() => onSelect(chat.chatId)}
+                >
+                  <div className="chatitem__title">
+                    {chat.title || 'Untitled chat'}
+                  </div>
+                  <div className="chatitem__meta">
+                    <span>{formatRelative(chat.updatedAt)}</span>
+                    {chat.messageCount > 0 && (
+                      <span>· {chat.messageCount}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
+    </aside>
+  );
+}
+
+// ─── ChatRail (outer) ─────────────────────────────────────────────────────────
+
+export default function ChatRail({
+  expanded,
+  onToggle,
+  onHoverChange,
+  activeChatId,
+  onSelect,
+  onNewChat,
+}: ChatRailProps) {
+  const { chats, loading, error, refresh } = useChatList();
+
+  if (!expanded) {
+    return (
+      <div
+        onMouseEnter={() => onHoverChange(true)}
+        onMouseLeave={() => onHoverChange(false)}
+      >
+        <CollapsedRail
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelect={onSelect}
+          onNewChat={onNewChat}
+          onToggle={onToggle}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
+    >
+      <ExpandedRail
+        chats={chats}
+        loading={loading}
+        error={error}
+        onRefresh={refresh}
+        activeChatId={activeChatId}
+        onSelect={onSelect}
+        onNewChat={onNewChat}
+        onToggle={onToggle}
+      />
     </div>
   );
 }
