@@ -1,7 +1,11 @@
 import { API_BASE, getJson, postJson } from './client';
+import { mockGet, mockPost } from './mock';
+
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING';
 export type JurisdictionStatus = 'RUNNING' | 'COMPLETE' | 'FAILED' | 'PENDING';
+export type LaunchKind = 'PRODUCT' | 'POLICY' | 'PROCESS';
 
 export interface Launch {
   id: string;
@@ -9,6 +13,9 @@ export interface Launch {
   brief: string;
   license?: string;
   counterparties?: string[];
+  kind?: LaunchKind;
+  aggregateVerdict?: Verdict;
+  jurisdictionCount?: number;
   status: 'DRAFT' | 'RUNNING' | 'COMPLETE' | 'FAILED';
   createdAt: string;
   updatedAt: string;
@@ -39,18 +46,24 @@ export interface CreateLaunchRequest {
   brief: string;
   license?: string;
   markets: string[];
+  kind?: LaunchKind;
 }
 
 export function createLaunch(req: CreateLaunchRequest): Promise<Launch> {
+  if (USE_MOCK) return mockPost<Launch>('/launches', req);
   return postJson<Launch>('/launches', req);
 }
 
 export function listLaunches(): Promise<Launch[]> {
+  if (USE_MOCK) return mockGet<Launch[]>('/launches');
   return getJson<Launch[]>('/launches');
 }
 
 export async function getLaunch(id: string): Promise<LaunchDetail> {
-  const raw = await getJson<LaunchDetail | Launch>(`/launches/${encodeURIComponent(id)}`);
+  const path = `/launches/${encodeURIComponent(id)}`;
+  const raw = USE_MOCK
+    ? await mockGet<LaunchDetail | Launch>(path)
+    : await getJson<LaunchDetail | Launch>(path);
   const launch = (raw && typeof raw === 'object' && 'launch' in raw
     ? (raw as LaunchDetail).launch
     : (raw as Launch));
@@ -86,21 +99,35 @@ function normalizeRun(r: Partial<JurisdictionRun>): JurisdictionRun {
 }
 
 export function addJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
-  return postJson<JurisdictionRun>(
-    `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}`,
-    {}
-  );
+  const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}`;
+  if (USE_MOCK) return mockPost<JurisdictionRun>(path, {});
+  return postJson<JurisdictionRun>(path, {});
 }
 
 export function rerunJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
-  return postJson<JurisdictionRun>(
-    `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`,
-    {}
-  );
+  const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`;
+  if (USE_MOCK) return mockPost<JurisdictionRun>(path, {});
+  return postJson<JurisdictionRun>(path, {});
 }
 
 export function getProofPackUrl(launchId: string, code: string): string {
   return `${API_BASE}/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/proof-pack`;
+}
+
+export function downloadProofPack(launchId: string, code: string): void {
+  if (USE_MOCK) {
+    const blob = new Blob([], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proof-pack-${launchId}-${code}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+  window.location.assign(getProofPackUrl(launchId, code));
 }
 
 export function jurisdictionSseUrl(launchId: string, code: string): string {

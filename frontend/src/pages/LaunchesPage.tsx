@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listLaunches, getLaunch, jurisdictionFlag, type Launch, type JurisdictionRun } from '../api/launch';
-
-type Verdict = JurisdictionRun['verdict'];
+import type { Verdict } from '../api/launch';
+import KindBadge from '../components/KindBadge';
+import VerdictPill from '../components/VerdictPill';
 
 const VERDICT_EMOJI: Record<Verdict, string> = {
   GREEN: '🟢',
@@ -10,6 +11,13 @@ const VERDICT_EMOJI: Record<Verdict, string> = {
   RED: '🔴',
   PENDING: '⏳',
 };
+
+const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1 };
+function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
+  const valid = rs.filter(r => VERDICT_RANK[r.verdict] >= 0);
+  if (valid.length === 0) return rs.length > 0 ? 'PENDING' : null;
+  return valid.reduce((w, r) => VERDICT_RANK[r.verdict] > VERDICT_RANK[w.verdict] ? r : w, valid[0]).verdict;
+}
 
 interface LaunchRow {
   launch: Launch;
@@ -128,33 +136,45 @@ export default function LaunchesPage() {
                 (e.currentTarget as HTMLAnchorElement).style.background = '#0D0D0D';
               }}
             >
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[15px] font-semibold text-white">{launch.name}</span>
-                    {launch.license && (
-                      <span
-                        className="text-[10px] font-mono rounded-full px-2.5 py-0.5"
-                        style={{
-                          background: 'rgba(110,183,232,0.12)',
-                          color: '#6EB7E8',
-                          border: '1px solid rgba(110,183,232,0.25)',
-                        }}
-                      >
-                        {launch.license}
-                      </span>
-                    )}
+              {(() => {
+                const agg: Verdict | null = launch.aggregateVerdict ?? worstVerdict(jurisdictions);
+                return (
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-[15px] font-semibold text-white">{launch.name}</span>
+                        {launch.kind && <KindBadge kind={launch.kind} />}
+                        {launch.license && (
+                          <span
+                            className="text-[10px] font-mono rounded-full px-2.5 py-0.5"
+                            style={{
+                              background: 'rgba(110,183,232,0.12)',
+                              color: '#6EB7E8',
+                              border: '1px solid rgba(110,183,232,0.25)',
+                            }}
+                          >
+                            {launch.license}
+                          </span>
+                        )}
+                        {agg && <VerdictPill verdict={agg} />}
+                        {jurisdictions.length > 0 && (
+                          <span className="text-[11px] font-mono" style={{ color: '#6B6B6B' }}>
+                            {jurisdictions.length} markets
+                          </span>
+                        )}
+                      </div>
+                      {launch.brief && (
+                        <p className="text-[13px] mt-1 line-clamp-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                          {launch.brief}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-mono shrink-0" style={{ color: '#6B6B6B' }}>
+                      {new Date(launch.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
-                  {launch.brief && (
-                    <p className="text-[13px] mt-1 line-clamp-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                      {launch.brief}
-                    </p>
-                  )}
-                </div>
-                <span className="text-[11px] font-mono shrink-0" style={{ color: '#6B6B6B' }}>
-                  {new Date(launch.createdAt).toLocaleDateString()}
-                </span>
-              </div>
+                );
+              })()}
 
               {jurisdictions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">

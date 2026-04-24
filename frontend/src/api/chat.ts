@@ -3,6 +3,13 @@ import { API_BASE } from './client';
 // ─── Types ────────────────────────────────────────────────
 export type KbType = 'REGULATIONS' | 'POLICIES' | 'CONTROLS';
 
+export interface GraphRef {
+  launchId: string;
+  launchName: string;
+  jurisdictionCode: string;
+  jurisdictionName: string;
+}
+
 export interface Citation {
   kbType: KbType;
   chunkId: string;
@@ -43,6 +50,7 @@ export interface ChatStreamHandlers {
   onDelta: (delta: string) => void;
   onCompleted?: (e: ChatCompletedEvent) => void;
   onFailed: (e: ChatFailedEvent) => void;
+  onGraphRefs?: (refs: GraphRef[]) => void;
 }
 
 export interface ChatRequest {
@@ -58,6 +66,7 @@ export interface ChatHistoryMessage {
   role: 'USER' | 'ASSISTANT';
   content: string;
   citations: Citation[];
+  graphRefs?: GraphRef[];
   timestamp: string;
   tokenUsage?: TokenUsage;
 }
@@ -155,6 +164,11 @@ export async function postChatStream(
               timestamp: new Date().toISOString(),
             });
           }
+        } else if (eventName === 'graph_refs') {
+          try {
+            const parsed = JSON.parse(data) as { refs: GraphRef[] };
+            handlers.onGraphRefs?.(parsed.refs ?? []);
+          } catch { /* skip */ }
         }
         // event: connected — ignore
       }

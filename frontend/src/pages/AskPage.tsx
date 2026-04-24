@@ -1,6 +1,10 @@
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PrismCanvas from '../components/PrismCanvas';
-import { postChatStream, citationFileName, type Citation } from '../api/chat';
+import { postChatStream, citationFileName, type Citation, type GraphRef } from '../api/chat';
+import GraphRefChips from '../components/GraphRefChips';
+import { matchGraphRefsFromPrompt } from '../api/mock';
+import { USE_MOCK } from '../api/launch';
 
 // ─── Local data ───────────────────────────────────────────────────────────────
 
@@ -218,14 +222,20 @@ const KB_COLORS: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AskPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
   const [citations, setCitations] = useState<Citation[]>([]);
+  const [graphRefs, setGraphRefs] = useState<GraphRef[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
+
+  function handleOpenGraph(ref: GraphRef) {
+    navigate(`/jurisdictions/${ref.jurisdictionCode}/launches/${ref.launchId}`);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -240,6 +250,7 @@ export default function AskPage() {
     setSubmittedQuery(trimmed);
     setAnswer(null);
     setCitations([]);
+    setGraphRefs([]);
     setError(null);
     setLoading(true);
 
@@ -249,10 +260,21 @@ export default function AskPage() {
         onStarted: (ev) => setCurrentChatId(ev.chatId),
         onDelta: (d) => setAnswer((prev) => (prev ?? '') + d),
         onCitations: setCitations,
-        onCompleted: () => setLoading(false),
+        onGraphRefs: (refs) => setGraphRefs(refs),
+        onCompleted: () => {
+          setLoading(false);
+          if (USE_MOCK) {
+            setGraphRefs(matchGraphRefsFromPrompt(trimmed));
+          }
+        },
         onFailed: (ev) => {
           setError(ev.message);
           setLoading(false);
+          if (USE_MOCK) {
+            setAnswer((prev) => prev ?? 'In NL, the Crypto Debit Card launch has 3 open compliance gaps under DNB Wwft Art 3 and MiCA Art 75 sanctions screening. Two controls are partially covered; a real-time OFAC screening step is missing from ToC §5.3.');
+            setError(null);
+            setGraphRefs(matchGraphRefsFromPrompt(trimmed));
+          }
         },
       },
       controller.signal,
@@ -264,6 +286,7 @@ export default function AskPage() {
     setSubmittedQuery(null);
     setAnswer(null);
     setCitations([]);
+    setGraphRefs([]);
     setError(null);
     setLoading(false);
     setQuery('');
@@ -387,6 +410,16 @@ export default function AskPage() {
                 <p className="text-white/30 text-[13px] font-mono animate-pulse">Generating…</p>
               )}
             </div>
+
+            {/* Graph ref chips */}
+            {graphRefs.length > 0 && (
+              <div
+                className="px-5 pb-4"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}
+              >
+                <GraphRefChips refs={graphRefs} onOpen={handleOpenGraph} />
+              </div>
+            )}
 
             {/* Citations */}
             {citations.length > 0 && (
