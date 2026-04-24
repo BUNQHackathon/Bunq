@@ -1,0 +1,4 @@
+# Copy this to terraform.tfvars (gitignored) and fill in values.
+aws_profile           = "mkrestin"
+opensanctions_api_key = ""
+sidecar_base_url      = "https://<sidecar-service>.ecs.eu-central-1.on.aws"

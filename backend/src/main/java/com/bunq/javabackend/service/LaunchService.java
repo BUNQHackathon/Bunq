@@ -2,14 +2,20 @@ package com.bunq.javabackend.service;
 
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
 import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
+import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
+import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
 import com.bunq.javabackend.exception.EntityAlreadyExistsException;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.model.document.Document;
 import com.bunq.javabackend.model.enums.BedrockModel;
+import com.bunq.javabackend.model.gap.Gap;
+import com.bunq.javabackend.model.gap.RecommendedAction;
 import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.launch.Launch;
+import com.bunq.javabackend.model.launch.LaunchKind;
 import com.bunq.javabackend.model.session.Session;
+import com.bunq.javabackend.repository.GapRepository;
 import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import com.bunq.javabackend.repository.LaunchRepository;
 import com.bunq.javabackend.repository.SessionRepository;
@@ -38,6 +44,7 @@ public class LaunchService {
 
     private final LaunchRepository launchRepository;
     private final JurisdictionRunRepository jurisdictionRunRepository;
+    private final GapRepository gapRepository;
     private final SessionService sessionService;
     private final SessionRepository sessionRepository;
     private final PipelineOrchestrator pipelineOrchestrator;
@@ -53,12 +60,18 @@ public class LaunchService {
                 .name(req.getName())
                 .brief(req.getBrief())
                 .license(req.getLicense())
+                .kind(req.getKind() != null ? req.getKind() : LaunchKind.PRODUCT)
                 .status("CREATED")
                 .counterparties(counterparties)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
         launchRepository.save(launch);
+        if (req.getJurisdictions() != null && !req.getJurisdictions().isEmpty()) {
+            for (String code : req.getJurisdictions()) {
+                provisionJurisdiction(launch.getId(), code);
+            }
+        }
         return launch;
     }
 
@@ -125,10 +138,62 @@ public class LaunchService {
         Launch launch = launchRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + id));
         List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(id);
-        return toDto(launch, runs);
+        List<JurisdictionRunResponseDTO> runDtos = mapRunsWithSummary(runs);
+        return toDto(launch, runDtos);
     }
 
-    public JurisdictionRun addJurisdiction(String launchId, String code) {
+    private List<JurisdictionRunResponseDTO> mapRunsWithSummary(List<JurisdictionRun> runs) {
+        List<JurisdictionRunResponseDTO> result = new ArrayList<>();
+        for (JurisdictionRun run : runs) {
+            String verdict = run.getVerdict();
+            String summary;
+            List<String> requiredChanges;
+            List<String> blockers;
+            boolean proofPackAvailable = run.getProofPackS3Key() != null;
+
+            if ("GREEN".equals(verdict)) {
+                summary = "Can ship as-is";
+                requiredChanges = List.of();
+                blockers = List.of();
+            } else if ("AMBER".equals(verdict)) {
+                summary = "Requires changes";
+                List<Gap> gaps = run.getCurrentSessionId() != null
+                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                        : List.of();
+                requiredChanges = gaps.stream()
+                        .flatMap(g -> g.getRecommendedActions() == null ? java.util.stream.Stream.empty()
+                                : g.getRecommendedActions().stream())
+                        .map(RecommendedAction::getAction)
+                        .filter(a -> a != null && !a.isBlank())
+                        .distinct()
+                        .limit(10)
+                        .toList();
+                blockers = List.of();
+            } else if ("RED".equals(verdict)) {
+                summary = "Blocked";
+                List<Gap> gaps = run.getCurrentSessionId() != null
+                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                        : List.of();
+                blockers = gaps.stream()
+                        .filter(g -> g.getResidualRisk() != null)
+                        .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
+                        .limit(3)
+                        .map(Gap::getNarrative)
+                        .filter(n -> n != null)
+                        .toList();
+                requiredChanges = List.of();
+            } else {
+                summary = "Analysis in progress";
+                requiredChanges = List.of();
+                blockers = List.of();
+            }
+
+            result.add(toDto(run, summary, requiredChanges, blockers, proofPackAvailable));
+        }
+        return result;
+    }
+
+    private JurisdictionRun provisionJurisdiction(String launchId, String code) {
         launchRepository.findById(launchId)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
         jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code).ifPresent(existing -> {
@@ -191,8 +256,25 @@ public class LaunchService {
         return run;
     }
 
-    public com.bunq.javabackend.dto.response.LaunchSummaryDTO toSummaryWithCount(Launch launch) {
-        int jurisdictionCount = jurisdictionRunRepository.findByLaunchId(launch.getId()).size();
-        return toSummary(launch, jurisdictionCount);
+    public LaunchSummaryDTO toSummaryWithCount(Launch launch) {
+        List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(launch.getId());
+        String aggregateVerdict = computeAggregateVerdict(runs);
+        return toSummary(launch, runs.size(), aggregateVerdict);
+    }
+
+    private String computeAggregateVerdict(List<JurisdictionRun> runs) {
+        boolean hasRed = false;
+        boolean hasAmber = false;
+        boolean hasGreen = false;
+        for (JurisdictionRun run : runs) {
+            String v = run.getVerdict();
+            if ("RED".equals(v)) hasRed = true;
+            else if ("AMBER".equals(v)) hasAmber = true;
+            else if ("GREEN".equals(v)) hasGreen = true;
+        }
+        if (hasRed) return "RED";
+        if (hasAmber) return "AMBER";
+        if (hasGreen) return "GREEN";
+        return null;
     }
 }

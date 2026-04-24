@@ -4,7 +4,6 @@ import com.bunq.javabackend.helper.mapper.MappingMapper;
 import com.bunq.javabackend.model.control.Control;
 import com.bunq.javabackend.model.mapping.Mapping;
 import com.bunq.javabackend.model.obligation.Obligation;
-import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.model.enums.GapStatus;
 import com.bunq.javabackend.model.enums.MappingType;
 import com.bunq.javabackend.model.evidence.Evidence;
@@ -13,16 +12,15 @@ import com.bunq.javabackend.repository.EvidenceRepository;
 import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.service.AuditLogService;
-import com.bunq.javabackend.service.BedrockService;
-import com.bunq.javabackend.service.bedrock.ToolDefinitions;
+import com.bunq.javabackend.service.bedrock.MatchResult;
+import com.bunq.javabackend.service.bedrock.MatchableControl;
+import com.bunq.javabackend.service.bedrock.MatchableObligation;
+import com.bunq.javabackend.service.bedrock.ObligationControlMatcher;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
-import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -44,11 +42,10 @@ public class MapObligationsControlsStage implements Stage {
     private static final int BATCH_SIZE = 10;
     private static final int MAX_CANDIDATE_CONTROLS = 20;
 
-    private final BedrockService bedrockService;
+    private final ObligationControlMatcher matcher;
     private final MappingRepository mappingRepository;
     private final ObligationRepository obligationRepository;
     private final ControlRepository controlRepository;
-    private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
 
@@ -136,7 +133,34 @@ public class MapObligationsControlsStage implements Stage {
                     results.add(cached);
                     reused++;
                 } else {
-                    List<Mapping> semanticMappings = semanticMatch(obl, List.of(ctrl), ctx.getSessionId(), mappingId);
+                    MatchableObligation matchableObl = new MatchableObligation(
+                            obl.getId(), obl.getSubject(), obl.getAction(),
+                            obl.getRiskCategory(), obl.getRegulatoryPenaltyRange());
+                    List<MatchableControl> matchableControls = List.of(new MatchableControl(
+                            ctrl.getId(), ctrl.getDescription(),
+                            ctrl.getCategory() != null ? ctrl.getCategory().name() : null,
+                            ctrl.getMappedStandards()));
+                    List<MatchResult> matchResults = matcher.match(matchableObl, matchableControls);
+                    List<Mapping> semanticMappings = new ArrayList<>();
+                    for (MatchResult result : matchResults) {
+                        String controlId = result.controlId();
+                        String id = matchableControls.size() == 1
+                                ? mappingId
+                                : deterministic(obl.getId(), controlId != null ? controlId : "");
+                        Mapping mapping = new Mapping();
+                        mapping.setId(id);
+                        mapping.setSessionId(ctx.getSessionId());
+                        mapping.setObligationId(obl.getId());
+                        mapping.setControlId(controlId);
+                        mapping.setMappingConfidence(result.confidence());
+                        mapping.setSemanticReason(result.reason());
+                        String typeStr = result.mappingType();
+                        try { mapping.setMappingType(MappingType.valueOf(typeStr.toLowerCase())); }
+                        catch (Exception ignored) { mapping.setMappingType(MappingType.partial); }
+                        double score = mapping.getMappingConfidence() != null ? mapping.getMappingConfidence() : 0;
+                        mapping.setGapStatus(score >= 50 ? GapStatus.satisfied : GapStatus.partial);
+                        semanticMappings.add(mapping);
+                    }
                     for (Mapping m : semanticMappings) {
                         Map<String, String> meta = new HashMap<>();
                         meta.put("route", "llm");
@@ -179,64 +203,6 @@ public class MapObligationsControlsStage implements Stage {
                 })
                 .limit(MAX_CANDIDATE_CONTROLS)
                 .toList();
-    }
-
-    private List<Mapping> semanticMatch(Obligation obl, List<Control> candidates,
-                                        String sessionId, String mappingId) {
-        List<Mapping> mappings = new ArrayList<>();
-        try {
-            HashMap<String, Object> userInput = new HashMap<String, Object>();
-            userInput.put("obligation_id", obl.getId());
-            userInput.put("obligation_subject", obl.getSubject());
-            userInput.put("obligation_action", obl.getAction());
-            userInput.put("obligation_risk_category", obl.getRiskCategory());
-            userInput.put("candidate_controls", candidates.stream().map(c -> {
-                HashMap<String, Object> m = new HashMap<String, Object>();
-                m.put("control_id", c.getId());
-                m.put("description", c.getDescription());
-                m.put("category", c.getCategory() != null ? c.getCategory().name() : null);
-                m.put("mapped_standards", c.getMappedStandards());
-                return m;
-            }).toList());
-
-            JsonNode toolInput = bedrockService.invokeModelWithTool(
-                    BedrockModel.SONNET.getModelId(),
-                    SystemPrompts.MATCH_OBLIGATIONS_TO_CONTROLS,
-                    userInput,
-                    ToolDefinitions.MATCH_OBLIGATION_TO_CONTROLS_TOOL
-            );
-
-            JsonNode matchesNode = toolInput.isArray() ? toolInput : toolInput.path("matches");
-            if (matchesNode.isArray()) {
-                for (JsonNode node : matchesNode) {
-                    Mapping mapping = new Mapping();
-                    // use deterministic ID only when there is exactly one candidate (per-pair call)
-                    // otherwise fall back to per-pair id derived from the returned control_id
-                    String controlId = node.path("control_id").asText(null);
-                    String id = candidates.size() == 1
-                            ? mappingId
-                            : deterministic(obl.getId(), controlId != null ? controlId : "");
-                    mapping.setId(id);
-                    mapping.setSessionId(sessionId);
-                    mapping.setObligationId(obl.getId());
-                    mapping.setControlId(controlId);
-                    mapping.setMappingConfidence(node.path("match_score").asDouble(0.0));
-                    mapping.setSemanticReason(node.path("reason").asText(null));
-
-                    String typeStr = node.path("mapping_type").asText("partial");
-                    try { mapping.setMappingType(MappingType.valueOf(typeStr.toLowerCase())); }
-                    catch (Exception ignored) { mapping.setMappingType(MappingType.partial); }
-
-                    double score = mapping.getMappingConfidence() != null ? mapping.getMappingConfidence() : 0;
-                    mapping.setGapStatus(score >= 50 ? GapStatus.satisfied : GapStatus.partial);
-
-                    mappings.add(mapping);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Semantic match failed for obligation {}: {}", obl.getId(), e.getMessage());
-        }
-        return mappings;
     }
 
     /** Produces a stable mapping ID from an (obligationId, controlId) pair. */

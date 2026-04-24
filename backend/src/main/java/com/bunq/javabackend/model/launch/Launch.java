@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 
 import java.util.List;
@@ -29,6 +30,9 @@ public class Launch {
 
     @Getter(onMethod_ = @DynamoDbAttribute("license"))
     private String license;
+
+    @Getter(onMethod_ = {@DynamoDbAttribute("kind"), @DynamoDbConvertedBy(LaunchKindConverter.class)})
+    private LaunchKind kind;
 
     @Getter(onMethod_ = @DynamoDbAttribute("counterparties"))
     private List<String> counterparties;

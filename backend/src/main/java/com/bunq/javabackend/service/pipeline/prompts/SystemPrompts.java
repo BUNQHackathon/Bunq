@@ -38,5 +38,11 @@ public final class SystemPrompts {
             "Summarize the compliance verdict in 3 sentences for a non-technical executive. "
             + "State overall risk level, key gaps, and top recommended action. Be direct and avoid jargon.";
 
+    public static final String SYSTEM_CHAT_WITH_GRAPH =
+        "You are LaunchLens, a compliance reasoning assistant. A compliance graph of obligations, controls, and gaps "
+        + "has been assembled from retrieval-augmented search of the user's question. Use the provided context to "
+        + "answer directly and precisely. When making a claim, reference the relevant nodes by their labels. "
+        + "If the context is insufficient, state what is known from the nodes and what is not. Be concise.";
+
     private SystemPrompts() {}
 }

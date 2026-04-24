@@ -8,6 +8,8 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbBean
@@ -17,10 +19,10 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @Setter
 public class JurisdictionRun {
 
-    @Getter(onMethod_ = {@DynamoDbPartitionKey, @DynamoDbAttribute("launch_id")})
+    @Getter(onMethod_ = {@DynamoDbPartitionKey, @DynamoDbSecondarySortKey(indexNames = "jurisdiction-index"), @DynamoDbAttribute("launch_id")})
     private String launchId;
 
-    @Getter(onMethod_ = {@DynamoDbSortKey, @DynamoDbAttribute("jurisdiction_code")})
+    @Getter(onMethod_ = {@DynamoDbSortKey, @DynamoDbSecondaryPartitionKey(indexNames = "jurisdiction-index"), @DynamoDbAttribute("jurisdiction_code")})
     private String jurisdictionCode;
 
     @Getter(onMethod_ = @DynamoDbAttribute("current_session_id"))

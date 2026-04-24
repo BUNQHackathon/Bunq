@@ -1,5 +1,6 @@
 package com.bunq.javabackend.dto.response;
 
+import com.bunq.javabackend.model.launch.LaunchKind;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class LaunchResponseDTO {
     private String name;
     private String brief;
     private String license;
+    private LaunchKind kind;
     private List<String> counterparties;
     private String status;
     private String createdAt;

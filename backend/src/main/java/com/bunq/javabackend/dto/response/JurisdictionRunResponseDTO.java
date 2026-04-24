@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,4 +21,8 @@ public class JurisdictionRunResponseDTO {
     private String proofPackS3Key;
     private String lastRunAt;
     private String status;
+    private String summary;
+    private List<String> requiredChanges;
+    private List<String> blockers;
+    private boolean proofPackAvailable;
 }

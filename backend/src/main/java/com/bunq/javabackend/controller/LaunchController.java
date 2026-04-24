@@ -1,12 +1,16 @@
 package com.bunq.javabackend.controller;
 
+import com.bunq.javabackend.client.SidecarClient;
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
 import com.bunq.javabackend.dto.response.DocumentResponseDTO;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
+import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.helper.mapper.DocumentMapper;
+import com.bunq.javabackend.helper.mapper.LaunchMapper;
+import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import com.bunq.javabackend.repository.LaunchRepository;
 import com.bunq.javabackend.service.AutoDocService;
 import com.bunq.javabackend.service.LaunchService;
@@ -21,8 +25,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 
-import static com.bunq.javabackend.helper.mapper.LaunchMapper.toDto;
-
 @RestController
 @RequestMapping("/launches")
 @RequiredArgsConstructor
@@ -32,12 +34,13 @@ public class LaunchController {
     private final AutoDocService autoDocService;
     private final LaunchRepository launchRepository;
     private final ProofPackService proofPackService;
+    private final JurisdictionRunRepository jurisdictionRunRepository;
+    private final SidecarClient sidecarClient;
 
     @PostMapping
-    public ResponseEntity<LaunchSummaryDTO> createLaunch(@Valid @RequestBody CreateLaunchRequestDTO request) {
+    public ResponseEntity<LaunchResponseDTO> createLaunch(@Valid @RequestBody CreateLaunchRequestDTO request) {
         var launch = launchService.createLaunch(request);
-        var summary = launchService.toSummaryWithCount(launch);
-        return ResponseEntity.status(HttpStatus.CREATED).body(summary);
+        return ResponseEntity.status(HttpStatus.CREATED).body(launchService.getLaunch(launch.getId()));
     }
 
     @GetMapping
@@ -54,20 +57,12 @@ public class LaunchController {
         return ResponseEntity.ok(launchService.getLaunch(id));
     }
 
-    @PostMapping("/{id}/jurisdictions/{code}")
-    public ResponseEntity<JurisdictionRunResponseDTO> addJurisdiction(
-            @PathVariable String id,
-            @PathVariable String code) {
-        var run = launchService.addJurisdiction(id, code);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDto(run));
-    }
-
     @PostMapping("/{id}/jurisdictions/{code}/run")
     public ResponseEntity<JurisdictionRunResponseDTO> runJurisdiction(
             @PathVariable String id,
             @PathVariable String code) {
         var run = launchService.runJurisdiction(id, code);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(toDto(run));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(LaunchMapper.toDto(run));
     }
 
     @GetMapping("/{id}/auto-docs")
@@ -94,5 +89,16 @@ public class LaunchController {
                 .header(HttpHeaders.CONTENT_TYPE, "application/zip")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(bytes);
+    }
+
+    @GetMapping("/{id}/jurisdictions/{code}/compliance-map")
+    public ResponseEntity<GraphDAG> getComplianceMap(@PathVariable String id, @PathVariable String code) {
+        var run = jurisdictionRunRepository.findByLaunchIdAndCode(id, code)
+                .orElseThrow(() -> new NotFoundException(
+                        "JurisdictionRun not found: launch=" + id + " code=" + code));
+        if (run.getCurrentSessionId() == null) {
+            throw new IllegalStateException("Analysis in progress — compliance map not ready");
+        }
+        return ResponseEntity.ok(sidecarClient.getComplianceMap(run.getCurrentSessionId()));
     }
 }

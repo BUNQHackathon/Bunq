@@ -1,5 +1,6 @@
 package com.bunq.javabackend.dto.request;
 
+import com.bunq.javabackend.model.launch.LaunchKind;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +19,6 @@ public class CreateLaunchRequestDTO {
     @NotBlank
     private String brief;
     private String license;
-    private List<String> markets;
+    private List<String> jurisdictions;
+    private LaunchKind kind;
 }

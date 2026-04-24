@@ -1,7 +1,10 @@
 package com.bunq.javabackend.util;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Stateless utility for inferring document jurisdictions from filenames and for
@@ -15,6 +18,60 @@ public final class JurisdictionInference {
             "GR", "CY", "MT", "SI", "SK", "EE", "LV", "LT", "FI", "DK",
             "SE", "BG", "RO", "HR", "CZ", "HU", "PL"
     );
+
+    /** Keyword → ISO-2 jurisdiction map used by inferFromText. */
+    private static final Map<String, String> KEYWORD_MAP;
+    /** Single-char symbols that need plain contains() rather than word-boundary regex. */
+    private static final Map<String, String> SYMBOL_MAP = Map.of(
+            "£", "UK",
+            "$", "US"
+    );
+
+    static {
+        Map<String, String> m = new java.util.LinkedHashMap<>();
+        // NL
+        m.put("nl", "NL"); m.put("netherlands", "NL"); m.put("dutch", "NL"); m.put("dnb", "NL");
+        // DE
+        m.put("de", "DE"); m.put("germany", "DE"); m.put("german", "DE"); m.put("deutsch", "DE"); m.put("bafin", "DE");
+        // FR
+        m.put("fr", "FR"); m.put("france", "FR"); m.put("french", "FR"); m.put("acpr", "FR");
+        // UK
+        m.put("uk", "UK"); m.put("gb", "UK"); m.put("britain", "UK"); m.put("england", "UK");
+        m.put("united kingdom", "UK"); m.put("fca", "UK"); m.put("gbp", "UK");
+        // US
+        m.put("us", "US"); m.put("usa", "US"); m.put("united states", "US"); m.put("america", "US");
+        m.put("american", "US"); m.put("occ", "US"); m.put("sec", "US"); m.put("usd", "US");
+        // IE
+        m.put("ie", "IE"); m.put("ireland", "IE"); m.put("irish", "IE"); m.put("cbi", "IE");
+        KEYWORD_MAP = java.util.Collections.unmodifiableMap(m);
+    }
+
+    /**
+     * Infer jurisdiction codes from free-text by scanning for well-known keywords.
+     *
+     * @param text arbitrary user text (question, hint, etc.)
+     * @return set of matched ISO-2 jurisdiction codes; empty if none found or input is blank
+     */
+    public static Set<String> inferFromText(String text) {
+        if (text == null || text.isBlank()) return Set.of();
+        String lower = text.toLowerCase();
+        Set<String> results = new LinkedHashSet<>();
+        // Symbol checks (non-word chars; can't use \b)
+        for (Map.Entry<String, String> e : SYMBOL_MAP.entrySet()) {
+            if (lower.contains(e.getKey())) {
+                results.add(e.getValue());
+            }
+        }
+        // Word-boundary keyword checks
+        for (Map.Entry<String, String> e : KEYWORD_MAP.entrySet()) {
+            String kw = e.getKey();
+            Pattern p = Pattern.compile("\\b" + Pattern.quote(kw) + "\\b");
+            if (p.matcher(lower).find()) {
+                results.add(e.getValue());
+            }
+        }
+        return results;
+    }
 
     private JurisdictionInference() {}
 

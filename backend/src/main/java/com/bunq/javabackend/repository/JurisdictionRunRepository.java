@@ -45,4 +45,17 @@ public class JurisdictionRunRepository {
                 false
         ).toList();
     }
+
+    public List<JurisdictionRun> findByJurisdiction(String jurisdictionCode) {
+        var index = table.index("jurisdiction-index");
+        var qc = QueryConditional.keyEqualTo(Key.builder().partitionValue(jurisdictionCode).build());
+        return index.query(r -> r.queryConditional(qc))
+                .stream()
+                .flatMap(p -> p.items().stream())
+                .toList();
+    }
+
+    public List<JurisdictionRun> findAll() {
+        return StreamSupport.stream(table.scan().items().spliterator(), false).toList();
+    }
 }

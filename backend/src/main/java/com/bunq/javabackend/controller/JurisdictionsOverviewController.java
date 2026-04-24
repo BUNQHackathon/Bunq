@@ -1,6 +1,12 @@
 package com.bunq.javabackend.controller;
 
+import com.bunq.javabackend.dto.response.JurisdictionOverviewDTO;
+import com.bunq.javabackend.dto.response.JurisdictionTriageDTO;
+import com.bunq.javabackend.service.JurisdictionOverviewService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -8,18 +14,21 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/jurisdictions")
-public class JurisdictionsController {
+@RequiredArgsConstructor
+public class JurisdictionsOverviewController {
+
+    private final JurisdictionOverviewService service;
 
     public record Jurisdiction(
-        String code,
-        String name,
-        String flag,
-        String status,
-        String license,
-        String regulator
+            String code,
+            String name,
+            String flag,
+            String status,
+            String license,
+            String regulator
     ) {}
 
-    private static final List<Jurisdiction> ALL = List.of(
+    private static final List<Jurisdiction> CATALOG = List.of(
         new Jurisdiction("NLD", "Netherlands", "🇳🇱", "active", "Full Banking License", "De Nederlandsche Bank (DNB)"),
         new Jurisdiction("DEU", "Germany", "🇩🇪", "active", "EU Passport (DNB)", "BaFin"),
         new Jurisdiction("FRA", "France", "🇫🇷", "active", "EU Passport (DNB)", "ACPR"),
@@ -49,7 +58,17 @@ public class JurisdictionsController {
     );
 
     @GetMapping
-    public List<Jurisdiction> list() {
-        return ALL;
+    public ResponseEntity<List<JurisdictionOverviewDTO>> overview() {
+        return ResponseEntity.ok(service.overview());
+    }
+
+    @GetMapping("/{code}/triage")
+    public ResponseEntity<JurisdictionTriageDTO> triage(@PathVariable String code) {
+        return ResponseEntity.ok(service.triage(code));
+    }
+
+    @GetMapping("/catalog")
+    public ResponseEntity<List<Jurisdiction>> catalog() {
+        return ResponseEntity.ok(CATALOG);
     }
 }
