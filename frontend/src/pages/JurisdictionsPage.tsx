@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import * as d3 from 'd3';
 import Globe from 'globe.gl';
+import { MeshPhongMaterial } from 'three';
 
 // ── Mock data (inlined from portal.ts) ────────────────────────────────────
 
@@ -187,6 +188,7 @@ export default function JurisdictionsPage() {
   const globeRef = useRef<InstanceType<typeof Globe> | null>(null);
   const globeInitRef = useRef(false);
   const hoveredGlobeRef = useRef<GeoFeature | null>(null);
+  const resizeObsRef = useRef<ResizeObserver | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectedIsoForD3Ref = useRef<string | null>(null);
 
@@ -338,73 +340,61 @@ export default function JurisdictionsPage() {
     globeInitRef.current = true;
 
     const el = globeContRef.current;
+    const w = el.clientWidth || el.getBoundingClientRect().width || 800;
+    const h = el.clientHeight || el.getBoundingClientRect().height || 600;
 
-    const cvs = document.createElement('canvas');
-    cvs.width = 2; cvs.height = 2;
-    const ctx = cvs.getContext('2d')!;
-    ctx.fillStyle = '#080810';
-    ctx.fillRect(0, 0, 2, 2);
-    const darkUrl = cvs.toDataURL();
-
-    type GlobeAPI = {
-      width: (n: number) => GlobeAPI;
-      height: (n: number) => GlobeAPI;
-      backgroundColor: (s: string) => GlobeAPI;
-      showAtmosphere: (b: boolean) => GlobeAPI;
-      atmosphereColor: (s: string) => GlobeAPI;
-      atmosphereAltitude: (n: number) => GlobeAPI;
-      globeImageUrl: (s: string) => GlobeAPI;
-      polygonsData: (d: GeoFeature[]) => GlobeAPI;
-      polygonCapColor: (fn: (f: GeoFeature) => string) => GlobeAPI;
-      polygonSideColor: (fn: () => string) => GlobeAPI;
-      polygonStrokeColor: (fn: () => string) => GlobeAPI;
-      polygonAltitude: (fn: (f: GeoFeature) => number) => GlobeAPI;
-      polygonLabel: (fn: (f: GeoFeature) => string) => GlobeAPI;
-      onPolygonHover: (fn: (f: GeoFeature | null) => void) => GlobeAPI;
-      onPolygonClick: (fn: (f: GeoFeature) => void) => GlobeAPI;
-      pointOfView: (pov: { lat: number; lng: number; altitude: number }, ms?: number) => GlobeAPI;
-    };
-
-    const GlobeConstructor = Globe as unknown as (el: HTMLElement) => GlobeAPI;
-    const globe = GlobeConstructor(el);
+    const globe = new Globe(el);
 
     globe
-      .width(el.clientWidth)
-      .height(el.clientHeight)
+      .width(w)
+      .height(h)
       .backgroundColor('#080808')
       .showAtmosphere(true)
-      .atmosphereColor('rgba(255,120,25,0.12)')
-      .atmosphereAltitude(0.12)
-      .globeImageUrl(darkUrl)
-      .polygonsData(features)
-      .polygonCapColor((feat) => getCountryFill(readIso3(feat.properties)))
-      .polygonSideColor(() => 'rgba(0,0,0,0.3)')
-      .polygonStrokeColor(() => 'rgba(255,255,255,0.1)')
-      .polygonAltitude((feat) => feat === hoveredGlobeRef.current ? 0.025 : 0.008)
-      .polygonLabel((feat) => {
-        const iso = readIso3(feat.properties);
+      .atmosphereColor('#FF7819')
+      .atmosphereAltitude(0.14)
+      .showGlobe(true)
+      .globeMaterial(new MeshPhongMaterial({ color: 0x0a0a14 }) as never)
+      .polygonsData(features as unknown as object[])
+      .polygonCapColor(((feat: object) => getCountryFill(readIso3((feat as GeoFeature).properties))) as never)
+      .polygonSideColor((() => 'rgba(0,0,0,0.3)') as never)
+      .polygonStrokeColor((() => 'rgba(255,255,255,0.15)') as never)
+      .polygonAltitude(((feat: object) => feat === hoveredGlobeRef.current ? 0.025 : 0.008) as never)
+      .polygonLabel(((feat: object) => {
+        const f = feat as GeoFeature;
+        const iso = readIso3(f.properties);
         const st = getStatus(iso);
-        const admin = (feat.properties.ADMIN as string | undefined) ?? (feat.properties.admin as string | undefined) ?? iso;
+        const admin = (f.properties.ADMIN as string | undefined) ?? (f.properties.admin as string | undefined) ?? iso;
         return `<div style="background:#1C1C1C;color:#fff;padding:5px 12px;border-radius:999px;font-size:12px;font-family:Inter,sans-serif;font-weight:500">${admin} · ${statusLabels[st]}</div>`;
-      })
-      .onPolygonHover((feat) => {
-        hoveredGlobeRef.current = feat || null;
-        globe.polygonAltitude((f: GeoFeature) => f === hoveredGlobeRef.current ? 0.025 : 0.008);
+      }) as never)
+      .onPolygonHover(((feat: object | null) => {
+        hoveredGlobeRef.current = (feat as GeoFeature | null) || null;
+        globe.polygonAltitude(((f: object) => f === hoveredGlobeRef.current ? 0.025 : 0.008) as never);
         if (el) el.style.cursor = feat ? 'pointer' : 'default';
-      })
-      .onPolygonClick((feat) => {
+      }) as never)
+      .onPolygonClick(((feat: object) => {
         if (!feat) return;
-        const iso = readIso3(feat.properties);
+        const f = feat as GeoFeature;
+        const iso = readIso3(f.properties);
         selectCountry(iso);
-        if (feat.bbox) {
-          const lat = (feat.bbox[1] + feat.bbox[3]) / 2;
-          const lng = (feat.bbox[0] + feat.bbox[2]) / 2;
+        if (f.bbox) {
+          const lat = (f.bbox[1] + f.bbox[3]) / 2;
+          const lng = (f.bbox[0] + f.bbox[2]) / 2;
           globe.pointOfView({ lat, lng, altitude: 1.4 }, 700);
         }
-      })
+      }) as never)
       .pointOfView({ lat: 48, lng: 10, altitude: 1.8 });
 
-    globeRef.current = globe as unknown as InstanceType<typeof Globe>;
+    globeRef.current = globe;
+
+    const controls = (globe as unknown as { controls?: () => { autoRotate: boolean; autoRotateSpeed: number } }).controls?.();
+    if (controls) { controls.autoRotate = true; controls.autoRotateSpeed = 0.35; }
+
+    const ro = new ResizeObserver(() => {
+      const nw = el.clientWidth, nh = el.clientHeight;
+      if (nw > 0 && nh > 0) globe.width(nw).height(nh);
+    });
+    ro.observe(el);
+    resizeObsRef.current = ro;
 
     const rendererObj = (globeRef.current as unknown as { renderer?: () => { domElement: HTMLCanvasElement } }).renderer?.();
     const canvas = rendererObj?.domElement;
@@ -497,6 +487,8 @@ export default function JurisdictionsPage() {
 
   useEffect(() => {
     return () => {
+      resizeObsRef.current?.disconnect();
+      resizeObsRef.current = null;
       disposeGlobe(globeRef.current);
       globeRef.current = null;
       globeInitRef.current = false;
