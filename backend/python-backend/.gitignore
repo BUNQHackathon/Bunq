@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.idea/
+*.pyc
+.env
+dist/
+*.egg-info/
+# Data-prep script cache (downloaded sanctions CSVs + JSONL)
+scripts/.cache/
