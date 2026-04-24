@@ -3,8 +3,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 const POINTER_SMOOTHING = 0.014;
-const POINTER_EXTENT = 0.38;
-const BASE_SCALE = 1.28;
+const POINTER_EXTENT = 0.5;
+const BASE_SCALE = 1.4;
 const SCALE_SMOOTHING = 0.009;
 const EASE_IN_SECONDS = 2;
 

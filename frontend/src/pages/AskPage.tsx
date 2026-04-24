@@ -191,7 +191,13 @@ function TryAsking({ onSelect }: TryAskingProps) {
           key={q}
           type="button"
           onClick={() => onSelect(q)}
-          className="rounded-pill border border-white/[0.12] px-4 py-2 text-[13px] text-white/80 hover:bg-white/5 hover:border-white/25 transition bg-transparent"
+          className="rounded-pill border px-4 py-2 text-[13px] text-white/80 transition hover:text-white"
+          style={{
+            background: 'rgba(14,10,8,0.65)',
+            borderColor: 'rgba(246,241,234,0.14)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+          }}
         >
           {q}
         </button>
