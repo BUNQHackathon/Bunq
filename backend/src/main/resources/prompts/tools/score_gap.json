@@ -1,0 +1,62 @@
+{
+  "name": "score_gap",
+  "description": "Given an obligation with no satisfactory mapped control, score the compliance gap on severity dimensions and 5 residual-risk dimensions (0.0-1.0), then suggest remediation actions.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "obligation": {"type": "object"},
+      "unmatched_controls": {"type": "array", "items": {"type": "object"}},
+      "penalty_context": {"type": "string", "description": "Brief text about regulatory enforcement patterns for this regulation"}
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "severity_dimensions": {
+        "type": "object",
+        "properties": {
+          "regulatory_urgency": {"type": "number"},
+          "penalty_severity": {"type": "number"},
+          "probability": {"type": "number"},
+          "business_impact": {"type": "number"},
+          "combined_risk_score": {"type": "number"}
+        }
+      },
+      "severity": {
+        "type": "number",
+        "description": "How bad is the impact if unaddressed (0=trivial, 1=existential). Float 0.0-1.0."
+      },
+      "likelihood": {
+        "type": "number",
+        "description": "Probability of occurrence (0=unlikely, 1=certain). Float 0.0-1.0."
+      },
+      "detectability": {
+        "type": "number",
+        "description": "How easily would this miss be detected — higher means HARDER to detect, i.e. higher risk (0=obvious, 1=silent failure). Float 0.0-1.0."
+      },
+      "blast_radius": {
+        "type": "number",
+        "description": "How many users/systems affected (0=one user, 1=whole org). Float 0.0-1.0."
+      },
+      "recoverability": {
+        "type": "number",
+        "description": "Cost of recovery (0=trivial rollback, 1=unrecoverable data loss). Float 0.0-1.0."
+      },
+      "recommended_actions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "action": {"type": "string"},
+            "priority": {"enum": ["high", "medium", "low"]},
+            "effort_days": {"type": "integer"},
+            "suggested_owner": {"type": "string"}
+          }
+        }
+      },
+      "narrative": {"type": "string"},
+      "escalation_required": {"type": "boolean"}
+    },
+    "required": ["severity", "likelihood", "detectability", "blast_radius", "recoverability"]
+  }
+}

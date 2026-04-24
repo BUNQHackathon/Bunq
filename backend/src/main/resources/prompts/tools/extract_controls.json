@@ -1,0 +1,28 @@
+{
+  "name": "extract_controls",
+  "description": "Extract internal controls from a bank policy document chunk. A control is a concrete technical or procedural measure a bank takes to enforce a policy. Must be grounded in the document text.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "policy_text": {"type": "string"},
+      "bank_id": {"type": "string"},
+      "doc_type": {"enum": ["tc", "privacy", "disclosure", "risk_framework"]},
+      "section_id": {"type": "string"}
+    }
+  },
+  "output_schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "control_type": {"enum": ["technical", "organizational", "procedural"]},
+        "category": {"enum": ["preventive", "detective", "corrective"]},
+        "description": {"type": "string"},
+        "evidence_type": {"type": "string"},
+        "implementation_status": {"enum": ["planned", "in_progress", "implemented", "unclear"]},
+        "source_text_snippet": {"type": "string"},
+        "extraction_confidence": {"type": "number"}
+      }
+    }
+  }
+}

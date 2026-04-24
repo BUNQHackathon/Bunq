@@ -1,0 +1,22 @@
+{
+  "name": "extract_counterparties_from_brief",
+  "description": "Extract mentioned counterparty entities (companies, individuals, organizations) from a feature brief. Include country and entity type if deducible from the text.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "brief_text": {"type": "string"}
+    }
+  },
+  "output_schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "country": {"type": "string"},
+        "type": {"enum": ["individual", "company", "organization", "government", "unknown"]},
+        "confidence": {"type": "number"}
+      }
+    }
+  }
+}

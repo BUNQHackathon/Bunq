@@ -1,0 +1,23 @@
+{
+  "name": "match_obligation_to_controls",
+  "description": "Given one obligation and a list of candidate controls, return for each control a match score (0-100) and a reason. Only emit controls that semantically address the obligation. Missing = gap.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "obligation": {"type": "object"},
+      "candidate_controls": {"type": "array", "items": {"type": "object"}}
+    }
+  },
+  "output_schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "control_id": {"type": "string"},
+        "match_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "mapping_type": {"enum": ["direct", "partial", "requires_multiple"]},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}
