@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import * as d3 from 'd3';
 import Globe from 'globe.gl';
 import { MeshPhongMaterial } from 'three';
+import { listJurisdictions, type Jurisdiction } from '../api/portal';
 
 // ── Mock data (inlined from portal.ts) ────────────────────────────────────
 
@@ -129,8 +130,11 @@ function brighten(hex: string): string {
   return `rgb(${Math.min(255, r + 50)},${Math.min(255, g + 40)},${Math.min(255, b + 30)})`;
 }
 
+// statusLookup is swapped at runtime to point at the live state copy
+let _statusLookup: Record<string, CountryStatus> = countryStatus;
+
 function getStatus(iso: string): CountryStatus {
-  return countryStatus[iso] || 'inactive';
+  return _statusLookup[iso] || 'inactive';
 }
 
 function getCountryFill(iso: string): string {
@@ -151,11 +155,27 @@ function disposeGlobe(instance: InstanceType<typeof Globe> | null): void {
   } catch { /* best-effort */ }
 }
 
+// ── ISO2 → ISO3 lookup ────────────────────────────────────────────────────
+
+const ISO2_TO_ISO3: Record<string, string> = {
+  NL: 'NLD', DE: 'DEU', FR: 'FRA', ES: 'ESP', IT: 'ITA', BE: 'BEL',
+  AT: 'AUT', PT: 'PRT', IE: 'IRL', FI: 'FIN', GR: 'GRC', LU: 'LUX',
+  MT: 'MLT', CY: 'CYP', EE: 'EST', LV: 'LVA', LT: 'LTU', SK: 'SVK',
+  SI: 'SVN', HR: 'HRV', NO: 'NOR', SE: 'SWE', DK: 'DNK', IS: 'ISL',
+  LI: 'LIE', CH: 'CHE', GB: 'GBR', PL: 'POL', CZ: 'CZE', HU: 'HUN',
+  BG: 'BGR', RO: 'ROU', TR: 'TUR', AE: 'ARE', SG: 'SGP', US: 'USA',
+  CA: 'CAN', AU: 'AUS', BR: 'BRA', MX: 'MEX', ZA: 'ZAF', IN: 'IND',
+  ID: 'IDN', JP: 'JPN', KR: 'KOR', SA: 'SAU', QA: 'QAT', RU: 'RUS',
+  BY: 'BLR', KP: 'PRK', IR: 'IRN', SY: 'SYR', CU: 'CUB', VE: 'VEN',
+  SD: 'SDN', MM: 'MMR', LY: 'LBY', YE: 'YEM', SO: 'SOM', ZW: 'ZWE',
+  AF: 'AFG',
+};
+
 // ── Computed stats ─────────────────────────────────────────────────────────
 
-function computeStats() {
+function computeStats(statusMap: Record<string, CountryStatus>) {
   let active = 0, watchlist = 0, restricted = 0, eea = 0;
-  for (const [iso, st] of Object.entries(countryStatus)) {
+  for (const [iso, st] of Object.entries(statusMap)) {
     if (st === 'active') { active++; if (EEA_CODES.has(iso)) eea++; }
     if (st === 'watchlist') watchlist++;
     if (st === 'restricted') restricted++;
@@ -163,13 +183,13 @@ function computeStats() {
   return { active, watchlist, restricted, eea, activeEU: active - eea };
 }
 
-const stats = computeStats();
-
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function JurisdictionsPage() {
   const [view, setView] = useState<'map' | 'globe'>('globe');
   const [selectedIso, setSelectedIso] = useState<string | null>(null);
+  const [liveCountryStatus, setLiveCountryStatus] = useState<Record<string, CountryStatus>>(countryStatus);
+  const [liveCountryDetails, setLiveCountryDetails] = useState<Record<string, { name: string; license: string; regulator: string; note: string }>>(countryDetails);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchMatches, setSearchMatches] = useState<GeoFeature[]>([]);
@@ -191,6 +211,32 @@ export default function JurisdictionsPage() {
   const resizeObsRef = useRef<ResizeObserver | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectedIsoForD3Ref = useRef<string | null>(null);
+
+  // ── API jurisdiction overlay ─────────────────────────────────────────────
+  useEffect(() => {
+    listJurisdictions().then((apiJurisdictions: Jurisdiction[]) => {
+      const newStatus = { ...countryStatus };
+      const newDetails = { ...countryDetails };
+      for (const j of apiJurisdictions) {
+        const iso3 = ISO2_TO_ISO3[j.code.toUpperCase()];
+        if (!iso3) continue;
+        if (j.status === 'active' || j.status === 'watchlist' || j.status === 'restricted') {
+          newStatus[iso3] = j.status;
+        }
+        newDetails[iso3] = {
+          name: j.name,
+          license: j.license,
+          regulator: j.regulator,
+          note: newDetails[iso3]?.note ?? '',
+        };
+      }
+      _statusLookup = newStatus;
+      setLiveCountryStatus(newStatus);
+      setLiveCountryDetails(newDetails);
+    }).catch(() => {
+      console.warn('JurisdictionsPage: API unavailable, using mock data');
+    });
+  }, []);
 
   // ── GeoJSON load ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -496,8 +542,9 @@ export default function JurisdictionsPage() {
   }, []);
 
   // ── Derived panel data ──────────────────────────────────────────────────
+  const stats = computeStats(liveCountryStatus);
   const status = selectedIso ? getStatus(selectedIso) : null;
-  const detail = selectedIso ? (countryDetails[selectedIso] ?? null) : null;
+  const detail = selectedIso ? (liveCountryDetails[selectedIso] ?? null) : null;
   const countryName = detail?.name || selectedIso || '';
   const pill = status ? PILL_STYLE[status] : null;
   const statusText = status ? statusLabels[status] : '';

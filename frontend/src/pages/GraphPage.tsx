@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
 
 const CAT_COLOR: Record<string, string> = {
   terms: '#FF7819',
@@ -98,8 +99,11 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const nodeGRef = useRef<d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown> | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    if (nodes.length === 0 || initializedRef.current) return;
+    initializedRef.current = true;
     const container = containerRef.current;
     const svgEl = svgRef.current;
     if (!container || !svgEl) return;
@@ -241,7 +245,7 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       container.removeEventListener('mousemove', handleMouseMove);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [nodes, links]);
 
   useEffect(() => {
     if (!nodeGRef.current) return;
@@ -414,7 +418,32 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
 }
 
 export default function GraphPage() {
+  const [nodes, setNodes] = useState<GraphNode[]>(MOCK_NODES);
+  const [links, setLinks] = useState<GraphLink[]>(MOCK_LINKS);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+
+  useEffect(() => {
+    getGraph()
+      .then((data) => {
+        const apiNodes = (data.nodes as ApiGraphNode[]).map((n): GraphNode => ({
+          id: n.id,
+          label: n.label,
+          cat: n.cat,
+          doc: n.doc,
+          size: n.size,
+          updated: n.updated || undefined,
+        }));
+        const apiLinks = (data.links as ApiGraphLink[]).map((l): GraphLink => ({
+          source: l.source,
+          target: l.target,
+        }));
+        setNodes(apiNodes);
+        setLinks(apiLinks);
+      })
+      .catch(() => {
+        console.warn('GraphPage: API unavailable, using mock data');
+      });
+  }, []);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(prev => prev?.id === node.id ? null : node);
@@ -455,8 +484,8 @@ export default function GraphPage() {
         }}
       >
         <GraphCanvas
-          nodes={MOCK_NODES}
-          links={MOCK_LINKS}
+          nodes={nodes}
+          links={links}
           onNodeClick={handleNodeClick}
           selectedId={selectedNode?.id ?? null}
         />
@@ -464,7 +493,7 @@ export default function GraphPage() {
         {selectedNode && (
           <NodeDetailPanel
             node={selectedNode}
-            links={MOCK_LINKS}
+            links={links}
             onClose={handleClose}
           />
         )}
@@ -480,7 +509,7 @@ export default function GraphPage() {
             backdropFilter: 'blur(12px)',
           }}
         >
-          {`${MOCK_NODES.length} NODES · ${MOCK_LINKS.length} LINKS`}
+          {`${nodes.length} NODES · ${links.length} LINKS`}
         </div>
       </div>
     </div>
