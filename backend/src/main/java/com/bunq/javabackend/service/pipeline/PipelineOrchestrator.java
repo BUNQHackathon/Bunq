@@ -1,0 +1,197 @@
+package com.bunq.javabackend.service.pipeline;
+
+import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
+import com.bunq.javabackend.dto.response.CounterpartyDTO;
+import com.bunq.javabackend.dto.response.events.PipelineCompletedEvent;
+import com.bunq.javabackend.dto.response.events.StageCompletedEvent;
+import com.bunq.javabackend.dto.response.events.StageFailedEvent;
+import com.bunq.javabackend.dto.response.events.StageStartedEvent;
+import com.bunq.javabackend.exception.PipelineStageException;
+import com.bunq.javabackend.model.sanction.Counterparty;
+import com.bunq.javabackend.model.enums.CounterpartyType;
+import com.bunq.javabackend.model.session.Session;
+import com.bunq.javabackend.model.enums.SessionState;
+import com.bunq.javabackend.repository.SessionRepository;
+import com.bunq.javabackend.service.SessionService;
+import com.bunq.javabackend.service.pipeline.stage.ExtractControlsStage;
+import com.bunq.javabackend.service.pipeline.stage.ExtractObligationsStage;
+import com.bunq.javabackend.service.pipeline.stage.GapAnalyzeStage;
+import com.bunq.javabackend.service.pipeline.stage.GroundCheckStage;
+import com.bunq.javabackend.service.pipeline.stage.IngestStage;
+import com.bunq.javabackend.service.pipeline.stage.MapObligationsControlsStage;
+import com.bunq.javabackend.service.pipeline.stage.NarrateStage;
+import com.bunq.javabackend.service.pipeline.stage.SanctionsScreenStage;
+import com.bunq.javabackend.service.sse.SseEmitterService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PipelineOrchestrator {
+
+    private final SessionService sessionService;
+    private final SessionRepository sessionRepository;
+    private final SseEmitterService sseEmitterService;
+    private final IngestStage ingestStage;
+    private final ExtractObligationsStage extractObligationsStage;
+    private final ExtractControlsStage extractControlsStage;
+    private final SanctionsScreenStage sanctionsScreenStage;
+    private final MapObligationsControlsStage mapObligationsControlsStage;
+    private final GapAnalyzeStage gapAnalyzeStage;
+    private final GroundCheckStage groundCheckStage;
+    private final NarrateStage narrateStage;
+
+    @Async("pipelineExecutor")
+    public void start(String sessionId, PipelineStartRequestDTO request) {
+        List<Counterparty> counterparties = mapCounterparties(request.getCounterparties());
+        PipelineContext ctx = new PipelineContext(
+                sessionId,
+                request.getRegulation(),
+                request.getPolicy(),
+                counterparties,
+                request.getBriefText(),
+                sseEmitterService
+        );
+        sessionRepository.findById(sessionId)
+                .map(Session::getJurisdictionCode)
+                .ifPresent(ctx::setJurisdictionCode);
+
+        try {
+            // CREATED → UPLOADING
+            sessionService.updateState(sessionId, SessionState.UPLOADING);
+
+            // Stage 1: Ingest
+            runStage(ctx, ingestStage);
+
+            // UPLOADING → EXTRACTING
+            sessionService.updateState(sessionId, SessionState.EXTRACTING);
+
+            // Stages 2+3 in parallel
+            CompletableFuture<Void> oblFuture = runStageAsync(ctx, extractObligationsStage);
+            CompletableFuture<Void> ctrlFuture = runStageAsync(ctx, extractControlsStage);
+            CompletableFuture.allOf(oblFuture, ctrlFuture).join();
+
+            // EXTRACTING → MAPPING
+            sessionService.updateState(sessionId, SessionState.MAPPING);
+
+            // Stages 4+5 in parallel
+            CompletableFuture<Void> sanctionsFuture = runStageAsync(ctx, sanctionsScreenStage);
+            CompletableFuture<Void> mapFuture = runStageAsync(ctx, mapObligationsControlsStage);
+            CompletableFuture.allOf(sanctionsFuture, mapFuture).join();
+
+            // MAPPING → SCORING → SANCTIONS
+            sessionService.updateState(sessionId, SessionState.SCORING);
+            sessionService.updateState(sessionId, SessionState.SANCTIONS);
+
+            // Stage 6: Gap analyze
+            runStage(ctx, gapAnalyzeStage);
+
+            // Stage 7: Ground check
+            runStage(ctx, groundCheckStage);
+
+            // Stage 8: Narrate
+            runStage(ctx, narrateStage);
+
+            // SANCTIONS → COMPLETE
+            sessionService.updateState(sessionId, SessionState.COMPLETE);
+
+            sseEmitterService.send(sessionId, PipelineCompletedEvent.builder()
+                    .sessionId(sessionId)
+                    .timestamp(Instant.now())
+                    .summary(ctx.getSummary())
+                    .reportUrl(ctx.getReportUrl())
+                    .build());
+
+            sseEmitterService.send(sessionId, "done",
+                    java.util.Map.of("session_id", sessionId));
+
+            sseEmitterService.complete(sessionId);
+
+        } catch (Exception e) {
+            log.error("Pipeline failed for session {}: {}", sessionId, e.getMessage(), e);
+            PipelineStage failedStage = e instanceof PipelineStageException pse
+                    ? pse.getStage()
+                    : PipelineStage.INGEST;
+            sseEmitterService.send(sessionId, StageFailedEvent.builder()
+                    .sessionId(sessionId)
+                    .timestamp(Instant.now())
+                    .stage(failedStage)
+                    .errorCode("PIPELINE_ERROR")
+                    .message(e.getMessage())
+                    .build());
+            try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ignored) {}
+            sseEmitterService.complete(sessionId);
+        }
+    }
+
+    private void runStage(PipelineContext ctx, Stage stage) {
+        long start = System.currentTimeMillis();
+        emitStarted(ctx.getSessionId(), stage.stage());
+        try {
+            stage.execute(ctx).join();
+            emitCompleted(ctx.getSessionId(), stage.stage(), System.currentTimeMillis() - start);
+        } catch (Exception e) {
+            throw new PipelineStageException(stage.stage(),
+                    "Stage " + stage.stage() + " failed: " + e.getMessage(), e);
+        }
+    }
+
+    private CompletableFuture<Void> runStageAsync(PipelineContext ctx, Stage stage) {
+        long start = System.currentTimeMillis();
+        emitStarted(ctx.getSessionId(), stage.stage());
+        return stage.execute(ctx)
+                .thenRun(() -> emitCompleted(ctx.getSessionId(), stage.stage(), System.currentTimeMillis() - start))
+                .exceptionally(ex -> {
+                    sseEmitterService.send(ctx.getSessionId(), StageFailedEvent.builder()
+                            .sessionId(ctx.getSessionId())
+                            .timestamp(Instant.now())
+                            .stage(stage.stage())
+                            .errorCode("STAGE_ERROR")
+                            .message(ex.getMessage())
+                            .build());
+                    log.error("Async stage {} failed: {}", stage.stage(), ex.getMessage());
+                    return null;
+                });
+    }
+
+    private void emitStarted(String sessionId, PipelineStage stage) {
+        sseEmitterService.send(sessionId, StageStartedEvent.builder()
+                .sessionId(sessionId)
+                .timestamp(Instant.now())
+                .stage(stage)
+                .ordinal(stage.getOrdinal())
+                .totalStages(PipelineStage.totalStages())
+                .build());
+    }
+
+    private void emitCompleted(String sessionId, PipelineStage stage, long durationMs) {
+        sseEmitterService.send(sessionId, StageCompletedEvent.builder()
+                .sessionId(sessionId)
+                .timestamp(Instant.now())
+                .stage(stage)
+                .durationMs(durationMs)
+                .itemsProduced(0)
+                .build());
+    }
+
+    private List<Counterparty> mapCounterparties(List<CounterpartyDTO> dtos) {
+        if (dtos == null) return List.of();
+        return dtos.stream().map(dto -> {
+            Counterparty cp = new Counterparty();
+            cp.setName(dto.getName());
+            cp.setCountry(dto.getCountry());
+            if (dto.getType() != null) {
+                try { cp.setType(CounterpartyType.valueOf(dto.getType().toLowerCase())); }
+                catch (Exception ignored) {}
+            }
+            return cp;
+        }).toList();
+    }
+}
