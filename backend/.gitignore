@@ -1,0 +1,21 @@
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Terraform state & secrets (infra/)
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars
+infra/tfplan
+
+# Seed documents — downloaded corpus (binary / large / licensing-unclear)
+# Place files here before running terraform apply; they are NOT committed.
+seed/
