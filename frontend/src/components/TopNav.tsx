@@ -10,12 +10,15 @@ import {
   IconSettings,
   IconMoon,
   IconStar,
+  IconGraph,
 } from './icons';
+import ModeToggle, { useMode } from './ModeToggle';
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
 const navItems = [
   { to: '/launches', label: 'Launches', Icon: IconStar, end: false },
+  { to: '/jurisdictions', label: 'Jurisdictions', Icon: IconGraph, end: false },
   { to: '/library', label: 'Library', Icon: IconFolders, end: false },
 ];
 
@@ -260,6 +263,7 @@ type OpenMenu = 'jurisdiction' | 'search' | 'me' | 'them' | null;
 export default function TopNav() {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [currentJuris, setCurrentJuris] = useState<Jurisdiction>(JURISDICTIONS[0]);
+  const [mode] = useMode();
 
   const jurisRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -298,7 +302,11 @@ export default function TopNav() {
       className="fixed top-0 left-0 right-0 z-50 h-[56px] flex items-center px-3 md:px-4 gap-2 md:gap-4"
       style={{
         background: '#080808',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: mode === 'expansion'
+          ? '1px solid rgba(255,120,25,0.25)'
+          : mode === 'regulator'
+          ? '1px solid rgba(176,138,255,0.25)'
+          : '1px solid rgba(255,255,255,0.06)',
       }}
     >
       {/* Left cluster */}
@@ -309,6 +317,8 @@ export default function TopNav() {
         >
           prism.
         </NavLink>
+
+        <ModeToggle />
 
         <div className="hidden md:block w-px h-4" style={{ background: 'rgba(255,255,255,0.1)' }} />
 

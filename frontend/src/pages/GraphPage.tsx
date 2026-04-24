@@ -1,7 +1,17 @@
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
+import { getComplianceMap } from '../api/jurisdictions';
+import { getLaunch, jurisdictionFlag, jurisdictionLabel } from '../api/launch';
+
+// ─── Compliance-map node type → color ────────────────────────────────────────
+const COMPLIANCE_TYPE_COLOR: Record<string, string> = {
+  obligation: '#5ECFA0',  // terms green
+  control:    '#A8D66C',  // licensing
+  gap:        '#E05050',  // aml/red
+  evidence:   '#6EB7E8',  // reports
+};
 
 const CAT_COLOR: Record<string, string> = {
   terms: '#FF7819',
@@ -20,6 +30,10 @@ interface GraphNode extends d3.SimulationNodeDatum {
   doc: boolean;
   size: number;
   updated?: string;
+  // compliance-map extras (live mode)
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  recommendedAction?: string;
+  nodeType?: 'obligation' | 'control' | 'gap' | 'evidence';
 }
 
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
@@ -320,6 +334,13 @@ interface NodeDetailPanelProps {
   onClose: () => void;
 }
 
+const SEVERITY_COLOR: Record<string, string> = {
+  low:      '#A8D66C',
+  medium:   '#FFD080',
+  high:     '#FF9F55',
+  critical: '#E05050',
+};
+
 function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
   const connections = links
     .filter(l => (l.source as GraphNode).id === node.id || (l.target as GraphNode).id === node.id)
@@ -347,10 +368,10 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
         <div className="flex items-center gap-2">
           <div
             className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ background: CAT_COLOR[node.cat] ?? '#556677' }}
+            style={{ background: CAT_COLOR[node.cat] ?? COMPLIANCE_TYPE_COLOR[node.nodeType ?? ''] ?? '#556677' }}
           />
           <span className="font-mono text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {node.cat}
+            {node.nodeType ?? node.cat}
           </span>
         </div>
         <button
@@ -384,6 +405,46 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
           </div>
         </div>
 
+        {/* Gap-specific fields (live mode) */}
+        {node.nodeType === 'gap' && (node.severity || node.recommendedAction) && (
+          <div className="flex flex-col gap-3">
+            {node.severity && (
+              <div>
+                <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  Severity
+                </div>
+                <span
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono tracking-[0.08em] capitalize"
+                  style={{
+                    background: `${SEVERITY_COLOR[node.severity] ?? '#FF9F55'}22`,
+                    border: `1px solid ${SEVERITY_COLOR[node.severity] ?? '#FF9F55'}66`,
+                    color: SEVERITY_COLOR[node.severity] ?? '#FF9F55',
+                  }}
+                >
+                  {node.severity}
+                </span>
+              </div>
+            )}
+            {node.recommendedAction && (
+              <div>
+                <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  Recommended action
+                </div>
+                <div
+                  className="text-[12px] leading-relaxed rounded-lg px-3 py-2.5"
+                  style={{
+                    background: 'rgba(224,80,80,0.06)',
+                    border: '1px solid rgba(224,80,80,0.15)',
+                    color: 'rgba(255,255,255,0.75)',
+                  }}
+                >
+                  {node.recommendedAction}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {connections.length > 0 && (
           <div>
             <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -398,14 +459,14 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
                 >
                   <div
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: CAT_COLOR[conn.cat] ?? '#445566' }}
+                    style={{ background: CAT_COLOR[conn.cat] ?? COMPLIANCE_TYPE_COLOR[conn.nodeType ?? ''] ?? '#445566' }}
                   />
                   <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{conn.label}</span>
                   <span
                     className="ml-auto text-[10px] font-mono"
                     style={{ color: 'rgba(255,255,255,0.25)' }}
                   >
-                    {conn.cat}
+                    {conn.nodeType ?? conn.cat}
                   </span>
                 </div>
               ))}
@@ -417,33 +478,97 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
   );
 }
 
-export default function GraphPage() {
-  const [nodes, setNodes] = useState<GraphNode[]>(MOCK_NODES);
-  const [links, setLinks] = useState<GraphLink[]>(MOCK_LINKS);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Override CAT_COLOR lookup when in live mode by injecting an ephemeral key. */
+function buildCatKey(type: string): string {
+  // We inject synthetic keys so CAT_COLOR picks up the compliance colors
+  return `__compliance_${type}`;
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function GraphPage() {
+  const { code, id } = useParams<{ code?: string; id?: string }>();
+  const isLive = Boolean(code && id);
+
+  const [nodes, setNodes] = useState<GraphNode[]>(isLive ? [] : MOCK_NODES);
+  const [links, setLinks] = useState<GraphLink[]>(isLive ? [] : MOCK_LINKS);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [loading, setLoading] = useState(isLive);
+  const [error, setError] = useState<string | null>(null);
+  const [launchName, setLaunchName] = useState<string>(id ?? '');
+
+  // Inject compliance-type colors into CAT_COLOR at runtime (once)
   useEffect(() => {
-    getGraph()
-      .then((data) => {
-        const apiNodes = (data.nodes as ApiGraphNode[]).map((n): GraphNode => ({
+    if (isLive) {
+      CAT_COLOR['__compliance_obligation'] = COMPLIANCE_TYPE_COLOR.obligation;
+      CAT_COLOR['__compliance_control']    = COMPLIANCE_TYPE_COLOR.control;
+      CAT_COLOR['__compliance_gap']        = COMPLIANCE_TYPE_COLOR.gap;
+      CAT_COLOR['__compliance_evidence']   = COMPLIANCE_TYPE_COLOR.evidence;
+    }
+  }, [isLive]);
+
+  // Live mode: fetch compliance map + launch name in parallel
+  useEffect(() => {
+    if (!isLive) {
+      // Legacy path: fetch from portal API (existing behavior)
+      getGraph()
+        .then((data) => {
+          const apiNodes = (data.nodes as ApiGraphNode[]).map((n): GraphNode => ({
+            id: n.id,
+            label: n.label,
+            cat: n.cat,
+            doc: n.doc,
+            size: n.size,
+            updated: n.updated || undefined,
+          }));
+          const apiLinks = (data.links as ApiGraphLink[]).map((l): GraphLink => ({
+            source: l.source,
+            target: l.target,
+          }));
+          setNodes(apiNodes);
+          setLinks(apiLinks);
+        })
+        .catch(() => {
+          console.warn('GraphPage: API unavailable, using mock data');
+        });
+      return;
+    }
+
+    // Fetch launch name non-blocking (fallback to id)
+    getLaunch(id!)
+      .then(detail => setLaunchName(detail.launch.name))
+      .catch(() => { /* keep id as fallback */ });
+
+    setLoading(true);
+    setError(null);
+
+    getComplianceMap(id!, code!)
+      .then(payload => {
+        const mappedNodes: GraphNode[] = payload.nodes.map(n => ({
           id: n.id,
           label: n.label,
-          cat: n.cat,
-          doc: n.doc,
-          size: n.size,
-          updated: n.updated || undefined,
+          cat: buildCatKey(n.type),
+          doc: n.type === 'evidence' || n.type === 'control',
+          size: n.type === 'gap' ? 11 : n.type === 'obligation' ? 13 : 10,
+          nodeType: n.type,
+          severity: n.severity,
+          recommendedAction: n.recommendedAction,
         }));
-        const apiLinks = (data.links as ApiGraphLink[]).map((l): GraphLink => ({
-          source: l.source,
-          target: l.target,
+        const mappedLinks: GraphLink[] = payload.edges.map(e => ({
+          source: e.source,
+          target: e.target,
         }));
-        setNodes(apiNodes);
-        setLinks(apiLinks);
+        setNodes(mappedNodes);
+        setLinks(mappedLinks);
+        setLoading(false);
       })
-      .catch(() => {
-        console.warn('GraphPage: API unavailable, using mock data');
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to load compliance graph');
+        setLoading(false);
       });
-  }, []);
+  }, [code, id, isLive]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(prev => prev?.id === node.id ? null : node);
@@ -457,23 +582,61 @@ export default function GraphPage() {
     <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto" style={{ color: '#E8E8E8' }}>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-white mb-1">Knowledge Graph</h1>
-          <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: '#6B6B6B' }}>
-            Compliance concepts and documents
-          </p>
+          {isLive ? (
+            <>
+              {/* Breadcrumb for live compliance-map mode */}
+              <div className="font-mono text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1.5" style={{ color: '#6B6B6B' }}>
+                <Link
+                  to={`/jurisdictions/${code}`}
+                  className="hover:text-[#FF9F55] transition-colors"
+                  style={{ color: '#6B6B6B' }}
+                >
+                  ← Back to {code}
+                </Link>
+                <span style={{ color: 'rgba(107,107,107,0.5)' }}>·</span>
+                <span>
+                  {jurisdictionFlag(code!)} {jurisdictionLabel(code!)} / {launchName} / Compliance Graph
+                </span>
+              </div>
+              <h1 className="text-2xl font-semibold text-white">Compliance Graph</h1>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold text-white mb-1">Knowledge Graph</h1>
+              <p className="font-mono text-[11px] uppercase tracking-wider" style={{ color: '#6B6B6B' }}>
+                Compliance concepts and documents
+              </p>
+            </>
+          )}
         </div>
-        <Link
-          to="/launches"
-          className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+        {!isLive && (
+          <Link
+            to="/launches"
+            className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+            style={{
+              background: 'rgba(255,120,25,0.14)',
+              border: '1px solid rgba(255,120,25,0.35)',
+              color: '#FF9F55',
+            }}
+          >
+            ← Launches
+          </Link>
+        )}
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <div
+          className="mb-4 px-4 py-2.5 rounded-lg text-[12px] font-mono"
           style={{
-            background: 'rgba(255,120,25,0.14)',
-            border: '1px solid rgba(255,120,25,0.35)',
-            color: '#FF9F55',
+            background: 'rgba(224,80,80,0.08)',
+            border: '1px solid rgba(224,80,80,0.25)',
+            color: '#E05050',
           }}
         >
-          ← Launches
-        </Link>
-      </div>
+          {error}
+        </div>
+      )}
 
       <div
         className="rounded-xl overflow-hidden relative"
@@ -483,34 +646,48 @@ export default function GraphPage() {
           border: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        <GraphCanvas
-          nodes={nodes}
-          links={links}
-          onNodeClick={handleNodeClick}
-          selectedId={selectedNode?.id ?? null}
-        />
+        {/* Loading state */}
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: '#080808' }}>
+            <span
+              className="font-mono text-[11px] uppercase tracking-wider"
+              style={{ color: '#6B6B6B' }}
+            >
+              Loading compliance graph…
+            </span>
+          </div>
+        ) : (
+          <>
+            <GraphCanvas
+              nodes={nodes}
+              links={links}
+              onNodeClick={handleNodeClick}
+              selectedId={selectedNode?.id ?? null}
+            />
 
-        {selectedNode && (
-          <NodeDetailPanel
-            node={selectedNode}
-            links={links}
-            onClose={handleClose}
-          />
+            {selectedNode && (
+              <NodeDetailPanel
+                node={selectedNode}
+                links={links}
+                onClose={handleClose}
+              />
+            )}
+
+            <div
+              className="absolute z-20 font-mono text-[10px] px-3 py-1.5 rounded-full tracking-[0.08em]"
+              style={{
+                top: 20,
+                left: 20,
+                background: 'rgba(13,13,13,0.92)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.3)',
+                backdropFilter: 'blur(12px)',
+              }}
+            >
+              {`${nodes.length} NODES · ${links.length} LINKS`}
+            </div>
+          </>
         )}
-
-        <div
-          className="absolute z-20 font-mono text-[10px] px-3 py-1.5 rounded-full tracking-[0.08em]"
-          style={{
-            top: 20,
-            left: 20,
-            background: 'rgba(13,13,13,0.92)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.3)',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
-          {`${nodes.length} NODES · ${links.length} LINKS`}
-        </div>
       </div>
     </div>
   );
