@@ -1,0 +1,77 @@
+eurlex:
+  # Payments & e-money
+  - celex: "32015L2366"
+    short_name: psd2
+  - celex: "32009L0110"
+    short_name: emd2
+  - celex: "32012R0260"
+    short_name: sepa
+  - celex: "32024R0886"
+    short_name: instant_payments
+  - celex: "32021R1230"
+    short_name: cross_border_payments
+  - celex: "32015R0751"
+    short_name: interchange_fees
+
+  # AML/CFT (2024 package)
+  - celex: "32024R1624"
+    short_name: amlr
+  - celex: "32024L1640"
+    short_name: amld6
+  - celex: "32024R1620"
+    short_name: amla
+  - celex: "32023R1113"
+    short_name: transfer_of_funds
+
+  # Data & privacy
+  - celex: "32016R0679"
+    short_name: gdpr
+  - celex: "32002L0058"
+    short_name: eprivacy
+
+  # Operational resilience / cyber
+  - celex: "32022R2554"
+    short_name: dora
+  - celex: "32022L2555"
+    short_name: nis2
+
+  # Crypto
+  - celex: "32023R1114"
+    short_name: mica
+
+  # Prudential
+  - celex: "32013R0575"
+    short_name: crr
+  - celex: "32013L0036"
+    short_name: crd4
+  - celex: "32014L0059"
+    short_name: brrd
+  - celex: "32014L0049"
+    short_name: dgsd
+
+  # Consumer
+  - celex: "32014L0092"
+    short_name: pad
+  - celex: "32023L2225"
+    short_name: ccd2
+  - celex: "32014L0017"
+    short_name: mcd
+  - celex: "32023L2673"
+    short_name: distance_marketing_fs
+  - celex: "32005L0029"
+    short_name: ucpd
+
+  # Investments
+  - celex: "32014L0065"
+    short_name: mifid2
+  - celex: "32014R0600"
+    short_name: mifir
+  - celex: "32014R1286"
+    short_name: priips
+
+# Guidance sources — recorded here for step 2; not crawled yet
+guidance:
+  eba: https://www.eba.europa.eu/regulation-and-policy
+  ecb: https://www.bankingsupervision.europa.eu
+  esma: https://www.esma.europa.eu
+  fatf: https://www.fatf-gafi.org
