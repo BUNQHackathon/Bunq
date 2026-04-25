@@ -336,7 +336,7 @@ export default function LaunchDetailPage() {
               <Link to="/launches" className="juris__map-eyebrow">
                 ← ALL LAUNCHES
               </Link>
-              <span className="juris__map-h">{launch?.name ?? id}</span>
+              <span className="juris__map-h">{launch?.name ?? ' '}</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
