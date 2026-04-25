@@ -97,9 +97,11 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
   const color1 = '#eb2700';
   const color2 = '#C86334';
   const color3 = '#d9a67d';
-  const stop1Height = 98;
-  const stop2Height = 128;
-  const stop3Height = 148;
+  // % of each ellipse's own height pushed below the hero — controls how much peeks up.
+  // Smaller = more visible. Layered so the red core peeks most, amber least.
+  const stop1Sink = 65; // red core: ~35% visible
+  const stop2Sink = 85; // orange:    ~15% visible
+  const stop3Sink = 92; // amber:      ~8% visible
   const bgColor = '#0b0a09';
   const blurAmount = 25;
   const titleFadeStart = 15;
@@ -151,8 +153,8 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
             width: `${glowSpread}%`,
             aspectRatio: '1994 / 717',
             left: '50%',
-            bottom: `${-stop1Height}%`,
-            transform: 'translateX(-50%)',
+            bottom: 0,
+            transform: `translate(-50%, ${stop1Sink}%)`,
             borderRadius: '50%',
             background: `radial-gradient(ellipse farthest-side at center, ${color1} 29%, #292928 100%)`,
             filter: `blur(${blurAmount}px)`,
@@ -164,8 +166,8 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
             width: `${glowSpread}%`,
             aspectRatio: '1994 / 717',
             left: '52%',
-            bottom: `${-stop2Height}%`,
-            transform: 'translateX(-50%)',
+            bottom: 0,
+            transform: `translate(-50%, ${stop2Sink}%)`,
             borderRadius: '50%',
             background: color2,
             filter: `blur(${blurAmount}px)`,
@@ -178,8 +180,8 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
             width: `${glowSpread + 20}%`,
             aspectRatio: '2222 / 717',
             left: '54%',
-            bottom: `${-stop3Height}%`,
-            transform: 'translateX(-50%)',
+            bottom: 0,
+            transform: `translate(-50%, ${stop3Sink}%)`,
             borderRadius: '50%',
             background: color3,
             filter: `blur(${blurAmount + 4}px)`,
