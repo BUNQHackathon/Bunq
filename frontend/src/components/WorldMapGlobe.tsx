@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Globe from 'globe.gl';
 import { MeshPhongMaterial } from 'three';
 
@@ -70,12 +70,30 @@ function disposeGlobe(instance: InstanceType<typeof Globe> | null): void {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+function useResponsiveHeight(defaultHeight: number): number {
+  const [h, setH] = React.useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 640
+      ? Math.min(360, window.innerHeight * 0.55)
+      : defaultHeight,
+  );
+  React.useEffect(() => {
+    function onResize() {
+      setH(window.innerWidth < 640 ? Math.min(360, window.innerHeight * 0.55) : defaultHeight);
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [defaultHeight]);
+  return h;
+}
+
 export default function WorldMapGlobe({
   data,
   onSelect,
   onHover,
-  height = 520,
+  height,
 }: WorldMapGlobeProps) {
+  const computedHeight = useResponsiveHeight(520);
+  const effectiveHeight = height ?? computedHeight;
   const containerRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<InstanceType<typeof Globe> | null>(null);
   const globeInitRef = useRef(false);
@@ -111,7 +129,7 @@ export default function WorldMapGlobe({
       globeInitRef.current = true;
 
       const w = el.clientWidth || el.getBoundingClientRect().width || 800;
-      const h = el.clientHeight || el.getBoundingClientRect().height || height;
+      const h = el.clientHeight || el.getBoundingClientRect().height || effectiveHeight;
 
       const globe = new Globe(el);
 
@@ -218,7 +236,7 @@ export default function WorldMapGlobe({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height, background: '#080808' }}
+      style={{ width: '100%', height: effectiveHeight, background: '#080808' }}
     />
   );
 }

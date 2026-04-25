@@ -77,7 +77,7 @@ const CATEGORIES = [
 
 function CategoryRow() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:gap-7 mb-5 px-2">
+    <div className="ask__categories flex flex-nowrap sm:flex-wrap sm:justify-center items-center gap-x-4 gap-y-2 md:gap-7 mb-5 px-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
       {CATEGORIES.map((cat) => (
         <span
           key={cat.label}

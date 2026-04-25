@@ -157,7 +157,7 @@
 
 .juris__hero-title {
   font-family: var(--serif);
-  font-size: 56px;
+  font-size: clamp(28px, 7vw, 56px);
   font-weight: 500;
   letter-spacing: -0.025em;
   color: var(--ink-0);
@@ -362,4 +362,48 @@
   color: var(--ink-2);
   max-width: 320px;
   line-height: 1.5;
+}
+
+@media (max-width: 1023px) {
+  .juris {
+    grid-template-columns: 1fr;
+    grid-template-rows: clamp(280px, 45vh, 480px) 1fr;
+    height: auto;
+    min-height: 100%;
+  }
+  .juris__map {
+    border-right: none;
+    border-bottom: 1px solid var(--line-0);
+  }
+  .juris__panel-body {
+    padding: 16px 16px 0;
+  }
+  .juris__summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .juris__map-head {
+    top: 12px;
+    left: 14px;
+    right: 14px;
+  }
+  .juris__map-foot {
+    bottom: 10px;
+    left: 14px;
+    right: 14px;
+  }
+  .juris__legend {
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 10.5px;
+  }
+  .juris__summary {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .juris__panel-body {
+    padding: 12px 12px 0;
+  }
 }

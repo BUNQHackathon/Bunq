@@ -9,6 +9,7 @@
   background: var(--bg-0);
   position: relative;
 }
+
 .folders__content {
   position: relative;
   margin-top: 8px;
@@ -195,3 +196,31 @@
 .chatref__head { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .chatref__title { font-size: 13px; font-weight: 500; color: var(--ink-0); }
 .chatref__snippet { font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+
+@media (max-width: 767px) {
+  .folders {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .folders__rail {
+    padding: 12px 12px 10px;
+    max-height: 220px;
+  }
+  .folders__tree {
+    max-height: 140px;
+  }
+  .folders__main {
+    padding: 16px 16px 24px;
+  }
+  .folders__grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .folders__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}

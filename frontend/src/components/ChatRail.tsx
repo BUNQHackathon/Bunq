@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { IconPanel, IconPlus, IconSettings, IconSearch } from './icons';
+import { IconPanel, IconPlus, IconSearch } from './icons';
 import { useChatList } from '../hooks/useChatList';
 import type { ChatSummary } from '../api/chat';
 
