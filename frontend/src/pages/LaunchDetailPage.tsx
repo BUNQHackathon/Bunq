@@ -13,6 +13,7 @@ import {
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import VerdictPill, { verdictToHex } from '../components/VerdictPill';
+import HeroGradient from '../components/HeroGradient';
 
 // ── ISO mappings ──────────────────────────────────────────────────────────────
 const ISO2_TO_ISO3: Record<string, string> = {
@@ -93,17 +94,7 @@ interface HeroProps {
 
 function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
   const headerHeight = 220;
-  const glowSpread = 113;
-  const color1 = '#eb2700';
-  const color2 = '#C86334';
-  const color3 = '#d9a67d';
-  // % of each ellipse's own height pushed below the hero — controls how much peeks up.
-  // Smaller = more visible. Layered so the red core peeks most, amber least.
-  const stop1Sink = 65; // red core: ~35% visible
-  const stop2Sink = 85; // orange:    ~15% visible
-  const stop3Sink = 92; // amber:      ~8% visible
   const bgColor = '#0b0a09';
-  const blurAmount = 25;
   const titleFadeStart = 15;
   const titleFadeEnd = 115;
 
@@ -112,83 +103,7 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
       className="juris__hero"
       style={{ minHeight: `${headerHeight}px`, background: bgColor }}
     >
-      <svg
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          mixBlendMode: 'soft-light',
-          zIndex: 1,
-        }}
-      >
-        <defs>
-          <filter id="ldp-grain">
-            <feTurbulence type="turbulence" baseFrequency="0.65" numOctaves={3} stitchTiles="stitch" />
-            <feColorMatrix type="saturate" values="0" />
-            <feComponentTransfer>
-              <feFuncR type="linear" slope={4} intercept={-1.5} />
-              <feFuncG type="linear" slope={4} intercept={-1.5} />
-              <feFuncB type="linear" slope={4} intercept={-1.5} />
-            </feComponentTransfer>
-          </filter>
-        </defs>
-        <rect width="100%" height="100%" filter="url(#ldp-grain)" opacity="0.25" />
-      </svg>
-
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            width: `${glowSpread}%`,
-            aspectRatio: '1994 / 717',
-            left: '50%',
-            bottom: 0,
-            transform: `translate(-50%, ${stop1Sink}%)`,
-            borderRadius: '50%',
-            background: `radial-gradient(ellipse farthest-side at center, ${color1} 29%, #292928 100%)`,
-            filter: `blur(${blurAmount}px)`,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: `${glowSpread}%`,
-            aspectRatio: '1994 / 717',
-            left: '52%',
-            bottom: 0,
-            transform: `translate(-50%, ${stop2Sink}%)`,
-            borderRadius: '50%',
-            background: color2,
-            filter: `blur(${blurAmount}px)`,
-            opacity: 0.95,
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            width: `${glowSpread + 20}%`,
-            aspectRatio: '2222 / 717',
-            left: '54%',
-            bottom: 0,
-            transform: `translate(-50%, ${stop3Sink}%)`,
-            borderRadius: '50%',
-            background: color3,
-            filter: `blur(${blurAmount + 4}px)`,
-            opacity: 0.9,
-          }}
-        />
-      </div>
+      <HeroGradient />
 
       <div
         style={{
