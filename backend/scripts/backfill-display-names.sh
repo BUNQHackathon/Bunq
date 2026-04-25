@@ -92,12 +92,16 @@ while IFS=$'\t' read -r filename title; do
     continue
   fi
 
+  # Build JSON via python to safely encode Unicode (em-dashes etc.)
+  eav=$(python3 -c "import json,sys; print(json.dumps({':n':{'S':sys.argv[1]}}))" "$title")
+  key_json=$(python3 -c "import json,sys; print(json.dumps({'id':{'S':sys.argv[1]}}))" "$doc_id")
+
   update_result=$(aws dynamodb update-item \
     --table-name "$TABLE" \
     --region "$REGION" \
-    --key "{\"id\":{\"S\":\"${doc_id}\"}}" \
+    --key "$key_json" \
     --update-expression "SET display_name = :n" \
-    --expression-attribute-values "{\":n\":{\"S\":\"${title}\"}}" \
+    --expression-attribute-values "$eav" \
     --output json 2>&1)
 
   if [[ $? -ne 0 ]]; then

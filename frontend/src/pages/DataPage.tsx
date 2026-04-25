@@ -24,7 +24,7 @@ function docId(d: UnifiedDoc): string {
 }
 
 function docTitle(d: UnifiedDoc): string {
-  return isLibrary(d) ? d.filename : d.title;
+  return isLibrary(d) ? (d.displayName ?? d.filename) : d.title;
 }
 
 function docCategory(d: UnifiedDoc): string {
