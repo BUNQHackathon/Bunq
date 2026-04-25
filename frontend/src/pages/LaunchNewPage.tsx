@@ -179,7 +179,7 @@ export default function LaunchNewPage() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
-                className="btn btn--orange"
+                className="btn btn--orange-hollow"
                 onClick={() => set({ step: 2 })}
                 disabled={!nameValid}
                 style={{ opacity: nameValid ? 1 : 0.4, cursor: nameValid ? 'pointer' : 'not-allowed' }}
@@ -240,7 +240,7 @@ export default function LaunchNewPage() {
                 ← Back
               </button>
               <button
-                className="btn btn--orange"
+                className="btn btn--orange-hollow"
                 onClick={() => set({ step: 3 })}
                 disabled={!briefValid}
                 style={{ opacity: briefValid ? 1 : 0.4, cursor: briefValid ? 'pointer' : 'not-allowed' }}
@@ -314,7 +314,7 @@ export default function LaunchNewPage() {
               </button>
 
               <button
-                className="btn btn--orange"
+                className="btn btn--orange-hollow"
                 onClick={handleSubmit}
                 disabled={!marketsValid || state.submitting}
                 style={{

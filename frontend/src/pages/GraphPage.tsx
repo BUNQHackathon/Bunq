@@ -405,7 +405,7 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
       {/* Resolve action for gap nodes */}
       {isGap && (
         <div className="graph__focus-actions" style={{ marginTop: 4, marginBottom: 14 }}>
-          <button className="btn btn--orange btn--sm">Mark resolved</button>
+          <button className="btn btn--orange-hollow btn--sm">Mark resolved</button>
           <button className="btn btn--sm btn--ghost">Dismiss</button>
         </div>
       )}
