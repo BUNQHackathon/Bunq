@@ -40,7 +40,7 @@ public class GapAnalyzeStage implements Stage {
 
     public GapAnalyzeStage(GapScorer gapScorer, GapRepository gapRepository,
                            ObligationRepository obligationRepository, MappingRepository mappingRepository,
-                           @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+                           @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.gapScorer = gapScorer;
         this.gapRepository = gapRepository;
         this.obligationRepository = obligationRepository;
