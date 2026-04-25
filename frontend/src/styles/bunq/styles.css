@@ -95,6 +95,17 @@ html, body {
   background: radial-gradient(closest-side, rgba(167, 139, 250, 0.35), transparent 70%);
 }
 
+@media (max-width: 639px) {
+  .atmosphere::before {
+    width: 360px; height: 360px;
+    left: -90px; top: -120px;
+  }
+  .atmosphere::after {
+    width: 280px; height: 280px;
+    right: -70px; bottom: -90px;
+  }
+}
+
 /* ---------- Utility text ---------- */
 .mono-label {
   font-family: var(--mono);

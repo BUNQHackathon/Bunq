@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
 // ── GeoJSON source URLs (same as JurisdictionsPage) ──────────────────────────
@@ -56,11 +56,13 @@ export default function WorldMapD3({
   selected,
   onSelect,
   onHover,
-  height = 520,
 }: WorldMapD3Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  const featuresRef = useRef<GeoFeature[]>([]);
 
   // Keep stable refs to callbacks so effects don't re-run on every render
   const onSelectRef = useRef(onSelect);
@@ -77,6 +79,20 @@ export default function WorldMapD3({
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const pathGenRef = useRef<d3.GeoPath | null>(null);
 
+  // ResizeObserver: update dims when container size changes
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const { width, height: h } = entries[0].contentRect;
+      if (width > 0 && h > 0) setDims({ w: width, h });
+    });
+    ro.observe(el);
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) setDims({ w: r.width, h: r.height });
+    return () => ro.disconnect();
+  }, []);
+
   // Sync selection stroke whenever `selected` prop changes
   useEffect(() => {
     if (!mapSelRef.current) return;
@@ -89,16 +105,19 @@ export default function WorldMapD3({
       );
   }, [selected]);
 
-  // Main map initialisation
+  // Main map initialisation — reruns when dims change
   useEffect(() => {
+    if (!dims) return;
     let cancelled = false;
 
     async function fetchFeatures(): Promise<GeoFeature[]> {
+      if (featuresRef.current.length) return featuresRef.current;
       for (const url of [GEO_URL_PRIMARY, GEO_URL_FALLBACK]) {
         try {
           const res = await fetch(url);
           if (!res.ok) continue;
           const json = await res.json() as { features: GeoFeature[] };
+          featuresRef.current = json.features;
           return json.features;
         } catch { /* try next */ }
       }
@@ -110,8 +129,9 @@ export default function WorldMapD3({
       const containerEl = containerRef.current;
       if (!svgEl || !containerEl) return;
 
-      const W = containerEl.clientWidth || 800;
-      const H = containerEl.clientHeight || height;
+      if (!dims) return;
+      const W = dims.w;
+      const H = dims.h;
 
       const proj = d3.geoNaturalEarth1().scale(W / 5.8).translate([W / 2, H / 2]);
       const path = d3.geoPath().projection(proj);
@@ -269,7 +289,7 @@ export default function WorldMapD3({
   }, []);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 'clamp(280px, 50vh, 520px)' }}>
       <svg
         ref={svgRef}
         id="wmd3-svg"

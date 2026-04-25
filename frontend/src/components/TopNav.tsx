@@ -1,19 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   IconAsk,
-  IconGraph,
   IconFolders,
   IconSearch,
-  IconChevron,
+  IconClose,
 } from './icons';
-import ModeToggle from './ModeToggle';
-import {
-  JURISDICTION_CATALOG,
-  jurisdictionFlag,
-  jurisdictionLabel,
-} from '../api/launch';
-
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
 
 function IconGlobe({ size = 14 }: { size?: number }) {
@@ -48,12 +40,6 @@ export function useCurrentJurisdiction(): [string, (code: string) => void] {
   return [code, set];
 }
 
-// ─── Flag component ───────────────────────────────────────────────────────────
-
-function Flag({ code }: { code: string }) {
-  return <span className="flag">{jurisdictionFlag(code)}</span>;
-}
-
 // ─── ViewTab ──────────────────────────────────────────────────────────────────
 
 interface ViewTabProps {
@@ -76,108 +62,106 @@ function ViewTab({ to, icon, label }: ViewTabProps) {
   );
 }
 
-// ─── Jurisdiction Dropdown ────────────────────────────────────────────────────
+// ─── Hamburger icon (inline, no dedicated icon exists) ───────────────────────
 
-interface JurisdictionDropdownProps {
-  currentCode: string;
-  onSelect: (code: string) => void;
-}
-
-function JurisdictionDropdown({ currentCode, onSelect }: JurisdictionDropdownProps) {
+function IconHamburger() {
   return (
-    <div
-      className="absolute top-full left-0 mt-1 z-50 overflow-hidden"
-      style={{
-        background: 'var(--bg-1)',
-        border: '1px solid var(--line-1)',
-        borderRadius: 'var(--r-md)',
-        minWidth: '200px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      }}
-    >
-      {JURISDICTION_CATALOG.map((j) => {
-        const isActive = j.code === currentCode;
-        return (
-          <button
-            key={j.code}
-            type="button"
-            onClick={() => onSelect(j.code)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12.5px] transition-colors"
-            style={{
-              color: isActive ? 'var(--orange)' : 'var(--ink-1)',
-              background: isActive ? 'var(--orange-wash)' : 'transparent',
-            }}
-          >
-            <span>{jurisdictionFlag(j.code)}</span>
-            <span className="flex-1">{j.name}</span>
-            {isActive && (
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: 'var(--orange)' }}
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <rect x="2" y="4" width="14" height="1.5" rx="0.75" fill="currentColor" />
+      <rect x="2" y="8.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
+      <rect x="2" y="12.5" width="14" height="1.5" rx="0.75" fill="currentColor" />
+    </svg>
   );
 }
 
 // ─── TopNav ────────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
-  const [jurisOpen, setJurisOpen] = useState(false);
-  const [currentCode, setCurrentCode] = useCurrentJurisdiction();
-  const jurisRef = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Close on outside click
+  // Close drawer on Escape
   useEffect(() => {
-    if (!jurisOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (!jurisRef.current?.contains(e.target as Node)) {
-        setJurisOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [jurisOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!jurisOpen) return;
+    if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setJurisOpen(false);
+      if (e.key === 'Escape') setDrawerOpen(false);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [jurisOpen]);
+  }, [drawerOpen]);
 
   return (
-    <header className="topnav hairline-b">
-      {/* Left */}
-      <div className="topnav__left">
-        <Link to="/" className="wordmark">
-          <span className="wordmark__text">K.V.A.S</span>
-          <span className="wordmark__dot">.</span>
-        </Link>
+    <>
+      <header className="topnav hairline-b">
+        {/* Left */}
+        <div className="topnav__left">
+          <Link to="/" className="wordmark">
+            <span className="wordmark__text">K.V.A.S</span>
+            <span className="wordmark__dot">.</span>
+          </Link>
+        </div>
 
-      </div>
+        {/* Center nav */}
+        <nav className="topnav__center">
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
+        </nav>
 
-      {/* Center nav */}
-      <nav className="topnav__center">
-        <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
-        <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
-        <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
-      </nav>
+        {/* Right */}
+        <div className="topnav__right">
+          <button type="button" className="btn btn--ghost btn--sm">
+            <IconSearch size={14} />
+            {' '}Search
+          </button>
+          <div className="kbd">⌘K</div>
+        </div>
 
-      {/* Right */}
-      <div className="topnav__right">
-        <button type="button" className="btn btn--ghost btn--sm">
-          <IconSearch size={14} />
-          {' '}Search
+        {/* Hamburger (mobile only) */}
+        <button
+          type="button"
+          className="topnav__hamburger"
+          aria-label="Open menu"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <IconHamburger />
         </button>
-        <div className="kbd">⌘K</div>
+      </header>
+
+      {/* Mobile drawer */}
+      {drawerOpen && (
+        <div className="drawer-overlay" onClick={() => setDrawerOpen(false)} />
+      )}
+      <div
+        className={'drawer' + (drawerOpen ? ' drawer--open' : '')}
+        aria-hidden={!drawerOpen}
+      >
+        <div className="drawer__header">
+          <Link to="/" className="wordmark" onClick={() => setDrawerOpen(false)}>
+            <span className="wordmark__text">K.V.A.S</span>
+            <span className="wordmark__dot">.</span>
+          </Link>
+          <button
+            type="button"
+            className="drawer__close"
+            aria-label="Close menu"
+            onClick={() => setDrawerOpen(false)}
+          >
+            <IconClose size={16} />
+          </button>
+        </div>
+        <nav className="drawer__nav" onClick={() => setDrawerOpen(false)}>
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
+        </nav>
+        <div className="drawer__search">
+          <button type="button" className="btn btn--ghost btn--sm">
+            <IconSearch size={14} />
+            {' '}Search
+          </button>
+          <div className="kbd">⌘K</div>
+        </div>
       </div>
-    </header>
+    </>
   );
 }

@@ -4,7 +4,7 @@
 
 .ask {
   position: relative;
-  padding: 56px 80px 80px;
+  padding: 56px clamp(16px, 5vw, 80px) 80px;
   min-height: 100%;
   background: var(--bg-0);
   overflow: hidden;
@@ -28,7 +28,7 @@
 .ask__headline {
   font-family: var(--serif);
   font-weight: 500;
-  font-size: 148px;
+  font-size: clamp(48px, 14vw, 148px);
   line-height: 0.9;
   letter-spacing: -0.035em;
   margin: 0 0 28px;
@@ -233,4 +233,42 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.ask__categories::-webkit-scrollbar { display: none; }
+
+@media (max-width: 639px) {
+  .ask__prompt {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 10px 10px 14px;
+  }
+  .ask__prompt-inner {
+    width: 100%;
+  }
+  .ask__prompt-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .ask__answer-head {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 16px 14px;
+  }
+  .ask__answer-body {
+    padding: 18px 16px 16px;
+  }
+  .ask__answer-sources {
+    padding: 14px 16px 16px;
+  }
+  .srcrow {
+    grid-template-columns: 28px 10px 1fr 14px;
+  }
+  .srcrow__meta,
+  .srcrow__date {
+    display: none;
+  }
+  .ask__suggestions {
+    margin-bottom: 36px;
+  }
 }
