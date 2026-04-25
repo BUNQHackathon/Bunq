@@ -34,6 +34,11 @@ public final class SystemPrompts {
             "You are a citation verifier. For each mapping, verify that the semantic reason cited actually appears "
             + "in the source text. If the claim cannot be grounded in the provided text, mark verified=false.";
 
+    public static final String GROUND_CHECK_BATCH =
+            "You are a citation verifier processing a batch of checks. Each check has a mapping_id, a claim, and a source_text. "
+            + "For each entry, verify the claim appears verbatim or with negligible paraphrase in its source_text. "
+            + "Mark verified=false if the claim cannot be grounded. Return results for every mapping_id in the input.";
+
     public static final String NARRATE_EXEC_SUMMARY =
             "Summarize the compliance verdict in 3 sentences for a non-technical executive. "
             + "State overall risk level, key gaps, and top recommended action. Be direct and avoid jargon.";

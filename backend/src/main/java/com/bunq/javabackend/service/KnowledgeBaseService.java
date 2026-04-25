@@ -35,6 +35,10 @@ public class KnowledgeBaseService {
             String text
     ) {}
 
+    public CompletableFuture<List<RetrievedChunk>> retrieveControls(String query, int topK) {
+        return retrieve(knowledgeBaseConfig.getControlsId(), query, topK, KbType.CONTROLS);
+    }
+
     public CompletableFuture<List<RetrievedChunk>> retrieveAll(String query, int perKbTopK, int topNMerged) {
         CompletableFuture<List<RetrievedChunk>> regFuture = retrieve(knowledgeBaseConfig.getRegulationsId(), query, perKbTopK, KbType.REGULATIONS);
         CompletableFuture<List<RetrievedChunk>> polFuture = retrieve(knowledgeBaseConfig.getPoliciesId(), query, perKbTopK, KbType.POLICIES);

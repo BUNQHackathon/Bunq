@@ -31,6 +31,7 @@ aws:
     uploads-bucket: ${UPLOADS_BUCKET:launchlens-uploads-914115115148}
   bedrock:
     region: eu-central-1
+    max-concurrent: ${BEDROCK_MAX_CONCURRENT:15}
     model-ids:
       opus:   ${AWS_BEDROCK_MODEL_IDS_OPUS:eu.anthropic.claude-opus-4-7}
       sonnet: ${AWS_BEDROCK_MODEL_IDS_SONNET:eu.anthropic.claude-sonnet-4-6}

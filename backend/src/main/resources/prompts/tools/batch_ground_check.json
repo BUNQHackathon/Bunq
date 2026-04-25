@@ -1,0 +1,21 @@
+{
+  "name": "batch_ground_check",
+  "description": "Verify that each cited claim actually appears (verbatim or with negligible paraphrase) in its corresponding source text. Return verified=true only when the claim is grounded. Call this tool exactly once with results for all checks.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "results": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "mapping_id": {"type": "string"},
+            "verified": {"type": "boolean"}
+          },
+          "required": ["mapping_id", "verified"]
+        }
+      }
+    },
+    "required": ["results"]
+  }
+}

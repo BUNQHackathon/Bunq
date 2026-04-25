@@ -177,6 +177,8 @@ public class BedrockService {
             ObjectNode root = objectMapper.createObjectNode();
             root.putArray("content").add(contentBlock);
             return root;
+        } catch (ThrottlingException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to invoke Nova model via Converse API: " + e.getMessage(), e);
         }
@@ -229,6 +231,8 @@ public class BedrockService {
             }
             log.warn("Nova Converse returned no tool_use block for model {}", modelId);
             return objectMapper.createObjectNode();
+        } catch (ThrottlingException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to invoke Nova model with tool via Converse API: " + e.getMessage(), e);
         }

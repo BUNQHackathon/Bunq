@@ -11,6 +11,7 @@ public final class ToolDefinitions {
     public static final String MATCH_OBLIGATION_TO_CONTROLS_TOOL = loadResource("/prompts/tools/match_obligation_to_controls.json");
     public static final String SCORE_GAP_TOOL = loadResource("/prompts/tools/score_gap.json");
     public static final String GROUND_CHECK_TOOL = loadResource("/prompts/tools/ground_check.json");
+    public static final String BATCH_GROUND_CHECK_TOOL = loadResource("/prompts/tools/batch_ground_check.json");
     public static final String EXTRACT_COUNTERPARTIES_TOOL = loadResource("/prompts/tools/extract_counterparties_from_brief.json");
 
     private ToolDefinitions() {}

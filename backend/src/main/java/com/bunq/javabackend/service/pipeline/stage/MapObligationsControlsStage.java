@@ -12,6 +12,7 @@ import com.bunq.javabackend.repository.EvidenceRepository;
 import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.service.AuditLogService;
+import com.bunq.javabackend.service.KnowledgeBaseService;
 import com.bunq.javabackend.service.bedrock.MatchResult;
 import com.bunq.javabackend.service.bedrock.MatchableControl;
 import com.bunq.javabackend.service.bedrock.MatchableObligation;
@@ -41,6 +42,7 @@ public class MapObligationsControlsStage implements Stage {
 
     private static final int BATCH_SIZE = 10;
     private static final int MAX_CANDIDATE_CONTROLS = 20;
+    private static final int KB_TOP_K = 5;
 
     private final ObligationControlMatcher matcher;
     private final MappingRepository mappingRepository;
@@ -48,11 +50,13 @@ public class MapObligationsControlsStage implements Stage {
     private final ControlRepository controlRepository;
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
+    private final KnowledgeBaseService knowledgeBaseService;
     private final Executor pipelineExecutor;
 
     public MapObligationsControlsStage(ObligationControlMatcher matcher, MappingRepository mappingRepository,
                                        ObligationRepository obligationRepository, ControlRepository controlRepository,
                                        AuditLogService auditLogService, EvidenceRepository evidenceRepository,
+                                       KnowledgeBaseService knowledgeBaseService,
                                        @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.matcher = matcher;
         this.mappingRepository = mappingRepository;
@@ -60,6 +64,7 @@ public class MapObligationsControlsStage implements Stage {
         this.controlRepository = controlRepository;
         this.auditLogService = auditLogService;
         this.evidenceRepository = evidenceRepository;
+        this.knowledgeBaseService = knowledgeBaseService;
         this.pipelineExecutor = pipelineExecutor;
     }
 
@@ -144,10 +149,45 @@ public class MapObligationsControlsStage implements Stage {
         int reused = 0;
     }
 
+    private List<Control> kbCandidates(Obligation obl, List<Control> allControls) {
+        try {
+            String query = String.join(" ",
+                    obl.getSubject() != null ? obl.getSubject() : "",
+                    obl.getAction() != null ? obl.getAction() : "",
+                    obl.getRiskCategory() != null ? obl.getRiskCategory() : "").trim();
+            if (query.isBlank()) return List.of();
+
+            List<KnowledgeBaseService.RetrievedChunk> chunks =
+                    knowledgeBaseService.retrieveControls(query, KB_TOP_K).join();
+            if (chunks.isEmpty()) return List.of();
+
+            // Match KB chunk text against control descriptions (case-insensitive substring)
+            List<Control> matched = new ArrayList<>();
+            for (KnowledgeBaseService.RetrievedChunk chunk : chunks) {
+                String chunkText = chunk.text() != null ? chunk.text().toLowerCase() : "";
+                for (Control ctrl : allControls) {
+                    if (matched.contains(ctrl)) continue;
+                    String desc = ctrl.getDescription() != null ? ctrl.getDescription().toLowerCase() : "";
+                    if (!desc.isBlank() && chunkText.contains(desc.substring(0, Math.min(desc.length(), 40)))) {
+                        matched.add(ctrl);
+                    }
+                }
+                if (matched.size() >= KB_TOP_K) break;
+            }
+            return matched;
+        } catch (Exception e) {
+            log.warn("KB candidate retrieval failed for obligation {}: {}", obl.getId(), e.getMessage());
+            return List.of();
+        }
+    }
+
     private ObligationResult processObligation(Obligation obl, List<Control> allControls,
                                                PipelineContext ctx, List<String> evidenceHashes) {
         ObligationResult out = new ObligationResult();
-        List<Control> candidates = structuralFilter(obl, allControls);
+        List<Control> candidates = kbCandidates(obl, allControls);
+        if (candidates.isEmpty()) {
+            candidates = structuralFilter(obl, allControls);
+        }
         if (candidates.isEmpty() && !allControls.isEmpty()) {
             candidates = allControls.stream().limit(MAX_CANDIDATE_CONTROLS).toList();
         }
