@@ -194,15 +194,6 @@ export default function LaunchDetailPage() {
   const [retrying, setRetrying] = useState(false);
   const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant'>('all');
 
-  // Hero reveal animation: play once per browser session (across mounts/navigations).
-  const [animateHero] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const KEY = 'launch-detail.hero-revealed';
-    if (sessionStorage.getItem(KEY)) return false;
-    sessionStorage.setItem(KEY, '1');
-    return true;
-  });
-
   // Keep a ref to detail so the interval closure can read current value
   const detailRef = useRef<LaunchDetail | null>(null);
   detailRef.current = detail;
@@ -493,13 +484,14 @@ export default function LaunchDetailPage() {
       {/* ── Right column ────────────────────────────────────────────────────── */}
       <div className="fjp">
         <Hero
+          key={id}
           title={launch?.name ?? (id ?? '')}
           total={counts.total}
           ok={counts.ok}
           review={counts.review}
           block={counts.block}
           anyRunning={anyRunning}
-          animate={animateHero}
+          animate
         />
 
         <div className="fjp__body">
