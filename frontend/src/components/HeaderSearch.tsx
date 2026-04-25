@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchAll } from '../api/search';
 import type { SearchResponse } from '../api/search';
+import { IconSearch, IconFolders, IconExternal, IconDoc, IconChatBubble } from './icons';
 
-const NAVIGABLE = new Set(['launch', 'jurisdiction']);
+const NAVIGABLE = new Set(['launch', 'jurisdiction', 'document']);
 
 const GROUP_ORDER: Array<{ key: keyof Omit<SearchResponse, 'query'>; label: string }> = [
   { key: 'launches', label: 'Launches' },
@@ -17,10 +18,23 @@ const GROUP_ORDER: Array<{ key: keyof Omit<SearchResponse, 'query'>; label: stri
 function hitPath(type: string, id: string): string | null {
   if (type === 'launch') return `/launches/${id}`;
   if (type === 'jurisdiction') return `/jurisdictions/${id}`;
+  if (type === 'document') return `/doc/${id}`;
   return null;
 }
 
-export default function HeaderSearch() {
+function HitIcon({ type }: { type: string }) {
+  if (type === 'launch') return <IconFolders size={12} className="text-white/50 shrink-0" />;
+  if (type === 'jurisdiction') return <IconExternal size={12} className="text-white/50 shrink-0" />;
+  if (type === 'document') return <IconDoc size={12} className="text-white/50 shrink-0" />;
+  if (type === 'session') return <IconChatBubble size={12} className="text-white/50 shrink-0" />;
+  return <IconExternal size={12} className="text-white/50 shrink-0" />;
+}
+
+interface HeaderSearchProps {
+  fullWidth?: boolean;
+}
+
+export default function HeaderSearch({ fullWidth }: HeaderSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -124,24 +138,11 @@ export default function HeaderSearch() {
   let clickableIdx = -1;
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+    <div ref={containerRef} className="relative flex items-center">
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'var(--bg-1, #111)',
-          border: '1px solid var(--line-1, rgba(246,241,234,0.1))',
-          borderRadius: '6px',
-          padding: '0 8px',
-          height: '28px',
-          minWidth: '160px',
-        }}
+        className={`flex items-center gap-1.5 bg-[#141414] border border-white/[0.08] rounded-full px-2.5 h-[30px] ${fullWidth ? 'w-full' : 'w-44 md:w-56'}`}
       >
-        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: 'var(--ink-2, #888)' }}>
-          <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
-          <path d="M9.5 9.5L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        </svg>
+        <IconSearch size={14} className="text-white/50 shrink-0" />
         <input
           ref={inputRef}
           type="search"
@@ -150,80 +151,46 @@ export default function HeaderSearch() {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => { if (query.length >= 2 && results) setOpen(true); }}
           onKeyDown={handleKeyDown}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--ink-0, #f6f1ea)',
-            fontSize: '13px',
-            fontFamily: 'inherit',
-            width: '100%',
-          }}
+          className="bg-transparent text-[13px] text-white/85 placeholder-white/30 outline-none flex-1 min-w-0"
+          style={{ caretColor: '#FF7819' }}
         />
         {!query && (
-          <kbd
-            style={{
-              fontSize: '10px',
-              fontFamily: 'inherit',
-              background: 'var(--bg-2, rgba(246,241,234,0.06))',
-              border: '1px solid var(--line-1, rgba(246,241,234,0.1))',
-              borderRadius: '3px',
-              padding: '1px 4px',
-              color: 'var(--ink-2, #888)',
-              flexShrink: 0,
-              lineHeight: '14px',
-            }}
-          >
-            ⌘K
-          </kbd>
+          <kbd className="font-mono text-[10px] text-white/30 select-none shrink-0">⌘K</kbd>
         )}
       </div>
 
-      {open && (
+      {open && (loading || hasResults || (query.length >= 2 && !loading && !hasResults)) && (
         <div
+          className={`absolute top-full mt-2 rounded-xl overflow-hidden z-50 flex flex-col ${fullWidth ? 'left-0 right-0' : 'right-0 w-[min(380px,calc(100vw-24px))]'}`}
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            minWidth: '360px',
-            maxWidth: '420px',
-            background: 'var(--bg-1, #111)',
-            border: '1px solid var(--line-1, rgba(246,241,234,0.1))',
-            borderRadius: '8px',
-            boxShadow: '0 16px 48px -8px rgba(0,0,0,0.6)',
-            zIndex: 1000,
-            overflow: 'hidden',
+            background: '#141414',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
           }}
         >
           {loading && (
-            <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--ink-2, #888)', borderBottom: '1px solid var(--line-1, rgba(246,241,234,0.06))' }}>
+            <div
+              className="px-[14px] py-[10px] text-[12px] text-white/50"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            >
               Searching…
             </div>
           )}
 
           {!loading && query.length >= 2 && !hasResults && (
-            <div style={{ padding: '20px 14px', textAlign: 'center', fontSize: '13px', color: 'var(--ink-2, #888)' }}>
+            <div className="px-[14px] py-5 text-center text-[13px] text-white/40">
               No results
             </div>
           )}
 
           {hasResults && (
-            <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+            <div className="overflow-y-auto max-h-[360px]">
               {GROUP_ORDER.map(({ key, label }) => {
                 const hits = results![key] ?? [];
                 if (!hits.length) return null;
                 return (
                   <div key={key}>
-                    <div
-                      style={{
-                        padding: '8px 14px 4px',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'var(--ink-2, #888)',
-                      }}
-                    >
+                    <div className="font-mono uppercase tracking-widest text-[10px] text-white/30 px-3.5 pt-3 pb-1.5 select-none">
                       {label}
                     </div>
                     {hits.map((hit) => {
@@ -232,67 +199,43 @@ export default function HeaderSearch() {
                       if (clickable) clickableIdx++;
                       const myIdx = clickable ? clickableIdx : -1;
                       const isActive = myIdx === activeIndex;
+
+                      if (clickable) {
+                        return (
+                          <button
+                            key={`${hit.type}-${hit.id}`}
+                            type="button"
+                            onClick={
+                              path
+                                ? () => {
+                                    navigate(path);
+                                    setQuery('');
+                                    setOpen(false);
+                                    inputRef.current?.blur();
+                                  }
+                                : undefined
+                            }
+                            className={`flex items-center gap-3 px-4 py-2 hover:bg-white/[0.04] cursor-pointer w-full text-left transition-colors${isActive ? ' bg-white/[0.06]' : ''}`}
+                          >
+                            <HitIcon type={hit.type} />
+                            <span className="flex-1 text-[13px] text-white/85 truncate">{hit.title}</span>
+                            {hit.subtitle && (
+                              <span className="font-mono text-[10px] text-white/40 shrink-0">{hit.subtitle}</span>
+                            )}
+                          </button>
+                        );
+                      }
+
                       return (
                         <div
                           key={`${hit.type}-${hit.id}`}
-                          onClick={
-                            clickable && path
-                              ? () => {
-                                  navigate(path);
-                                  setQuery('');
-                                  setOpen(false);
-                                  inputRef.current?.blur();
-                                }
-                              : undefined
-                          }
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '7px 14px',
-                            cursor: clickable ? 'pointer' : 'default',
-                            opacity: clickable ? 1 : 0.45,
-                            background: isActive ? 'var(--bg-2, rgba(246,241,234,0.07))' : 'transparent',
-                          }}
-                          onMouseEnter={
-                            clickable
-                              ? (e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-2, rgba(246,241,234,0.05))'; }
-                              : undefined
-                          }
-                          onMouseLeave={
-                            clickable
-                              ? (e) => { (e.currentTarget as HTMLDivElement).style.background = isActive ? 'var(--bg-2, rgba(246,241,234,0.07))' : 'transparent'; }
-                              : undefined
-                          }
+                          className="flex items-center gap-3 px-4 py-2 opacity-50 cursor-default"
                         >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div
-                              style={{
-                                fontSize: '13px',
-                                fontWeight: 500,
-                                color: 'var(--ink-0, #f6f1ea)',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}
-                            >
-                              {hit.title}
-                            </div>
-                            {hit.subtitle && (
-                              <div
-                                style={{
-                                  fontSize: '11px',
-                                  color: 'var(--ink-2, #888)',
-                                  marginTop: '1px',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {hit.subtitle}
-                              </div>
-                            )}
-                          </div>
+                          <HitIcon type={hit.type} />
+                          <span className="flex-1 text-[13px] text-white/85 truncate">{hit.title}</span>
+                          {hit.subtitle && (
+                            <span className="font-mono text-[10px] text-white/40 shrink-0">{hit.subtitle}</span>
+                          )}
                         </div>
                       );
                     })}
@@ -301,6 +244,13 @@ export default function HeaderSearch() {
               })}
             </div>
           )}
+
+          <div
+            className="font-mono text-[10px] text-white/30 px-[14px] py-[10px] shrink-0"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+          >
+            ↑↓ to navigate · ↵ to select · esc to close
+          </div>
         </div>
       )}
     </div>

@@ -200,7 +200,7 @@ export default function TopNav() {
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
         </nav>
         <div className="drawer__search">
-          <HeaderSearch />
+          <HeaderSearch fullWidth />
         </div>
       </div>
     </>
