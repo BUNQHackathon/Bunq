@@ -140,6 +140,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
       name  = "SERVER_PORT"
       value = "8080"
     }
+    environment {
+      name  = "ADMIN_TOKEN"
+      value = "demo-test-7f3a9b2c"
+    }
 
     secret {
       name       = "OPENSANCTIONS_API_KEY"
