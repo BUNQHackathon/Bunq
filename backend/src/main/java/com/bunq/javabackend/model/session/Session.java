@@ -64,4 +64,7 @@ public class Session {
 
     @Getter(onMethod_ = @DynamoDbAttribute("jurisdiction_code"))
     private String jurisdictionCode;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("executive_summary"))
+    private String executiveSummary;
 }

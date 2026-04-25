@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listLaunches, getLaunch, deleteLaunch, type Launch, type LaunchKind, type JurisdictionRun } from '../api/launch';
+import { listLaunches, deleteLaunch, type Launch, type LaunchKind, type LaunchJurisdictionSummary } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import VerdictPill from '../components/VerdictPill';
 import { IconPlus, IconClose } from '../components/icons';
@@ -15,7 +15,7 @@ function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
 
 interface LaunchRow {
   launch: Launch;
-  jurisdictions: JurisdictionRun[];
+  jurisdictions: LaunchJurisdictionSummary[];
 }
 
 function kindDotClass(kind: LaunchKind | undefined): string {
@@ -57,19 +57,10 @@ export default function LaunchesPage() {
     setError(null);
 
     listLaunches()
-      .then(async (launches) => {
+      .then((launches) => {
         if (cancelled) return;
-        const details = await Promise.all(
-          launches.map((l) =>
-            getLaunch(l.id)
-              .then((d) => ({ launch: d.launch, jurisdictions: d.jurisdictions }))
-              .catch(() => ({ launch: l, jurisdictions: [] as JurisdictionRun[] })),
-          ),
-        );
-        if (!cancelled) {
-          setRows(details);
-          setLoading(false);
-        }
+        setRows(launches.map((l) => ({ launch: l, jurisdictions: l.jurisdictions ?? [] })));
+        setLoading(false);
       })
       .catch((err) => {
         if (!cancelled) {

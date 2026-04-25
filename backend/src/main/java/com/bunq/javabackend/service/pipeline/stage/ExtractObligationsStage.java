@@ -220,7 +220,10 @@ public class ExtractObligationsStage implements Stage {
                 ToolDefinitions.EXTRACT_OBLIGATIONS_TOOL
         );
 
-        return parseObligations(toolInput, ctx.getSessionId(), documentId);
+        String regulationName = doc != null
+                ? stripPdf(doc.getFilename())
+                : "REG-" + ctx.getSessionId();
+        return parseObligations(toolInput, ctx.getSessionId(), documentId, regulationName);
     }
 
     private Obligation cloneObligation(Obligation original, String sessionId) {
@@ -245,7 +248,17 @@ public class ExtractObligationsStage implements Stage {
         return clone;
     }
 
-    private List<Obligation> parseObligations(JsonNode toolInput, String sessionId, String documentId) {
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static String stripPdf(String name) {
+        if (name == null) return null;
+        return name.endsWith(".pdf") ? name.substring(0, name.length() - 4) : name;
+    }
+
+    private List<Obligation> parseObligations(JsonNode toolInput, String sessionId, String documentId,
+                                              String regulationName) {
         List<Obligation> result = new ArrayList<>();
         if (toolInput == null || toolInput.isMissingNode()) return result;
 
@@ -275,6 +288,13 @@ public class ExtractObligationsStage implements Stage {
 
                 ObligationSource source = new ObligationSource();
                 source.setSourceText(node.path("source_text_snippet").asText(null));
+                source.setRegulation(regulationName);
+                source.setArticle(blankToNull(node.path("article").asText(null)));
+                source.setSection(blankToNull(node.path("section").asText(null)));
+                JsonNode paraNode = node.path("paragraph");
+                if (!paraNode.isMissingNode() && !paraNode.isNull() && paraNode.asInt(0) != 0) {
+                    source.setParagraph(paraNode.asInt());
+                }
                 obl.setSource(source);
 
                 result.add(obl);

@@ -613,10 +613,10 @@ export default function LaunchDetailPage() {
 
                 const countsLine = `Obligations: ${run.obligationsCount ?? 0} • Controls: ${run.controlsCount ?? 0} • Gaps: ${run.gapsCount ?? 0}`;
 
-                const requiredAction =
-                  run.requiredChanges?.[0] ??
-                  run.blockers?.[0] ??
-                  'No action required';
+                const actionItems =
+                  run.verdict === 'RED'
+                    ? (run.blockers ?? []).slice(0, 5)
+                    : (run.requiredChanges ?? []).slice(0, 5);
 
                 return (
                   <div
@@ -660,8 +660,23 @@ export default function LaunchDetailPage() {
                     <div className="fjp__row-detail">
                       <div className="fjp__detail-grid">
                         <div className="fjp__detail-block fjp__detail-block--wide">
-                          <div className="mono-label">Required action</div>
-                          <div className="fjp__detail-value">{requiredAction}</div>
+                          <div className="mono-label">Compliance summary</div>
+                          {run.summary && (
+                            <div className="fjp__detail-value" style={{ marginBottom: actionItems.length > 0 ? 10 : 0 }}>
+                              {run.summary}
+                            </div>
+                          )}
+                          {actionItems.length > 0 ? (
+                            <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
+                              {actionItems.map((item, i) => (
+                                <li key={i} className="fjp__detail-value" style={{ marginBottom: 2 }}>
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : !run.summary ? (
+                            <div className="fjp__detail-value">No action required</div>
+                          ) : null}
                         </div>
                         <div className="fjp__detail-block fjp__detail-block--wide">
                           <div className="mono-label">Stats</div>

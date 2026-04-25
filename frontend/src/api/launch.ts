@@ -6,6 +6,12 @@ export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING' | 'UNKNOWN';
 export type JurisdictionStatus = 'RUNNING' | 'COMPLETE' | 'FAILED' | 'PENDING';
 export type LaunchKind = 'PRODUCT' | 'POLICY' | 'PROCESS';
 
+export interface LaunchJurisdictionSummary {
+  code: string;
+  verdict: Verdict;
+  status: string;
+}
+
 export interface Launch {
   id: string;
   name: string;
@@ -19,6 +25,7 @@ export interface Launch {
   createdAt: string;
   updatedAt: string;
   markets?: string[];
+  jurisdictions?: LaunchJurisdictionSummary[];
 }
 
 export interface JurisdictionRun {
