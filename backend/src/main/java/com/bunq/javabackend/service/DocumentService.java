@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ChecksumMode;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -41,6 +44,7 @@ public class DocumentService {
     private final DocJurisdictionRepository docJurisdictionRepository;
     private final S3PresignHelper s3PresignHelper;
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
@@ -160,11 +164,11 @@ public class DocumentService {
 
     public DocumentResponseDTO get(String id) {
         return documentRepository.findById(id)
-                .map(DocumentService::toResponseDTO)
+                .map(this::toResponseDTO)
                 .orElseThrow(() -> new NotFoundException("Document not found: " + id));
     }
 
-    private static DocumentResponseDTO toResponseDTO(Document doc) {
+    private DocumentResponseDTO toResponseDTO(Document doc) {
         return DocumentResponseDTO.builder()
                 .id(doc.getId())
                 .filename(doc.getFilename())
@@ -180,7 +184,22 @@ public class DocumentService {
                 .pageCount(doc.getPageCount())
                 .obligationsExtracted(doc.isObligationsExtracted())
                 .controlsExtracted(doc.isControlsExtracted())
+                .downloadUrl(doc.getS3Key() != null ? presignGetUrl(doc.getS3Key()) : null)
                 .build();
+    }
+
+    private String presignGetUrl(String key) {
+        try {
+            GetObjectRequest req = GetObjectRequest.builder().bucket(uploadsBucket).key(key).build();
+            GetObjectPresignRequest presignReq = GetObjectPresignRequest.builder()
+                    .signatureDuration(java.time.Duration.ofMinutes(15))
+                    .getObjectRequest(req)
+                    .build();
+            return s3Presigner.presignGetObject(presignReq).url().toString();
+        } catch (Exception e) {
+            log.warn("Failed to presign GET URL for key {}: {}", key, e.getMessage());
+            return null;
+        }
     }
 
     private static DocumentSummaryDTO toSummaryDTO(Document doc) {
