@@ -298,8 +298,8 @@ export default function AskPage() {
           <>
             <div
               style={{
-                WebkitMaskImage: 'linear-gradient(to bottom, black 15%, transparent 115%)',
-                maskImage: 'linear-gradient(to bottom, black 15%, transparent 115%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, black 5%, transparent 95%)',
+                maskImage: 'linear-gradient(to bottom, black 5%, transparent 95%)',
               }}
             >
               <h1
