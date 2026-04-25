@@ -9,6 +9,9 @@ import LaunchDetailPage from './pages/LaunchDetailPage';
 import JurisdictionDetailPage from './pages/JurisdictionDetailPage';
 import DataPage from './pages/DataPage';
 import DocPage from './pages/DocPage';
+import SessionDetailPage from './pages/SessionDetailPage';
+import ObligationDetailPage from './pages/ObligationDetailPage';
+import ControlDetailPage from './pages/ControlDetailPage';
 import { useMode } from './components/ModeToggle';
 
 function ModeAwareRedirect() {
@@ -31,6 +34,9 @@ export default function App() {
         <Route path="/jurisdictions" element={<JurisdictionsPage />} />
         <Route path="/jurisdictions/:code" element={<JurisdictionDetailPage />} />
         <Route path="/jurisdictions/:code/launches/:id" element={<GraphPage />} />
+        <Route path="/session/:id" element={<SessionDetailPage />} />
+        <Route path="/obligation/:id" element={<ObligationDetailPage />} />
+        <Route path="/control/:id" element={<ControlDetailPage />} />
       </Route>
     </Routes>
   );

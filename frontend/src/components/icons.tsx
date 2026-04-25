@@ -237,6 +237,22 @@ export function IconFolder({ className, size = 14 }: IconProps) {
   );
 }
 
+export function IconHelp({ className, size = 14 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" fill="none" className={className}>
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+      <path
+        d="M5.5 5.5a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="7" cy="10" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function IconMoreHorizontal({ className, size = 14 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" fill="none" className={className}>

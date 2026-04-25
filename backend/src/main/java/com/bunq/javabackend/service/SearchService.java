@@ -2,12 +2,15 @@ package com.bunq.javabackend.service;
 
 import com.bunq.javabackend.dto.response.SearchResponseDTO;
 import com.bunq.javabackend.dto.response.SearchResponseDTO.Hit;
+import com.bunq.javabackend.controller.JurisdictionsOverviewController.Jurisdiction;
 import com.bunq.javabackend.model.control.Control;
 import com.bunq.javabackend.model.document.Document;
+import com.bunq.javabackend.model.launch.Launch;
 import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.model.session.Session;
 import com.bunq.javabackend.repository.ControlRepository;
 import com.bunq.javabackend.repository.DocumentRepository;
+import com.bunq.javabackend.repository.LaunchRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class SearchService {
     private final SessionRepository sessionRepository;
     private final ObligationRepository obligationRepository;
     private final ControlRepository controlRepository;
+    private final LaunchRepository launchRepository;
 
     public SearchResponseDTO search(String rawQuery, int perTypeLimit) {
         String q = rawQuery == null ? "" : rawQuery.trim().toLowerCase(Locale.ROOT);
@@ -41,6 +45,8 @@ public class SearchService {
                     .sessions(List.of())
                     .obligations(List.of())
                     .controls(List.of())
+                    .launches(List.of())
+                    .jurisdictions(List.of())
                     .build();
         }
 
@@ -52,6 +58,8 @@ public class SearchService {
                 .sessions(searchSessions(q, limit))
                 .obligations(searchObligations(q, limit))
                 .controls(searchControls(q, limit))
+                .launches(searchLaunches(q, limit))
+                .jurisdictions(searchJurisdictions(q, limit))
                 .build();
     }
 
@@ -127,6 +135,42 @@ public class SearchService {
                         .id(c.getId())
                         .title(title)
                         .subtitle(c.getOwner())
+                        .build());
+                if (out.size() >= limit) break;
+            }
+        }
+        return out;
+    }
+
+    private List<Hit> searchLaunches(String q, int limit) {
+        List<Launch> all = launchRepository.findAll();
+        List<Hit> out = new ArrayList<>();
+        for (Launch l : all) {
+            if (matches(q, l.getName(), l.getBrief(), l.getLicense(), l.getStatus())) {
+                out.add(Hit.builder()
+                        .type("launch")
+                        .id(l.getId())
+                        .title(l.getName() != null ? l.getName() : l.getId())
+                        .subtitle(l.getBrief() != null ? l.getBrief() : l.getLicense())
+                        .build());
+                if (out.size() >= limit) break;
+            }
+        }
+        return out;
+    }
+
+    private static final List<com.bunq.javabackend.controller.JurisdictionsOverviewController.Jurisdiction> JURISDICTION_CATALOG =
+            com.bunq.javabackend.controller.JurisdictionsOverviewController.CATALOG;
+
+    private List<Hit> searchJurisdictions(String q, int limit) {
+        List<Hit> out = new ArrayList<>();
+        for (com.bunq.javabackend.controller.JurisdictionsOverviewController.Jurisdiction j : JURISDICTION_CATALOG) {
+            if (matches(q, j.code(), j.name(), j.license(), j.regulator(), j.status())) {
+                out.add(Hit.builder()
+                        .type("jurisdiction")
+                        .id(j.code())
+                        .title(j.name())
+                        .subtitle(j.regulator() != null ? j.regulator() : j.license())
                         .build());
                 if (out.size() >= limit) break;
             }

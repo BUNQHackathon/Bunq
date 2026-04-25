@@ -311,8 +311,16 @@ export function listObligations(sessionId: string): Promise<Obligation[]> {
   return getJson<Obligation[]>(`/sessions/${encodeURIComponent(sessionId)}/obligations`);
 }
 
+export function getObligation(id: string): Promise<Obligation> {
+  return getJson<Obligation>(`/obligations/${encodeURIComponent(id)}`);
+}
+
 export function listControls(sessionId: string): Promise<Control[]> {
   return getJson<Control[]>(`/sessions/${encodeURIComponent(sessionId)}/controls`);
+}
+
+export function getControl(id: string): Promise<Control> {
+  return getJson<Control>(`/controls/${encodeURIComponent(id)}`);
 }
 
 export function listMappings(sessionId: string): Promise<Mapping[]> {
