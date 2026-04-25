@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
+import { AdaptiveDpr } from '@react-three/drei';
 import * as THREE from 'three';
 import { GlassPrisms } from './GlassPrisms';
 import { BackdropMesh } from './BackdropMesh';
@@ -28,12 +28,11 @@ export default function PrismCanvas() {
           toneMapping: THREE.NoToneMapping,
           powerPreference: 'high-performance',
         }}
-        dpr={[1, 1.5]}
+        dpr={[1, 1.25]}
         frameloop={visible ? 'always' : 'never'}
         performance={{ min: 0.5 }}
         style={{ width: '100%', height: '100%', background: 'transparent' }}
       >
-        <PerformanceMonitor />
         <AdaptiveDpr pixelated />
         <BackdropMesh />
         <GlassPrisms />

@@ -30,6 +30,8 @@ export function GlassPrisms() {
     }
     ref.current.instanceMatrix.needsUpdate = true;
     ref.current.instanceColor!.needsUpdate = true;
+    ref.current.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    ref.current.instanceColor!.setUsage(THREE.StaticDrawUsage);
   }, [geo]);
 
   return (
@@ -46,8 +48,8 @@ export function GlassPrisms() {
         temporalDistortion={0}
         specularIntensity={0}
         color="white"
-        resolution={512}
-        samples={4}
+        resolution={256}
+        samples={2}
       />
     </instancedMesh>
   );
