@@ -4,7 +4,7 @@ import { searchAll } from '../api/search';
 import type { SearchResponse } from '../api/search';
 import { IconSearch, IconFolders, IconExternal, IconDoc, IconChatBubble } from './icons';
 
-const NAVIGABLE = new Set(['launch', 'jurisdiction', 'document']);
+const NAVIGABLE = new Set(['launch', 'jurisdiction', 'document', 'session', 'obligation', 'control']);
 
 const GROUP_ORDER: Array<{ key: keyof Omit<SearchResponse, 'query'>; label: string }> = [
   { key: 'launches', label: 'Launches' },
@@ -19,6 +19,9 @@ function hitPath(type: string, id: string): string | null {
   if (type === 'launch') return `/launches/${id}`;
   if (type === 'jurisdiction') return `/jurisdictions/${id}`;
   if (type === 'document') return `/doc/${id}`;
+  if (type === 'session') return `/session/${id}`;
+  if (type === 'obligation') return `/obligation/${id}`;
+  if (type === 'control') return `/control/${id}`;
   return null;
 }
 

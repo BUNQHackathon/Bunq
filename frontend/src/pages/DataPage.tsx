@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listDocuments, type DocumentSummary } from '../api/portal';
-import { listLibraryDocuments, createSession, attachDocument, type LibraryDocument } from '../api/session';
+import { listLibraryDocuments, createSession, attachDocument, type LibraryDocument, presignDocument, putToPresignedUrl, finalizeDocument, computeSha256Base64, type DocumentKind } from '../api/session';
 import { chats, type Chat } from '../data/portal';
 import {
   IconFilter,
@@ -360,16 +360,63 @@ function ChatRow({ chat }: ChatRowProps) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+function inferKindAndType(filename: string): { kind: DocumentKind; contentType: string } {
+  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
+  if (ext === '.pdf') return { kind: 'regulation', contentType: 'application/pdf' };
+  if (ext === '.md') return { kind: 'policy', contentType: 'text/markdown' };
+  if (ext === '.csv') return { kind: 'evidence', contentType: 'text/csv' };
+  if (ext === '.txt') return { kind: 'other', contentType: 'text/plain' };
+  if (ext === '.mp3') return { kind: 'audio', contentType: 'audio/mpeg' };
+  if (ext === '.wav') return { kind: 'audio', contentType: 'audio/wav' };
+  if (ext === '.m4a') return { kind: 'audio', contentType: 'audio/mp4' };
+  return { kind: 'other', contentType: 'application/octet-stream' };
+}
+
 export default function DataPage() {
   const navigate = useNavigate();
 
-  const [source, setSource] = useState<'kb' | 'library'>('kb');
+  const [source] = useState<'kb' | 'library'>('kb');
   const [docs, setDocs] = useState<UnifiedDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
   const [usingDocId, setUsingDocId] = useState<string | null>(null);
   const [docErrors, setDocErrors] = useState<Map<string, string>>(new Map<string, string>());
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<'recent' | 'oldest' | 'name' | 'size'>('recent');
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadState, setUploadState] = useState<'idle' | 'hashing' | 'uploading' | 'finalizing' | 'done' | 'error'>('idle');
+  const [uploadFileName, setUploadFileName] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (uploadState === 'done') {
+      const t = setTimeout(() => setUploadState('idle'), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [uploadState]);
+
+  async function handleUpload(file: File) {
+    setUploadFileName(file.name);
+    setUploadError(null);
+    setUploadState('hashing');
+    try {
+      const sha256 = await computeSha256Base64(file);
+      setUploadState('uploading');
+      const { kind, contentType } = inferKindAndType(file.name);
+      const { incomingKey, uploadUrl } = await presignDocument({ filename: file.name, contentType, sha256 });
+      await putToPresignedUrl(uploadUrl, file, contentType, sha256);
+      setUploadState('finalizing');
+      await finalizeDocument({ incomingKey, filename: file.name, contentType, kind });
+      setUploadState('done');
+    } catch (err) {
+      setUploadState('error');
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -443,9 +490,36 @@ export default function DataPage() {
     return docs.filter((d) => docCategory(d).toLowerCase() === nameLower);
   }, [selectedNode, docs]);
 
+  const availableTypes = useMemo(() => {
+    const set = new Set<string>();
+    for (const d of docs) {
+      const t = docType(d);
+      if (t) set.add(t);
+    }
+    return Array.from(set).sort();
+  }, [docs]);
+
+  const displayDocs = useMemo(() => {
+    let arr = filteredDocs;
+    if (typeFilter) arr = arr.filter((d) => docType(d) === typeFilter);
+    const sorted = [...arr];
+    if (sortKey === 'recent') sorted.sort((a, b) => (docUpdated(b) || '').localeCompare(docUpdated(a) || ''));
+    else if (sortKey === 'oldest') sorted.sort((a, b) => (docUpdated(a) || '').localeCompare(docUpdated(b) || ''));
+    else if (sortKey === 'name') sorted.sort((a, b) => docTitle(a).localeCompare(docTitle(b)));
+    else if (sortKey === 'size') sorted.sort((a, b) => docSize(b) - docSize(a));
+    return sorted;
+  }, [filteredDocs, typeFilter, sortKey]);
+
   const breadcrumbName = selectedNode ? selectedNode.name : (source === 'kb' ? 'All documents' : 'All kinds');
-  const breadcrumbCount = selectedNode ? filteredDocs.length : docs.length;
+  const breadcrumbCount = displayDocs.length;
   const breadcrumbPrefix = source === 'kb' ? 'Workspace' : 'Library';
+
+  useEffect(() => {
+    if (!typeMenuOpen && !sortMenuOpen) return;
+    const handler = () => { setTypeMenuOpen(false); setSortMenuOpen(false); };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [typeMenuOpen, sortMenuOpen]);
 
   function handleToggle(id: string) {
     setExpandedIds((prev) => {
@@ -456,8 +530,26 @@ export default function DataPage() {
     });
   }
 
+  const uploadLabel =
+    uploadState === 'hashing' ? 'Hashing…' :
+    uploadState === 'uploading' ? 'Uploading…' :
+    uploadState === 'finalizing' ? 'Finalizing…' :
+    'Upload';
+  const uploadBusy = uploadState === 'hashing' || uploadState === 'uploading' || uploadState === 'finalizing';
+
   return (
     <div className="flex flex-col h-[calc(100vh-56px)]">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept=".pdf,.md,.csv,.txt,.mp3,.wav,.m4a"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleUpload(file);
+          e.target.value = '';
+        }}
+      />
       {/* Breadcrumb bar */}
       <div className="shrink-0 h-12 px-6 flex items-center justify-between border-b border-white/[0.05]">
         <div className="flex items-center gap-4">
@@ -467,17 +559,77 @@ export default function DataPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors">
-            <IconFilter size={11} />
-            Type
+          <button
+            disabled={uploadBusy}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 font-mono text-[12px] transition-colors ${uploadBusy ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed' : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'}`}
+          >
+            <IconPlus size={11} />
+            {uploadLabel}
           </button>
-          <button className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors">
-            Sort: Recent
-            <IconChevron size={11} />
-          </button>
-
+          <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => { setTypeMenuOpen((o) => !o); setSortMenuOpen(false); }}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[12px] transition-colors ${typeFilter ? 'border-[#FF7819]/60 text-white bg-[#FF7819]/10' : 'border-white/[0.12] text-white/70 hover:bg-white/[0.04]'}`}
+            >
+              <IconFilter size={11} />
+              {typeFilter ? `Type: ${typeFilter.toUpperCase()}` : 'Type'}
+            </button>
+            {typeMenuOpen && (
+              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] bg-prism-panel shadow-lg overflow-hidden">
+                <button
+                  onClick={() => { setTypeFilter(null); setTypeMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-1.5 font-mono text-[11px] hover:bg-white/[0.05] ${typeFilter === null ? 'text-white' : 'text-white/70'}`}
+                >
+                  All types
+                </button>
+                {availableTypes.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => { setTypeFilter(t); setTypeMenuOpen(false); }}
+                    className={`w-full text-left px-3 py-1.5 font-mono text-[11px] hover:bg-white/[0.05] ${typeFilter === t ? 'text-white' : 'text-white/70'}`}
+                  >
+                    {t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => { setSortMenuOpen((o) => !o); setTypeMenuOpen(false); }}
+              className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors"
+            >
+              Sort: {sortKey === 'recent' ? 'Recent' : sortKey === 'oldest' ? 'Oldest' : sortKey === 'name' ? 'Name' : 'Size'}
+              <IconChevron size={11} />
+            </button>
+            {sortMenuOpen && (
+              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] bg-prism-panel shadow-lg overflow-hidden">
+                {([['recent', 'Recent'], ['oldest', 'Oldest'], ['name', 'Name (A→Z)'], ['size', 'Size']] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => { setSortKey(k); setSortMenuOpen(false); }}
+                    className={`w-full text-left px-3 py-1.5 font-mono text-[11px] hover:bg-white/[0.05] ${sortKey === k ? 'text-white' : 'text-white/70'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      {uploadError && (
+        <div className="shrink-0 px-6 py-1 flex items-center gap-2">
+          <span className="font-mono text-[11px] text-[#E05050]">{uploadError}</span>
+          <button onClick={() => setUploadError(null)} className="font-mono text-[11px] text-[#E05050] hover:text-white/70">×</button>
+        </div>
+      )}
+      {uploadState === 'done' && uploadFileName && (
+        <div className="shrink-0 px-6 py-1">
+          <span className="font-mono text-[11px] text-teal-300">Uploaded: {uploadFileName}</span>
+        </div>
+      )}
 
       {/* Main row */}
       <div className="flex-1 overflow-hidden flex">
@@ -552,7 +704,7 @@ export default function DataPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {filteredDocs.map((doc) => (
+              {displayDocs.map((doc) => (
                 <DocCard
                   key={docId(doc)}
                   doc={doc}

@@ -18,6 +18,8 @@ public class SearchResponseDTO {
     private List<Hit> sessions;
     private List<Hit> obligations;
     private List<Hit> controls;
+    private List<Hit> launches;
+    private List<Hit> jurisdictions;
 
     @Data
     @Builder

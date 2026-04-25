@@ -28,7 +28,7 @@ public class JurisdictionsOverviewController {
             String regulator
     ) {}
 
-    private static final List<Jurisdiction> CATALOG = List.of(
+    public static final List<Jurisdiction> CATALOG = List.of(
         new Jurisdiction("NLD", "Netherlands", "🇳🇱", "active", "Full Banking License", "De Nederlandsche Bank (DNB)"),
         new Jurisdiction("DEU", "Germany", "🇩🇪", "active", "EU Passport (DNB)", "BaFin"),
         new Jurisdiction("FRA", "France", "🇫🇷", "active", "EU Passport (DNB)", "ACPR"),

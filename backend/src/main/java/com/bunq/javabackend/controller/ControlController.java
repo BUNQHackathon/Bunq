@@ -5,6 +5,7 @@ import com.bunq.javabackend.dto.response.ControlResponseDTO;
 import com.bunq.javabackend.service.ControlService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,5 +30,14 @@ public class ControlController {
     @GetMapping("/sessions/{id}/controls")
     public ResponseEntity<List<ControlResponseDTO>> list(@PathVariable String id) {
         return ResponseEntity.ok(controlService.list(id));
+    }
+
+    @GetMapping("/controls/{id}")
+    public ResponseEntity<ControlResponseDTO> getById(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(controlService.get(id));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }

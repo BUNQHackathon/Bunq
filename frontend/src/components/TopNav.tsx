@@ -3,8 +3,9 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   IconAsk,
   IconFolder,
-  IconFolders,
+  IconHelp,
   IconClose,
+  IconFolders,
 } from './icons';
 
 const NAV_SHORTCUTS: { key: '1' | '2' | '3' | '4'; path: string }[] = [
@@ -156,11 +157,6 @@ export default function TopNav() {
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
         </nav>
 
-        {/* Right */}
-        <div className="topnav__right">
-          <HeaderSearch />
-        </div>
-
         {/* Hamburger (mobile only) */}
         <button
           type="button"
@@ -199,11 +195,10 @@ export default function TopNav() {
           <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" shortcut="2" modKey={modKey} />
           <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="4" modKey={modKey} />
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
-        </nav>
+        </nav >
         <div className="drawer__search">
-          <HeaderSearch fullWidth />
         </div>
-      </div>
+      </div >
     </>
   );
 }

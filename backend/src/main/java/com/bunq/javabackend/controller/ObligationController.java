@@ -31,4 +31,13 @@ public class ObligationController {
     public ResponseEntity<List<ObligationResponseDTO>> list(@PathVariable String id) {
         return ResponseEntity.ok(obligationService.list(id));
     }
+
+    @GetMapping("/obligations/{id}")
+    public ResponseEntity<ObligationResponseDTO> getById(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(obligationService.get(id));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
 }
