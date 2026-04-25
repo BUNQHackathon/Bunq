@@ -28,6 +28,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 import httpx
 import yaml
@@ -176,6 +177,34 @@ if not _esma_logger.handlers:
     _fh_esma = logging.FileHandler(LOGS_DIR / "esma.log", encoding="utf-8")
     _fh_esma.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
     _esma_logger.addHandler(_fh_esma)
+
+# ---------------------------------------------------------------------------
+# Irish Statute Book (national/ireland/primary)
+# ---------------------------------------------------------------------------
+ISB_BASE = "https://www.irishstatutebook.ie"
+LRC_REVISED_BASE = "https://revisedacts.lawreform.ie"
+DOCS_IE_PRIMARY = BASE_DIR / "docs" / "national" / "ireland" / "primary"
+DOCS_IE_CBI = BASE_DIR / "docs" / "national" / "ireland" / "guidance" / "cbi"
+DOCS_IE_DPC = BASE_DIR / "docs" / "national" / "ireland" / "guidance" / "dpc"
+
+_isb_logger = logging.getLogger("isb_crawler")
+_isb_logger.setLevel(logging.INFO)
+if not _isb_logger.handlers:
+    _fh_isb = logging.FileHandler(LOGS_DIR / "irishstatutebook.log", encoding="utf-8")
+    _fh_isb.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    _isb_logger.addHandler(_fh_isb)
+
+# ---------------------------------------------------------------------------
+# Central Bank of Ireland (national/ireland/guidance/cbi)
+# ---------------------------------------------------------------------------
+CBI_BASE = "https://www.centralbank.ie"
+
+_cbi_logger = logging.getLogger("cbi_crawler")
+_cbi_logger.setLevel(logging.INFO)
+if not _cbi_logger.handlers:
+    _fh_cbi = logging.FileHandler(LOGS_DIR / "cbi.log", encoding="utf-8")
+    _fh_cbi.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    _cbi_logger.addHandler(_fh_cbi)
 
 # ---------------------------------------------------------------------------
 # Rate limiter
@@ -2144,6 +2173,367 @@ def download_fatf(index: dict[str, dict]) -> tuple[int, int, int]:
 
 
 # ---------------------------------------------------------------------------
+# Irish Statute Book crawler
+# ---------------------------------------------------------------------------
+def _isb_candidate_urls(entry: dict) -> list[tuple[str, str, str]]:
+    """Return [(url, expected_kind, variant_label)] in fallback order.
+    For Acts with prefer_revised=true, try the LRC revised PDF first; then
+    the original irishstatutebook.ie PDF; then the print HTML."""
+    kind = entry["kind"]
+    year = int(entry["year"])
+    number = int(entry["number"])
+    n_padded = f"{number:04d}"
+    isb_pdf = f"{ISB_BASE}/pdf/{year}/en.{kind}.{year}.{n_padded}.pdf"
+    enacted_or_made = "enacted" if kind == "act" else "made"
+    isb_html = f"{ISB_BASE}/eli/{year}/{kind}/{number}/{enacted_or_made}/en/print.html"
+    candidates: list[tuple[str, str, str]] = []
+    if kind == "act" and entry.get("prefer_revised"):
+        lrc_pdf = f"{LRC_REVISED_BASE}/eli/{year}/act/{number}/revised/en/pdf"
+        candidates.append((lrc_pdf, "pdf", "revised"))
+    candidates.append((isb_pdf, "pdf", "original"))
+    candidates.append((isb_html, "html", "original"))
+    return candidates
+
+
+def download_irishstatutebook(entries: list[dict], index: dict[str, dict]) -> tuple[int, int, int]:
+    """Download Irish Acts and Statutory Instruments. Source: irishstatutebook.ie
+    plus revised PDFs from revisedacts.lawreform.ie for consolidated Acts."""
+    DOCS_IE_PRIMARY.mkdir(parents=True, exist_ok=True)
+    new_count = unchanged = failed = 0
+
+    _isb_logger.info("=== Irish Statute Book crawl started ===")
+    console.rule("[bold]Irish Statute Book[/bold]")
+
+    with httpx.Client(
+        headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=120.0
+    ) as client:
+        for entry in entries:
+            doc_id = entry["id"]
+            kind = entry["kind"]
+            short = entry["short_name"]
+            title = entry["title"]
+            year = entry["year"]
+            doc_type = "act" if kind == "act" else "statutory_instrument"
+
+            # Try candidate URLs in fallback order via HEAD probe
+            chosen_url = chosen_ext = chosen_variant = None
+            for url, expected_kind, variant in _isb_candidate_urls(entry):
+                try:
+                    _throttle(httpx.URL(url).host)
+                    r = client.head(url, timeout=30.0)
+                    if r.status_code != 200:
+                        continue
+                    ct = r.headers.get("content-type", "").lower()
+                    if expected_kind == "pdf" and "pdf" not in ct:
+                        continue
+                    if expected_kind == "html" and "html" not in ct:
+                        continue
+                    chosen_url, chosen_ext, chosen_variant = url, expected_kind, variant
+                    break
+                except Exception as ex:
+                    _isb_logger.warning(f"probe error {url}: {ex}")
+                    continue
+
+            now_iso = datetime.now(timezone.utc).isoformat()
+
+            if not chosen_url:
+                _isb_logger.error(f"FAILED {doc_id}: no candidate URL responded 200")
+                console.print(f"[red]FAILED[/red] {doc_id}: no working URL")
+                row = {
+                    "id": doc_id, "source": "irishstatutebook", "short_name": short,
+                    "title": title, "doc_type": doc_type,
+                    "url": "", "published_date": str(year), "local_path": "",
+                    "sha256": "", "downloaded_at": now_iso, "status": "failed",
+                }
+                index[doc_id] = row
+                upsert_index_row(row)
+                failed += 1
+                continue
+
+            local_path = DOCS_IE_PRIMARY / f"{doc_id}_{short}.{chosen_ext}"
+
+            # Idempotency: existing file with matching index sha256 → unchanged
+            if local_path.exists() and doc_id in index:
+                existing_sha = sha256_of(local_path)
+                if index[doc_id].get("sha256") == existing_sha:
+                    _isb_logger.info(f"unchanged: {doc_id}")
+                    index[doc_id] = dict(index[doc_id], status="unchanged")
+                    upsert_index_row(index[doc_id])
+                    unchanged += 1
+                    continue
+
+            try:
+                r = _get(client, chosen_url)
+                r.raise_for_status()
+                local_path.write_bytes(r.content)
+                sha = sha256_of(local_path)
+                row = {
+                    "id": doc_id,
+                    "source": "irishstatutebook",
+                    "short_name": short,
+                    "title": title,
+                    "doc_type": doc_type,
+                    "url": chosen_url,
+                    "published_date": str(year),
+                    "local_path": str(local_path.relative_to(BASE_DIR)),
+                    "sha256": sha,
+                    "downloaded_at": now_iso,
+                    "status": "ok",
+                }
+                index[doc_id] = row
+                upsert_index_row(row)
+                _isb_logger.info(
+                    f"ok: {doc_id} ({chosen_variant} {chosen_ext}) {chosen_url} ({len(r.content)} bytes)"
+                )
+                console.print(
+                    f"[green]ok[/green] {doc_id}  [dim]{chosen_variant} {chosen_ext} ({len(r.content):,} bytes)[/dim]"
+                )
+                new_count += 1
+            except Exception as ex:
+                _isb_logger.error(f"FAILED {doc_id}: {ex}")
+                console.print(f"[red]FAILED[/red] {doc_id}: {ex}")
+                row = {
+                    "id": doc_id, "source": "irishstatutebook", "short_name": short,
+                    "title": title, "doc_type": doc_type,
+                    "url": chosen_url, "published_date": str(year), "local_path": "",
+                    "sha256": "", "downloaded_at": now_iso, "status": "failed",
+                }
+                index[doc_id] = row
+                upsert_index_row(row)
+                failed += 1
+
+    _isb_logger.info(
+        f"=== Irish Statute Book crawl finished — new={new_count} unchanged={unchanged} failed={failed} ==="
+    )
+    return new_count, unchanged, failed
+
+
+# ---------------------------------------------------------------------------
+# Central Bank of Ireland crawler
+# ---------------------------------------------------------------------------
+def _cbi_slug_from_pdf_url(url: str) -> str:
+    """URL → short slug derived from the PDF's filename basename."""
+    path = urlparse(url).path
+    fname = path.rsplit("/", 1)[-1]
+    if fname.lower().endswith(".pdf"):
+        fname = fname[:-4]
+    slug = re.sub(r"[^a-z0-9]+", "_", fname.lower()).strip("_")[:60]
+    return slug or "doc"
+
+
+def _cbi_collect_pdf_links(client: httpx.Client, page_url: str) -> list[dict]:
+    """Fetch a CBI index page and return [{url, title}] for every PDF link found."""
+    try:
+        r = _get(client, page_url)
+        r.raise_for_status()
+    except Exception as ex:
+        _cbi_logger.warning(f"index page failed {page_url}: {ex}")
+        return []
+    soup = BeautifulSoup(r.text, "lxml")
+    out: list[dict] = []
+    seen_local: set[str] = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if ".pdf" not in href.lower():
+            continue
+        abs_url = urljoin(page_url, href).split("#")[0]
+        if "centralbank.ie" not in urlparse(abs_url).netloc:
+            continue
+        if abs_url in seen_local:
+            continue
+        seen_local.add(abs_url)
+        text = a.get_text(strip=True)[:200] or ""
+        out.append({"url": abs_url, "title": text})
+    return out
+
+
+def _cbi_collect_hub_with_subpages(
+    client: httpx.Client, hub_url: str, path_prefix: str
+) -> list[dict]:
+    """Walk a hub one level deep within `path_prefix`. Returns deduped PDF links
+    from the hub itself and from every in-section subpage."""
+    docs: list[dict] = []
+    seen_urls: set[str] = set()
+
+    # Pull the hub HTML once so we can extract both PDFs and subpage links.
+    try:
+        r = _get(client, hub_url)
+        r.raise_for_status()
+    except Exception as ex:
+        _cbi_logger.warning(f"hub failed {hub_url}: {ex}")
+        return docs
+
+    soup = BeautifulSoup(r.text, "lxml")
+    subpages: list[str] = []
+    seen_subs: set[str] = set()
+    for a in soup.find_all("a", href=True):
+        abs_url = urljoin(hub_url, a["href"]).split("#")[0]
+        p = urlparse(abs_url)
+        if "centralbank.ie" not in p.netloc:
+            continue
+        if ".pdf" in abs_url.lower():
+            if abs_url not in seen_urls:
+                seen_urls.add(abs_url)
+                docs.append({"url": abs_url, "title": a.get_text(strip=True)[:200]})
+            continue
+        if not p.path.startswith(path_prefix):
+            continue
+        if abs_url == hub_url:
+            continue
+        if abs_url in seen_subs:
+            continue
+        seen_subs.add(abs_url)
+        subpages.append(abs_url)
+
+    _cbi_logger.info(
+        f"hub {hub_url} -> {len(docs)} top-level PDFs, {len(subpages)} subpages"
+    )
+
+    for sub_url in subpages:
+        sub_pdfs = _cbi_collect_pdf_links(client, sub_url)
+        added = 0
+        for d in sub_pdfs:
+            if d["url"] not in seen_urls:
+                seen_urls.add(d["url"])
+                docs.append(d)
+                added += 1
+        _cbi_logger.info(f"  subpage {sub_url} -> {len(sub_pdfs)} PDFs ({added} new)")
+
+    return docs
+
+
+def download_cbi(cbi_cfg: dict, index: dict[str, dict]) -> tuple[int, int, int]:
+    """Crawl CBI index pages, dedupe PDF links, download each PDF."""
+    DOCS_IE_CBI.mkdir(parents=True, exist_ok=True)
+    new_count = unchanged = failed = 0
+
+    _cbi_logger.info("=== CBI crawl started ===")
+    console.rule("[bold]Central Bank of Ireland[/bold]")
+
+    with httpx.Client(
+        headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=120.0
+    ) as client:
+        # Phase 1: collect unique PDF URLs from all index pages + direct list
+        seen_urls: set[str] = set()
+        all_docs: list[dict] = []
+
+        index_pages = cbi_cfg.get("index_pages") or []
+        for page_url in index_pages:
+            links = _cbi_collect_pdf_links(client, page_url)
+            _cbi_logger.info(f"index page {page_url} -> {len(links)} PDFs")
+            console.print(f"[dim]index[/dim] {page_url} -> {len(links)} PDFs")
+            for d in links:
+                if d["url"] not in seen_urls:
+                    seen_urls.add(d["url"])
+                    all_docs.append(d)
+
+        for direct_url in (cbi_cfg.get("direct_pdfs") or []):
+            if direct_url not in seen_urls:
+                seen_urls.add(direct_url)
+                all_docs.append({"url": direct_url, "title": ""})
+
+        for hub_entry in (cbi_cfg.get("subpage_hubs") or []):
+            hub_url = hub_entry["hub"]
+            prefix = hub_entry["path_prefix"]
+            sub_docs = _cbi_collect_hub_with_subpages(client, hub_url, prefix)
+            new_in_hub = 0
+            for d in sub_docs:
+                if d["url"] not in seen_urls:
+                    seen_urls.add(d["url"])
+                    all_docs.append(d)
+                    new_in_hub += 1
+            _cbi_logger.info(
+                f"hub total {hub_url}: {len(sub_docs)} PDFs found ({new_in_hub} new vs prior pages)"
+            )
+            console.print(
+                f"[dim]hub[/dim] {hub_url} -> {len(sub_docs)} PDFs ({new_in_hub} new)"
+            )
+
+        _cbi_logger.info(f"total unique PDFs to attempt: {len(all_docs)}")
+        console.print(f"[bold]CBI: {len(all_docs)} unique PDFs to fetch[/bold]")
+
+        # Phase 2: rebuild slug -> url claims from the index. Idempotency
+        # requires that the same URL re-claims its prior slug on re-run, so we
+        # track the URL each slug was claimed for, not just the bare slug.
+        slug_to_url: dict[str, str] = {}
+        for r_idx in index.values():
+            if r_idx.get("source") == "cbi":
+                s = r_idx.get("short_name", "")
+                u = r_idx.get("url", "")
+                if s:
+                    slug_to_url[s] = u
+
+        # Phase 3: per-doc download
+        for d in all_docs:
+            url = d["url"]
+            base_slug = _cbi_slug_from_pdf_url(url)
+            slug = base_slug
+            counter = 1
+            # Only bump suffix when the slug is claimed for a *different* URL
+            while slug in slug_to_url and slug_to_url[slug] != url:
+                slug = f"{base_slug}_{counter}"
+                counter += 1
+            slug_to_url[slug] = url
+            doc_id = f"cbi:{slug}"
+            local_path = DOCS_IE_CBI / f"cbi_{slug}.pdf"
+            now_iso = datetime.now(timezone.utc).isoformat()
+
+            # Idempotency
+            if local_path.exists() and doc_id in index:
+                existing_sha = sha256_of(local_path)
+                if index[doc_id].get("sha256") == existing_sha:
+                    _cbi_logger.info(f"unchanged: {slug}")
+                    index[doc_id] = dict(index[doc_id], status="unchanged")
+                    upsert_index_row(index[doc_id])
+                    unchanged += 1
+                    continue
+
+            try:
+                r = _get(client, url)
+                r.raise_for_status()
+                content = r.content
+                if not content.startswith(b"%PDF"):
+                    raise ValueError(f"Not a PDF (first bytes: {content[:20]!r})")
+                local_path.write_bytes(content)
+                sha = sha256_of(local_path)
+                row = {
+                    "id": doc_id,
+                    "source": "cbi",
+                    "short_name": slug,
+                    "title": d.get("title") or slug.replace("_", " "),
+                    "doc_type": "guidance",
+                    "url": url,
+                    "published_date": "",
+                    "local_path": str(local_path.relative_to(BASE_DIR)),
+                    "sha256": sha,
+                    "downloaded_at": now_iso,
+                    "status": "ok",
+                }
+                index[doc_id] = row
+                upsert_index_row(row)
+                _cbi_logger.info(f"ok: cbi_{slug}.pdf  {url}  ({len(content)} bytes)")
+                console.print(f"[green]ok[/green] cbi_{slug}.pdf  [dim]({len(content):,} bytes)[/dim]")
+                new_count += 1
+            except Exception as ex:
+                _cbi_logger.error(f"FAILED cbi_{slug}: {ex}  url={url}")
+                console.print(f"[red]FAILED[/red] cbi_{slug}: {ex}")
+                row = {
+                    "id": doc_id, "source": "cbi", "short_name": slug,
+                    "title": d.get("title", ""), "doc_type": "guidance",
+                    "url": url, "published_date": "", "local_path": "",
+                    "sha256": "", "downloaded_at": now_iso, "status": "failed",
+                }
+                index[doc_id] = row
+                upsert_index_row(row)
+                failed += 1
+
+    _cbi_logger.info(
+        f"=== CBI crawl finished — new={new_count} unchanged={unchanged} failed={failed} ==="
+    )
+    return new_count, unchanged, failed
+
+
+# ---------------------------------------------------------------------------
 # Dispatcher
 # ---------------------------------------------------------------------------
 def run(source_filter: str | None) -> None:
@@ -2187,6 +2577,24 @@ def run(source_filter: str | None) -> None:
         total_unchanged += u
         total_failed += f
 
+    if sources_to_run in ("all", "ireland", "irishstatutebook"):
+        ireland_primary = (
+            config.get("national", {}).get("ireland", {}).get("primary", [])
+        )
+        n, u, f = download_irishstatutebook(ireland_primary, index)
+        total_new += n
+        total_unchanged += u
+        total_failed += f
+
+    if sources_to_run in ("all", "ireland", "cbi"):
+        cbi_cfg = (
+            config.get("national", {}).get("ireland", {}).get("cbi", {})
+        )
+        n, u, f = download_cbi(cbi_cfg, index)
+        total_new += n
+        total_unchanged += u
+        total_failed += f
+
     save_index(index)
 
     console.rule()
@@ -2205,7 +2613,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Download EU regulatory documents.")
     parser.add_argument(
         "--source",
-        choices=["eurlex", "eba", "ecb", "esma", "fatf"],
+        choices=["eurlex", "eba", "ecb", "esma", "fatf", "irishstatutebook", "cbi", "ireland"],
         default=None,
         help="Download only this source (default: all)",
     )
