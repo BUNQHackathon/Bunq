@@ -2,6 +2,7 @@ package com.bunq.javabackend.service;
 
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
 import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
+import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
@@ -51,6 +52,7 @@ public class LaunchService {
     private final AutoDocService autoDocService;
     private final BedrockService bedrockService;
     private final ObjectMapper objectMapper;
+    private final EvidenceService evidenceService;
 
     public Launch createLaunch(CreateLaunchRequestDTO req) {
         String now = Instant.now().toString();
@@ -280,6 +282,18 @@ public class LaunchService {
         return failed.stream()
                 .map(r -> runJurisdiction(launchId, r.getJurisdictionCode()))
                 .toList();
+    }
+
+    public GraphDAG getComplianceMap(String launchId, String code) {
+        var runOpt = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code);
+        if (runOpt.isEmpty()) {
+            return GraphDAG.builder().nodes(List.of()).edges(List.of()).build();
+        }
+        String sessionId = runOpt.get().getCurrentSessionId();
+        if (sessionId == null || sessionId.isBlank()) {
+            return GraphDAG.builder().nodes(List.of()).edges(List.of()).build();
+        }
+        return evidenceService.getComplianceMap(sessionId);
     }
 
     public LaunchSummaryDTO toSummaryWithCount(Launch launch) {

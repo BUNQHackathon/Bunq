@@ -122,14 +122,8 @@ public class LaunchController {
         return sseEmitterService.register(sessionId);
     }
 
-    @GetMapping("/{id}/jurisdictions/{code}/compliance-map")
-    public ResponseEntity<GraphDAG> getComplianceMap(@PathVariable String id, @PathVariable String code) {
-        var run = jurisdictionRunRepository.findByLaunchIdAndCode(id, code)
-                .orElseThrow(() -> new NotFoundException(
-                        "JurisdictionRun not found: launch=" + id + " code=" + code));
-        if (run.getCurrentSessionId() == null) {
-            throw new IllegalStateException("Analysis in progress — compliance map not ready");
-        }
-        return ResponseEntity.ok(sidecarClient.getComplianceMap(run.getCurrentSessionId()));
+    @GetMapping("/{launchId}/jurisdictions/{code}/compliance-map")
+    public ResponseEntity<GraphDAG> getComplianceMap(@PathVariable String launchId, @PathVariable String code) {
+        return ResponseEntity.ok(launchService.getComplianceMap(launchId, code));
     }
 }

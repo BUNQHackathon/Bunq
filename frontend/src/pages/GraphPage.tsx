@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
 import { getComplianceMap } from '../api/jurisdictions';
 import { getLaunch, jurisdictionFlag, jurisdictionLabel } from '../api/launch';
@@ -461,6 +461,7 @@ function buildCatKey(type: string): string {
 export default function GraphPage() {
   const { code, id } = useParams<{ code?: string; id?: string }>();
   const isLive = Boolean(code && id);
+  const navigate = useNavigate();
 
   const [nodes, setNodes] = useState<GraphNode[]>(isLive ? [] : MOCK_NODES);
   const [links, setLinks] = useState<GraphLink[]>(isLive ? [] : MOCK_LINKS);
@@ -638,6 +639,26 @@ export default function GraphPage() {
             }}
           >
             <span className="mono-label">Loading compliance graph…</span>
+          </div>
+        ) : isLive && nodes.length === 0 && !error ? (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+            }}
+          >
+            <span className="mono-label" style={{ fontSize: 13 }}>Compliance map not yet generated</span>
+            <span className="mono-label mono-label--ink" style={{ fontSize: 11 }}>
+              This jurisdiction hasn't been analysed yet, or the analysis is still running.
+            </span>
+            <button className="btn btn--sm" style={{ marginTop: 8 }} onClick={() => navigate(-1)}>
+              ← Back
+            </button>
           </div>
         ) : (
           <>
