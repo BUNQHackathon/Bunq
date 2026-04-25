@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   IconAsk,
+  IconFolder,
   IconFolders,
-  IconSearch,
   IconClose,
 } from './icons';
+
+const NAV_SHORTCUTS: { key: '1' | '2' | '3'; path: string }[] = [
+  { key: '1', path: '/ask' },
+  { key: '2', path: '/launches' },
+  { key: '3', path: '/jurisdictions' },
+];
+import HeaderSearch from './HeaderSearch';
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
 
 function IconGlobe({ size = 14 }: { size?: number }) {
@@ -46,18 +53,28 @@ interface ViewTabProps {
   to: string;
   icon: React.ReactNode;
   label: string;
+  shortcut?: string;
+  modKey?: string;
 }
 
-function ViewTab({ to, icon, label }: ViewTabProps) {
+function ViewTab({ to, icon, label, shortcut, modKey }: ViewTabProps) {
+  const showTip = shortcut && modKey;
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         'viewtab' + (isActive ? ' viewtab--active' : '')
       }
+      aria-keyshortcuts={showTip ? `${modKey === '⌘' ? 'Meta' : 'Control'}+${shortcut}` : undefined}
     >
       <span className="viewtab__icon">{icon}</span>
       <span>{label}</span>
+      {showTip && (
+        <span className="viewtab__tip" role="tooltip" aria-hidden="true">
+          <span className="viewtab__tip-label">Open</span>
+          <span className="viewtab__tip-keys">{modKey}<span className="viewtab__tip-key">{shortcut}</span></span>
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -78,8 +95,38 @@ function IconHamburger() {
 
 export default function TopNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
+  const isMac = useMemo(
+    () =>
+      typeof navigator !== 'undefined' &&
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform),
+    [],
+  );
+  const modKey = isMac ? '⌘' : 'Ctrl';
 
-  // Close drawer on Escape
+  // Cmd/Ctrl + 1/2/3 → switch top-nav view
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const match = NAV_SHORTCUTS.find((s) => s.key === e.key);
+      if (!match) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      navigate(match.path);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate]);
+
   useEffect(() => {
     if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -104,16 +151,13 @@ export default function TopNav() {
         <nav className="topnav__center">
           <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
           <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
         </nav>
 
         {/* Right */}
         <div className="topnav__right">
-          <button type="button" className="btn btn--ghost btn--sm">
-            <IconSearch size={14} />
-            {' '}Search
-          </button>
-          <div className="kbd">⌘K</div>
+          <HeaderSearch />
         </div>
 
         {/* Hamburger (mobile only) */}
@@ -152,14 +196,11 @@ export default function TopNav() {
         <nav className="drawer__nav" onClick={() => setDrawerOpen(false)}>
           <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
           <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
         </nav>
         <div className="drawer__search">
-          <button type="button" className="btn btn--ghost btn--sm">
-            <IconSearch size={14} />
-            {' '}Search
-          </button>
-          <div className="kbd">⌘K</div>
+          <HeaderSearch />
         </div>
       </div>
     </>
