@@ -303,6 +303,11 @@
   color: oklch(0.74 0.16 25);
 }
 .fjp__row-status--noncompliant .fjp__row-status-dot { background: var(--danger); }
+.fjp__row-status--failed {
+  background: rgba(107, 107, 107, 0.10);
+  color: #9a9a9a;
+}
+.fjp__row-status--failed .fjp__row-status-dot { background: #6b6b6b; }
 
 .fjp__row-summary {
   font-size: 12.5px;
