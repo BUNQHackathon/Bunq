@@ -21,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,10 @@ public class ExtractControlsStage implements Stage {
     private final DocumentRepository documentRepository;
     private final SessionRepository sessionRepository;
     private final ObjectMapper objectMapper;
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.uploads-bucket}")
+    private String uploadsBucket;
 
     @Override
     public PipelineStage stage() {
@@ -107,14 +114,29 @@ public class ExtractControlsStage implements Stage {
                                     "recordsReused", originals.size()));
                 } else {
                     // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
-                    String textToExtract = (doc.getExtractedText() != null && !doc.getExtractedText().isBlank())
-                            ? doc.getExtractedText()
+                    String loaded = loadExtractedText(doc);
+                    String textToExtract = (loaded != null && !loaded.isBlank())
+                            ? loaded
                             : policyText;
                     log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
                     runBedrockExtraction(ctx, textToExtract, doc);
                 }
             }
         });
+    }
+
+    private String loadExtractedText(Document doc) {
+        if (doc.getExtractedText() != null) {
+            return doc.getExtractedText();
+        }
+        if (doc.getExtractionS3Key() != null) {
+            return s3Client.getObjectAsBytes(GetObjectRequest.builder()
+                            .bucket(uploadsBucket)
+                            .key(doc.getExtractionS3Key())
+                            .build())
+                    .asUtf8String();
+        }
+        return null;
     }
 
     private void runBedrockExtraction(PipelineContext ctx, String text, Document doc) {

@@ -286,10 +286,10 @@ export default function WorldMapD3({
       pathGenRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dims]);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 'clamp(280px, 50vh, 520px)' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
       <svg
         ref={svgRef}
         id="wmd3-svg"

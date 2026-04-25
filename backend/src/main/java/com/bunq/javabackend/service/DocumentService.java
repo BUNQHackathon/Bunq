@@ -30,6 +30,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +108,7 @@ public class DocumentService {
                 .build());
 
         Instant now = Instant.now();
+        Set<String> jurisdictions = (req.getJurisdictions() == null || req.getJurisdictions().isEmpty()) ? Set.of("EU") : req.getJurisdictions();
         Document doc = Document.builder()
                 .id(hash)
                 .filename(req.getFilename())
@@ -114,7 +116,7 @@ public class DocumentService {
                 .sizeBytes(sizeBytes)
                 .s3Key(destKey)
                 .kind(req.getKind())
-                .jurisdictions(req.getJurisdictions())
+                .jurisdictions(jurisdictions)
                 .firstSeenAt(now)
                 .lastUsedAt(now)
                 .obligationsExtracted(false)
