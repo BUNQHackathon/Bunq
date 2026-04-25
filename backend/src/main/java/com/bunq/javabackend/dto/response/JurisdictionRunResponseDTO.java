@@ -28,4 +28,6 @@ public class JurisdictionRunResponseDTO {
     private List<String> blockers;
     private boolean proofPackAvailable;
     private Integer regulationsCovered;
+    private Integer obligationsCount;
+    private Integer controlsCount;
 }

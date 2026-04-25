@@ -21,6 +21,7 @@ const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 
 function overviewToColor(verdict: Verdict): string {
   if (verdict === 'PENDING') return '#1E1E1E';
+  if (verdict === 'UNKNOWN') return '#3a3a3a';
   return '#FF7819';
 }
 
