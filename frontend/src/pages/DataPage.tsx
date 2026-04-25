@@ -331,6 +331,7 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<'idle' | 'hashing' | 'uploading' | 'finalizing' | 'done' | 'error'>('idle');
+  const [refreshToken, setRefreshToken] = useState(0);
   const [uploadFileName, setUploadFileName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -354,6 +355,7 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
       setUploadState('finalizing');
       await finalizeDocument({ incomingKey, filename: file.name, contentType, kind });
       setUploadState('done');
+      setRefreshToken((n) => n + 1);
     } catch (err) {
       setUploadState('error');
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -375,7 +377,7 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, kindFilter]);
+  }, [source, kindFilter, refreshToken]);
 
 const tree = useMemo(() => buildTree(docs), [docs]);
 
