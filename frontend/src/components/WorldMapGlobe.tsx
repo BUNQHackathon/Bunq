@@ -182,10 +182,13 @@ export default function WorldMapGlobe({
 
       globeRef.current = globe;
 
-      // Slight vertical squish so the sphere reads more like a planet seen
-      // through atmosphere than a perfect ball.
-      (globe as unknown as { scale: { set: (x: number, y: number, z: number) => void } })
-        .scale.set(1, 0.93, 1);
+      // Slight vertical squish. globe.gl returns a controller wrapper, not a
+      // THREE.Group, so scaling it has no effect. Scale the scene root
+      // instead — the ThreeGlobe and atmosphere mesh are both children of it.
+      const scene = (globe as unknown as {
+        scene?: () => { scale: { set: (x: number, y: number, z: number) => void } };
+      }).scene?.();
+      scene?.scale.set(1, 0.93, 1);
 
       // Auto-rotate until user interacts
       const controls = (globe as unknown as {
