@@ -216,7 +216,7 @@ export default function AskPage() {
         content: m.content,
       }));
       setMessages(msgs);
-    }).catch(() => {});
+    }).catch(() => { });
     return () => { cancelled = true; };
   }, [activeChatId]);
 
@@ -369,17 +369,6 @@ export default function AskPage() {
               disabled={loading}
             />
           </div>
-
-          {showHero && !isAuthenticated && (
-            <div className="mt-6 flex justify-center">
-              <button
-                className="btn btn--orange"
-                onClick={() => showGate(CHAT_GATE)}
-              >
-                Sign in to chat
-              </button>
-            </div>
-          )}
 
           {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
 

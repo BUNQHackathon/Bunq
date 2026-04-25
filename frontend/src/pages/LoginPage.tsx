@@ -55,6 +55,25 @@ export default function LoginPage() {
         borderRadius: 14,
         padding: '32px 28px',
       }}>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            margin: '0 0 16px',
+            color: 'var(--ink-2)',
+            fontFamily: 'var(--ui)',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          ← Back
+        </button>
         <h1 style={{
           margin: '0 0 4px',
           fontSize: 20,

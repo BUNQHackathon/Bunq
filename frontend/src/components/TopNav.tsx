@@ -164,7 +164,7 @@ export default function TopNav() {
             <button
               type="button"
               className="btn btn--ghost btn--sm"
-              onClick={() => { logout(); navigate('/login'); }}
+              onClick={() => { logout(); navigate('/'); }}
             >
               Sign out
             </button>
