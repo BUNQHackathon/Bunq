@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type DocumentSummary } from '../api/portal';
 import { listLibraryDocuments, type LibraryDocument, presignDocument, putToPresignedUrl, finalizeDocument, computeSha256Base64, type DocumentKind } from '../api/session';
-import { chats, type Chat } from '../data/portal';
+import { getAllDocJurisdictions, setDocJurisdiction } from '../data/docJurisdiction';
+import { JURISDICTION_CATALOG, jurisdictionFlag, jurisdictionLabel } from '../api/launch';
 import {
   IconFilter,
   IconChevron,
@@ -86,25 +87,61 @@ interface FolderNode {
 }
 
 
-function buildLibraryTree(docs: LibraryDocument[]): FolderNode[] {
-  const byKind = new Map<string, LibraryDocument[]>();
+const UNASSIGNED_CODE = '__none__';
+
+function buildLibraryTree(docs: LibraryDocument[], assignments: Record<string, string>): FolderNode[] {
+  const byJur = new Map<string, LibraryDocument[]>();
   for (const d of docs) {
-    const kind = d.kind || 'other';
-    if (!byKind.has(kind)) byKind.set(kind, []);
-    byKind.get(kind)!.push(d);
+    const fromServer = (d.jurisdictions ?? []).filter((c) => typeof c === 'string' && c.length > 0);
+    const codes = fromServer.length > 0
+      ? fromServer
+      : (assignments[d.id] ? [assignments[d.id]] : [UNASSIGNED_CODE]);
+    for (const code of codes) {
+      if (!byJur.has(code)) byJur.set(code, []);
+      byJur.get(code)!.push(d);
+    }
   }
-  return [...byKind.entries()].map(([kind, items]) => ({
-    id: `kind-${kind}`,
-    name: kind.charAt(0).toUpperCase() + kind.slice(1),
-    emoji: '',
-    docIds: items.map((d) => d.id),
-    level: 'jurisdiction' as const,
-    children: [],
-  }));
+
+  const knownOrdered = JURISDICTION_CATALOG.map((j) => j.code).filter((c) => byJur.has(c));
+  const knownSet = new Set(knownOrdered);
+  const otherCodes = [...byJur.keys()]
+    .filter((c) => c !== UNASSIGNED_CODE && !knownSet.has(c))
+    .sort();
+  const orderedCodes = [
+    ...knownOrdered,
+    ...otherCodes,
+    ...(byJur.has(UNASSIGNED_CODE) ? [UNASSIGNED_CODE] : []),
+  ];
+
+  return orderedCodes.map((code) => {
+    const items = byJur.get(code)!;
+    const byKind = new Map<string, LibraryDocument[]>();
+    for (const d of items) {
+      const kind = d.kind || 'other';
+      if (!byKind.has(kind)) byKind.set(kind, []);
+      byKind.get(kind)!.push(d);
+    }
+    const children: FolderNode[] = [...byKind.entries()].map(([kind, kItems]) => ({
+      id: `jur-${code}-kind-${kind}`,
+      name: kind.charAt(0).toUpperCase() + kind.slice(1),
+      emoji: '',
+      docIds: kItems.map((d) => d.id),
+      level: 'category' as const,
+      children: [],
+    }));
+    return {
+      id: `jur-${code}`,
+      name: code === UNASSIGNED_CODE ? 'Unassigned' : jurisdictionLabel(code),
+      emoji: code === UNASSIGNED_CODE ? '🏳️' : jurisdictionFlag(code),
+      docIds: items.map((d) => d.id),
+      level: 'jurisdiction' as const,
+      children,
+    };
+  });
 }
 
-function buildTree(docs: UnifiedDoc[]): FolderNode[] {
-  return buildLibraryTree(docs.filter(isLibrary));
+function buildTree(docs: UnifiedDoc[], assignments: Record<string, string>): FolderNode[] {
+  return buildLibraryTree(docs.filter(isLibrary), assignments);
 }
 
 function collectDocIds(node: FolderNode): string[] {
@@ -281,27 +318,6 @@ function DocCard({ doc }: DocCardProps) {
   );
 }
 
-// ─── ChatRow component ────────────────────────────────────────────────────────
-
-interface ChatRowProps {
-  chat: Chat;
-}
-
-function ChatRow({ chat }: ChatRowProps) {
-  return (
-    <div
-      className="px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] cursor-pointer flex flex-col gap-1"
-      onClick={() => { }}
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-[13.5px] text-white/85 font-medium truncate">{chat.title}</span>
-        <span className="font-mono text-[10px] text-white/40 flex-shrink-0">{chat.timestamp}</span>
-      </div>
-      <p className="text-[12px] text-white/55 leading-snug line-clamp-2">{chat.snippet}</p>
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function inferKindAndType(filename: string): { kind: DocumentKind; contentType: string } {
@@ -334,6 +350,10 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const [uploadFileName, setUploadFileName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [jurisdictionMap, setJurisdictionMap] = useState<Record<string, string>>(() => getAllDocJurisdictions());
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingJurisdiction, setPendingJurisdiction] = useState<string>(UNASSIGNED_CODE);
 
   useEffect(() => {
     if (uploadState === 'done') {
@@ -342,7 +362,7 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
     }
   }, [uploadState]);
 
-  async function handleUpload(file: File) {
+  async function handleUpload(file: File, jurisdictionCode?: string) {
     setUploadFileName(file.name);
     setUploadError(null);
     setUploadState('hashing');
@@ -353,7 +373,11 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
       const { incomingKey, uploadUrl } = await presignDocument({ filename: file.name, contentType, sha256 });
       await putToPresignedUrl(uploadUrl, file, contentType, sha256);
       setUploadState('finalizing');
-      await finalizeDocument({ incomingKey, filename: file.name, contentType, kind });
+      const finalized = await finalizeDocument({ incomingKey, filename: file.name, contentType, kind });
+      if (jurisdictionCode && jurisdictionCode !== UNASSIGNED_CODE) {
+        setDocJurisdiction(finalized.document.id, jurisdictionCode);
+        setJurisdictionMap((prev) => ({ ...prev, [finalized.document.id]: jurisdictionCode }));
+      }
       setUploadState('done');
       setRefreshToken((n) => n + 1);
     } catch (err) {
@@ -379,7 +403,7 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, kindFilter, refreshToken]);
 
-const tree = useMemo(() => buildTree(docs), [docs]);
+const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdictionMap]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set<string>());
@@ -486,7 +510,7 @@ const tree = useMemo(() => buildTree(docs), [docs]);
         accept=".pdf,.md,.csv,.txt,.mp3,.wav,.m4a"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleUpload(file);
+          if (file) setPendingFile(file);
           e.target.value = '';
         }}
       />
@@ -501,7 +525,7 @@ const tree = useMemo(() => buildTree(docs), [docs]);
         <div className="flex items-center gap-2">
           <button
             disabled={uploadBusy}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); }}
             className={`flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 font-mono text-[12px] transition-colors ${uploadBusy ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed' : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'}`}
           >
             <IconPlus size={11} />
@@ -645,19 +669,82 @@ const tree = useMemo(() => buildTree(docs), [docs]);
             </div>
           )}
 
-          {/* Recent chats */}
-          <div className="mt-10 pt-6 border-t border-white/[0.06]">
-            <div className="font-mono uppercase text-[11px] text-white/30 tracking-widest mb-4">
-              Recent chats citing this folder
+        </div>
+      </div>
+
+      {uploadModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setUploadModalOpen(false)}
+        >
+          <div
+            className="w-[420px] rounded-xl border border-white/[0.1] bg-prism-panel p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="font-mono uppercase text-[11px] text-white/40 tracking-widest mb-4">
+              Upload document
             </div>
-            <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-              {chats.map((chat) => (
-                <ChatRow key={chat.id} chat={chat} />
-              ))}
+
+            <div className="mb-4">
+              <div className="font-mono text-[11px] text-white/50 mb-2">File</div>
+              {pendingFile ? (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2">
+                  <span className="font-mono text-[12px] text-white/80 truncate">{pendingFile.name}</span>
+                  <button
+                    onClick={() => setPendingFile(null)}
+                    className="font-mono text-[11px] text-white/40 hover:text-white/70"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full rounded-lg border border-dashed border-white/[0.15] bg-white/[0.02] px-3 py-4 font-mono text-[12px] text-white/60 hover:bg-white/[0.04] hover:text-white/80 transition-colors"
+                >
+                  Choose file
+                </button>
+              )}
+            </div>
+
+            <div className="mb-5">
+              <div className="font-mono text-[11px] text-white/50 mb-2">Jurisdiction</div>
+              <select
+                value={pendingJurisdiction}
+                onChange={(e) => setPendingJurisdiction(e.target.value)}
+                className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 font-mono text-[12px] text-white/80 outline-none focus:border-[#FF7819]/60"
+              >
+                <option value={UNASSIGNED_CODE}>Unassigned</option>
+                {JURISDICTION_CATALOG.map((j) => (
+                  <option key={j.code} value={j.code}>{j.flag} {j.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setUploadModalOpen(false)}
+                className="rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04]"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!pendingFile || uploadBusy}
+                onClick={() => {
+                  if (!pendingFile) return;
+                  const file = pendingFile;
+                  const jur = pendingJurisdiction;
+                  setUploadModalOpen(false);
+                  handleUpload(file, jur);
+                }}
+                className={`rounded-full px-3 py-1.5 font-mono text-[12px] transition-colors ${(!pendingFile || uploadBusy) ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed' : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'}`}
+              >
+                Upload
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
