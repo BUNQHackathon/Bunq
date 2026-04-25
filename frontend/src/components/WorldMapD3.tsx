@@ -105,6 +105,15 @@ export default function WorldMapD3({
       );
   }, [selected]);
 
+  // Sync fill colors whenever `data` changes (e.g. when launch detail loads
+  // after the map was already initialised).
+  useEffect(() => {
+    if (!mapSelRef.current) return;
+    mapSelRef.current.attr('fill', (d: GeoFeature) =>
+      data.get(readIso3(d.properties))?.color ?? INACTIVE_FILL,
+    );
+  }, [data]);
+
   // Pan/zoom map to the selected country (e.g. when picked from search)
   useEffect(() => {
     const svgEl = svgRef.current;
