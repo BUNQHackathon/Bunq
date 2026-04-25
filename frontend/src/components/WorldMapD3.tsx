@@ -165,7 +165,7 @@ export default function WorldMapD3({
       // Natural-earth1 world is ~5 units wide, ~2.6 tall at scale 1.
       // Scale by max so we fill the limiting dimension instead of just the width.
       const projScale = Math.max(W / 5.0, H / 2.6);
-      const proj = d3.geoNaturalEarth1().scale(projScale).translate([W / 2, H / 2]).center([5.3, 0]);
+      const proj = d3.geoNaturalEarth1().scale(projScale).translate([W / 2, H / 2]).center([5.3, 35]);
       const path = d3.geoPath().projection(proj);
       pathGenRef.current = path;
 
