@@ -65,98 +65,117 @@ export default function LaunchesPage() {
     return () => { cancelled = true; };
   }, []);
 
+  const GRID_LINE_COLOR = 'rgba(214, 214, 214, 0.13)';
+  const gridOverlayStyle = {
+    position: 'absolute' as const,
+    inset: 0,
+    pointerEvents: 'none' as const,
+    zIndex: 0,
+    backgroundImage:
+      `linear-gradient(${GRID_LINE_COLOR} 1px, transparent 1px),` +
+      `linear-gradient(90deg, ${GRID_LINE_COLOR} 1px, transparent 1px)`,
+    backgroundSize: '44px 44px',
+    WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+    maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+  };
+
   return (
-    <div className="folders" style={{ display: 'block', padding: '40px 60px 80px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <div className="mono-label mono-label--ink" style={{ marginBottom: 10 }}>
-            LAUNCHES · {loading ? '…' : rows.length} ACTIVE
-          </div>
-          <h1 className="serif-display" style={{ fontSize: 56, margin: 0 }}>
-            Product launches<span style={{ color: 'var(--orange)' }}>.</span>
-          </h1>
-        </div>
-        <Link to="/launches/new" className="btn btn--orange">
-          <IconPlus size={14} /> New launch
-        </Link>
-      </div>
-
-      {/* Error state */}
-      {error && (
-        <div
-          style={{
-            background: 'rgba(217,74,74,0.08)',
-            border: '1px solid rgba(217,74,74,0.3)',
-            color: 'var(--danger, #d94a4a)',
-            borderRadius: 8,
-            padding: '14px 20px',
-            marginBottom: 24,
-            fontSize: 13,
-            fontFamily: 'var(--mono)',
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Card grid */}
-      <div className="folders__grid">
-        {/* Loading placeholders */}
-        {loading && placeholderKeys.map((k) => (
-          <div key={k} className="doccard" style={{ opacity: 0.5, animation: 'pulse 1.5s ease-in-out infinite' }}>
-            <div className="doccard__head">
-              <span className="srcrow__dot srcrow__dot--tc" />
-              <span className="mono-label">LOADING</span>
+    <div className="folders" style={{ display: 'block', position: 'relative', minHeight: '100%' }}>
+      <div className="folders__main" style={{ padding: '40px 60px 80px', minHeight: '100%', boxSizing: 'border-box', position: 'relative' }}>
+        <div aria-hidden style={gridOverlayStyle} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div>
+            <div className="mono-label mono-label--ink" style={{ marginBottom: 10 }}>
+              LAUNCHES · {loading ? '…' : rows.length} ACTIVE
             </div>
-            <div className="doccard__title" style={{ width: '60%', height: 18, background: 'var(--line-0)', borderRadius: 4 }} />
-            <div className="doccard__meta" style={{ minHeight: 36 }} />
-            <div className="doccard__foot" />
+            <h1 className="serif-display" style={{ fontSize: 56, margin: 0 }}>
+              Product launches<span style={{ color: 'var(--orange)' }}>.</span>
+            </h1>
           </div>
-        ))}
+          <Link to="/launches/new" className="btn btn--orange-hollow">
+            <IconPlus size={14} /> New launch
+          </Link>
+        </div>
 
-        {/* Empty state */}
-        {!loading && !error && rows.length === 0 && (
-          <div className="doccard" style={{ gridColumn: '1 / -1', textAlign: 'center', cursor: 'default' }}>
-            <div className="doccard__title" style={{ color: 'var(--ink-2)', marginBottom: 16 }}>
-              No launches yet.
-            </div>
-            <Link to="/launches/new" className="btn btn--orange btn--sm">
-              <IconPlus size={12} /> Create your first launch
-            </Link>
+        {/* Error state */}
+        {error && (
+          <div
+            style={{
+              background: 'rgba(217,74,74,0.08)',
+              border: '1px solid rgba(217,74,74,0.3)',
+              color: 'var(--danger, #d94a4a)',
+              borderRadius: 8,
+              padding: '14px 20px',
+              marginBottom: 24,
+              fontSize: 13,
+              fontFamily: 'var(--mono)',
+            }}
+          >
+            {error}
           </div>
         )}
 
-        {/* Launch cards */}
-        {!loading && !error && rows.map(({ launch, jurisdictions }) => {
-          const agg: Verdict | null = launch.aggregateVerdict ?? worstVerdict(jurisdictions);
-          return (
-            <Link
-              key={launch.id}
-              to={`/launches/${launch.id}`}
-              className="doccard"
-              style={{ textDecoration: 'none' }}
-            >
+        {/* Card grid */}
+        <div className="folders__grid">
+          {/* Loading placeholders */}
+          {loading && placeholderKeys.map((k) => (
+            <div key={k} className="doccard" style={{ opacity: 0.5, animation: 'pulse 1.5s ease-in-out infinite' }}>
               <div className="doccard__head">
-                <span className={`srcrow__dot srcrow__dot--${kindDotClass(launch.kind)}`} />
-                <span className="mono-label">{launch.kind ?? 'PRODUCT'}</span>
-                {launch.license && (
-                  <span className="mono-label" style={{ color: 'var(--ink-2)' }}>· {launch.license}</span>
-                )}
+                <span className="srcrow__dot srcrow__dot--tc" />
+                <span className="mono-label">LOADING</span>
               </div>
-              <div className="doccard__title">{launch.name}</div>
-              <div className="doccard__meta" style={{ minHeight: 36 }}>
-                {launch.brief || '—'}
+              <div className="doccard__title" style={{ width: '60%', height: 18, background: 'var(--line-0)', borderRadius: 4 }} />
+              <div className="doccard__meta" style={{ minHeight: 36 }} />
+              <div className="doccard__foot" />
+            </div>
+          ))}
+
+          {/* Empty state */}
+          {!loading && !error && rows.length === 0 && (
+            <div className="doccard" style={{ gridColumn: '1 / -1', textAlign: 'center', cursor: 'default' }}>
+              <div className="doccard__title" style={{ color: 'var(--ink-2)', marginBottom: 16 }}>
+                No launches yet.
               </div>
-              <div className="doccard__foot">
-                {agg && <VerdictPill verdict={agg} showEmoji={false} />}
-                <span className="mono-label" style={{ color: 'var(--ink-2)' }}>
-                  {jurisdictions.length} market{jurisdictions.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+              <Link to="/launches/new" className="btn btn--orange-hollow btn--sm">
+                <IconPlus size={12} /> Create your first launch
+              </Link>
+            </div>
+          )}
+
+          {/* Launch cards */}
+          {!loading && !error && rows.map(({ launch, jurisdictions }) => {
+            const agg: Verdict | null = launch.aggregateVerdict ?? worstVerdict(jurisdictions);
+            return (
+              <Link
+                key={launch.id}
+                to={`/launches/${launch.id}`}
+                className="doccard"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="doccard__head">
+                  <span className={`srcrow__dot srcrow__dot--${kindDotClass(launch.kind)}`} />
+                  <span className="mono-label">{launch.kind ?? 'PRODUCT'}</span>
+                  {launch.license && (
+                    <span className="mono-label" style={{ color: 'var(--ink-2)' }}>· {launch.license}</span>
+                  )}
+                </div>
+                <div className="doccard__title">{launch.name}</div>
+                <div className="doccard__meta" style={{ minHeight: 36 }}>
+                  {launch.brief || '—'}
+                </div>
+                <div className="doccard__foot">
+                  {agg && <VerdictPill verdict={agg} showEmoji={false} />}
+                  <span className="mono-label" style={{ color: 'var(--ink-2)' }}>
+                    {jurisdictions.length} market{jurisdictions.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        </div>
       </div>
     </div>
   );

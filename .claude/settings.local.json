@@ -1,8 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash",
-      "PowerShell"
+      "Bash(git -C /Users/elkopasto/Desktop/code/Bunq status --short)",
+      "Bash(git -C /Users/elkopasto/Desktop/code/Bunq status)",
+      "Bash(git -C /Users/elkopasto/Desktop/code/Bunq diff)",
+      "Bash(git -C /Users/elkopasto/Desktop/code/Bunq add -A)",
+      "Bash(git -C /Users/elkopasto/Desktop/code/Bunq diff --cached --stat -M)",
+      "Bash(git *)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Read(//Users/elkopasto/Desktop/**)",
+      "Bash(unzip -l /Users/elkopasto/Desktop/Bunq-handoff.zip)",
+      "Bash(mkdir -p /tmp/bunq-handoff)",
+      "Bash(unzip -o -q /Users/elkopasto/Desktop/Bunq-handoff.zip -d /tmp/bunq-handoff/)",
+      "Read(//tmp/bunq-handoff/bunq/**)",
+      "Bash(cat)",
+      "Bash(node /tmp/analyze_colors.js)",
+      "Bash(unzip -l \"/Users/elkopasto/Downloads/Bunq-handoff \\(1\\).zip\")",
+      "Bash(unzip -q -o \"/Users/elkopasto/Downloads/Bunq-handoff \\(1\\).zip\" -d /tmp/bunq-handoff)"
     ]
   }
 }

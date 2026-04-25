@@ -162,6 +162,17 @@ html, body {
 }
 .btn--orange:hover { background: var(--orange-hi); border-color: var(--orange-hi); }
 
+.btn--orange-hollow {
+  background: var(--orange-wash);
+  color: var(--orange);
+  border-color: rgba(239, 106, 42, 0.3);
+  font-weight: 600;
+}
+.btn--orange-hollow:hover {
+  background: rgba(239, 106, 42, 0.16);
+  border-color: rgba(239, 106, 42, 0.45);
+}
+
 .btn--ghost { background: transparent; }
 
 .btn--icon {
