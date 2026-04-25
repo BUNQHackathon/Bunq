@@ -7,11 +7,11 @@ import {
   IconClose,
 } from './icons';
 
-const NAV_SHORTCUTS: { key: '1' | '2' | '3' | '4'; path: string }[] = [
-  { key: '1', path: '/ask' },
-  { key: '2', path: '/launches' },
-  { key: '3', path: '/data' },
-  { key: '4', path: '/jurisdictions' },
+const NAV_SHORTCUTS: { key: 'a' | 'l' | 'd' | 'j'; path: string }[] = [
+  { key: 'a', path: '/ask' },
+  { key: 'l', path: '/launches' },
+  { key: 'd', path: '/data' },
+  { key: 'j', path: '/jurisdictions' },
 ];
 import HeaderSearch from './HeaderSearch';
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
@@ -109,7 +109,7 @@ export default function TopNav() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
-      const match = NAV_SHORTCUTS.find((s) => s.key === e.key);
+      const match = NAV_SHORTCUTS.find((s) => s.key === e.key.toLowerCase());
       if (!match) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
@@ -150,10 +150,10 @@ export default function TopNav() {
 
         {/* Center nav */}
         <nav className="topnav__center">
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
-          <ViewTab to="/launches" icon={<IconHelp size={14} />} label="Launches" shortcut="2" modKey={modKey} />
-          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="3" modKey={modKey} />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="4" modKey={modKey} />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="A" modKey={modKey} />
+          <ViewTab to="/launches" icon={<IconHelp size={14} />} label="Launches" shortcut="L" modKey={modKey} />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="D" modKey={modKey} />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="J" modKey={modKey} />
         </nav>
 
         {/* Hamburger (mobile only) */}
@@ -190,10 +190,10 @@ export default function TopNav() {
           </button>
         </div>
         <nav className="drawer__nav" onClick={() => setDrawerOpen(false)}>
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
-          <ViewTab to="/launches" icon={<IconHelp size={14} />} label="Launches" shortcut="2" modKey={modKey} />
-          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="3" modKey={modKey} />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="4" modKey={modKey} />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="A" modKey={modKey} />
+          <ViewTab to="/launches" icon={<IconHelp size={14} />} label="Launches" shortcut="L" modKey={modKey} />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="D" modKey={modKey} />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="J" modKey={modKey} />
         </nav >
         <div className="drawer__search">
         </div>
