@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(aws logs *)",
+      "Bash(MSYS_NO_PATHCONV=1 aws logs tail /ecs/launchlens-backend --region eu-central-1 --since 2h --filter-pattern \"AuthorizationDeniedException\" --format short)",
+      "Bash(MSYS_NO_PATHCONV=1 aws logs tail /ecs/launchlens-backend --region eu-central-1 --since 15m --format short)",
+      "Bash(./terraform.exe validate *)"
+    ]
+  }
+}

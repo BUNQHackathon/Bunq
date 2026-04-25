@@ -75,8 +75,8 @@ resource "aws_iam_role" "task" {
         {
           Effect = "Allow"
           Action = [
-            "bedrock-agent-runtime:Retrieve",
-            "bedrock-agent-runtime:RetrieveAndGenerate"
+            "bedrock:Retrieve",
+            "bedrock:RetrieveAndGenerate"
           ]
           Resource = "arn:aws:bedrock:${var.bedrock_region}:${data.aws_caller_identity.current.account_id}:knowledge-base/*"
         },
