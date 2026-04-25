@@ -157,52 +157,26 @@ export default function TopNav() {
       {/* Left */}
       <div className="topnav__left">
         <Link to="/" className="wordmark">
-          <span className="wordmark__text">prism</span>
+          <span className="wordmark__text">K.V.A.S</span>
           <span className="wordmark__dot">.</span>
         </Link>
 
-        <div className="topnav__ctx">
-          <span className="mono-label">COMPLIANCE /</span>
-          <div ref={jurisRef} className="relative">
-            <button
-              type="button"
-              className="topnav__ctx-country"
-              onClick={() => setJurisOpen((v) => !v)}
-            >
-              <Flag code={currentCode} />
-              <span>{jurisdictionLabel(currentCode)}</span>
-              <IconChevron size={12} />
-            </button>
-            {jurisOpen && (
-              <JurisdictionDropdown
-                currentCode={currentCode}
-                onSelect={(code) => {
-                  setCurrentCode(code);
-                  setJurisOpen(false);
-                }}
-              />
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Center nav */}
       <nav className="topnav__center">
         <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
-        <ViewTab to="/graph" icon={<IconGraph size={14} />} label="Graph" />
         <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
         <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
       </nav>
 
       {/* Right */}
       <div className="topnav__right">
-        <ModeToggle />
         <button type="button" className="btn btn--ghost btn--sm">
           <IconSearch size={14} />
           {' '}Search
         </button>
         <div className="kbd">⌘K</div>
-        <div className="avatar">MK</div>
       </div>
     </header>
   );

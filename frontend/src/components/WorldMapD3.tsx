@@ -121,6 +121,12 @@ export default function WorldMapD3({
       svg.select('#wmd3-graticule-g').selectAll('*').remove();
       svg.select('#wmd3-map-g').selectAll('*').remove();
 
+      // Track pointer-down position to distinguish click from drag/zoom
+      let downX = 0;
+      let downY = 0;
+      let downIso = '';
+      let downSvgTargetId = '';
+
       // Graticule
       const grat = d3.geoGraticule()();
       svg.select<SVGGElement>('#wmd3-graticule-g')
@@ -188,9 +194,17 @@ export default function WorldMapD3({
           if (tip) tip.style.opacity = '0';
           onHoverRef.current?.(null);
         })
-        .on('click', function (e: MouseEvent, d: GeoFeature) {
-          e.stopPropagation();
+        .on('pointerdown', function (e: PointerEvent, d: GeoFeature) {
+          downX = e.clientX;
+          downY = e.clientY;
+          downIso = readIso3(d.properties);
+        })
+        .on('pointerup', function (e: PointerEvent, d: GeoFeature) {
           const iso = readIso3(d.properties);
+          const dx = e.clientX - downX;
+          const dy = e.clientY - downY;
+          if (dx * dx + dy * dy >= 16) return;
+          if (downIso !== iso) return;
           onSelectRef.current?.(iso);
           mapSelRef.current
             ?.attr('stroke', 'rgba(255,255,255,0.1)')
@@ -200,10 +214,25 @@ export default function WorldMapD3({
 
       mapSelRef.current = mapSel as unknown as d3.Selection<SVGPathElement, GeoFeature, SVGGElement, unknown>;
 
-      // Click on ocean deselects
-      svg.on('click.deselect', (e: MouseEvent) => {
+      // Pointer on ocean/empty svg deselects (use pointerdown/up + movement threshold
+      // so zoom/pan drags don't trigger deselect, and so d3-zoom's preventDefault
+      // on mousedown can't swallow the interaction).
+      svg.on('pointerdown.deselect', (e: PointerEvent) => {
         const target = e.target as Element;
-        if (target.id === 'wmd3-svg' || target.id === 'wmd3-ocean-bg') {
+        downSvgTargetId = target.id || '';
+        downX = e.clientX;
+        downY = e.clientY;
+      });
+      svg.on('pointerup.deselect', (e: PointerEvent) => {
+        const target = e.target as Element;
+        const id = target.id || '';
+        const dx = e.clientX - downX;
+        const dy = e.clientY - downY;
+        if (dx * dx + dy * dy >= 16) return;
+        if (
+          (id === 'wmd3-svg' || id === 'wmd3-ocean-bg') &&
+          (downSvgTargetId === 'wmd3-svg' || downSvgTargetId === 'wmd3-ocean-bg')
+        ) {
           onSelectRef.current?.('');
         }
       });
@@ -229,7 +258,8 @@ export default function WorldMapD3({
       if (svgRef.current) {
         const svg = d3.select(svgRef.current);
         svg.on('.zoom', null);
-        svg.on('click.deselect', null);
+        svg.on('pointerdown.deselect', null);
+        svg.on('pointerup.deselect', null);
       }
       mapSelRef.current = null;
       zoomRef.current = null;

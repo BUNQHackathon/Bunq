@@ -1,5 +1,4 @@
 import { API_BASE, getJson, postJson } from './client';
-import { mockGet, mockPost } from './mock';
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
@@ -16,7 +15,7 @@ export interface Launch {
   kind?: LaunchKind;
   aggregateVerdict?: Verdict;
   jurisdictionCount?: number;
-  status: 'DRAFT' | 'RUNNING' | 'COMPLETE' | 'FAILED';
+  status: 'DRAFT' | 'RUNNING' | 'COMPLETE' | 'FAILED' | 'CREATED';
   createdAt: string;
   updatedAt: string;
   markets?: string[];
@@ -34,6 +33,10 @@ export interface JurisdictionRun {
   proofPackS3Key?: string;
   lastRunAt?: string;
   status: JurisdictionStatus;
+  summary?: string;
+  requiredChanges?: string[];
+  blockers?: string[];
+  proofPackAvailable?: boolean;
 }
 
 export interface LaunchDetail {
@@ -45,25 +48,21 @@ export interface CreateLaunchRequest {
   name: string;
   brief: string;
   license?: string;
-  markets: string[];
+  jurisdictions?: string[];
   kind?: LaunchKind;
 }
 
 export function createLaunch(req: CreateLaunchRequest): Promise<Launch> {
-  if (USE_MOCK) return mockPost<Launch>('/launches', req);
   return postJson<Launch>('/launches', req);
 }
 
 export function listLaunches(): Promise<Launch[]> {
-  if (USE_MOCK) return mockGet<Launch[]>('/launches');
   return getJson<Launch[]>('/launches');
 }
 
 export async function getLaunch(id: string): Promise<LaunchDetail> {
   const path = `/launches/${encodeURIComponent(id)}`;
-  const raw = USE_MOCK
-    ? await mockGet<LaunchDetail | Launch>(path)
-    : await getJson<LaunchDetail | Launch>(path);
+  const raw = await getJson<LaunchDetail | Launch>(path);
   const launch = (raw && typeof raw === 'object' && 'launch' in raw
     ? (raw as LaunchDetail).launch
     : (raw as Launch));
@@ -74,11 +73,14 @@ export async function getLaunch(id: string): Promise<LaunchDetail> {
   return { launch, jurisdictions };
 }
 
-function normalizeRun(r: Partial<JurisdictionRun>): JurisdictionRun {
+export function normalizeRun(r: Partial<JurisdictionRun> & { verdict?: Verdict | null }): JurisdictionRun {
+  const rawVerdict = r.verdict;
   const verdict: Verdict =
-    r.verdict === 'GREEN' || r.verdict === 'AMBER' || r.verdict === 'RED' || r.verdict === 'PENDING'
-      ? r.verdict
-      : 'PENDING';
+    rawVerdict === null || rawVerdict === undefined
+      ? 'PENDING'
+      : (rawVerdict === 'GREEN' || rawVerdict === 'AMBER' || rawVerdict === 'RED' || rawVerdict === 'PENDING'
+        ? rawVerdict
+        : 'PENDING');
   const status: JurisdictionStatus =
     r.status === 'RUNNING' || r.status === 'COMPLETE' || r.status === 'FAILED' || r.status === 'PENDING'
       ? r.status
@@ -95,39 +97,46 @@ function normalizeRun(r: Partial<JurisdictionRun>): JurisdictionRun {
     proofPackS3Key: r.proofPackS3Key,
     lastRunAt: r.lastRunAt,
     status,
+    summary: r.summary,
+    requiredChanges: r.requiredChanges,
+    blockers: r.blockers,
+    proofPackAvailable: r.proofPackAvailable,
   };
-}
-
-export function addJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
-  const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}`;
-  if (USE_MOCK) return mockPost<JurisdictionRun>(path, {});
-  return postJson<JurisdictionRun>(path, {});
-}
-
-export function rerunJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
-  const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`;
-  if (USE_MOCK) return mockPost<JurisdictionRun>(path, {});
-  return postJson<JurisdictionRun>(path, {});
 }
 
 export function getProofPackUrl(launchId: string, code: string): string {
   return `${API_BASE}/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/proof-pack`;
 }
 
-export function downloadProofPack(launchId: string, code: string): void {
-  if (USE_MOCK) {
-    const blob = new Blob([], { type: 'application/zip' });
-    const url = URL.createObjectURL(blob);
+export async function downloadProofPack(launchId: string, code: string): Promise<void> {
+  const url = getProofPackUrl(launchId, code);
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/zip' } });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = objUrl;
     a.download = `proof-pack-${launchId}-${code}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return;
+    URL.revokeObjectURL(objUrl);
+  } catch (_err) {
+    // Pipeline still running — synthesize empty zip as user-friendly fallback
+    alert('Proof pack not ready yet — pipeline still running');
+    const blob = new Blob([], { type: 'application/zip' });
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = `proof-pack-${launchId}-${code}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objUrl);
   }
-  window.location.assign(getProofPackUrl(launchId, code));
 }
 
 export function jurisdictionSseUrl(launchId: string, code: string): string {

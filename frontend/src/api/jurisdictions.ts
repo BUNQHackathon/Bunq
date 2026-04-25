@@ -14,11 +14,23 @@ export interface JurisdictionLaunchRow {
   launchId: string;
   name: string;
   kind: LaunchKind;
+  jurisdictionCode?: string;
   verdict: Verdict;
   gapsCount: number;
   sanctionsHits: number;
   lastRunAt?: string;
   proofPackAvailable: boolean;
+  status?: string;
+  summary?: string;
+  requiredChanges?: string[];
+  blockers?: string[];
+}
+
+export interface JurisdictionTriage {
+  code: string;
+  keep: JurisdictionLaunchRow[];
+  modify: JurisdictionLaunchRow[];
+  drop: JurisdictionLaunchRow[];
 }
 
 export interface ComplianceGraphNode {
@@ -42,16 +54,12 @@ export interface ComplianceGraphPayload {
 }
 
 export async function listJurisdictionsOverview(): Promise<JurisdictionOverview[]> {
-  if (USE_MOCK) return mockGet<JurisdictionOverview[]>('/jurisdictions');
   return getJson<JurisdictionOverview[]>('/jurisdictions');
 }
 
-export async function getJurisdictionLaunches(
-  code: string,
-): Promise<{ code: string; launches: JurisdictionLaunchRow[] }> {
-  const path = `/jurisdictions/${encodeURIComponent(code)}/launches`;
-  if (USE_MOCK) return mockGet<{ code: string; launches: JurisdictionLaunchRow[] }>(path);
-  return getJson<{ code: string; launches: JurisdictionLaunchRow[] }>(path);
+export async function getJurisdictionTriage(code: string): Promise<JurisdictionTriage> {
+  const path = `/jurisdictions/${encodeURIComponent(code)}/triage`;
+  return getJson<JurisdictionTriage>(path);
 }
 
 export async function getComplianceMap(
@@ -60,5 +68,10 @@ export async function getComplianceMap(
 ): Promise<ComplianceGraphPayload> {
   const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/compliance-map`;
   if (USE_MOCK) return mockGet<ComplianceGraphPayload>(path);
-  return getJson<ComplianceGraphPayload>(path);
+  try {
+    return await getJson<ComplianceGraphPayload>(path);
+  } catch (err) {
+    console.warn(`Compliance map not available yet for ${launchId}/${code}, falling back to mock:`, err);
+    return mockGet<ComplianceGraphPayload>(path);
+  }
 }

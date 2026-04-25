@@ -18,7 +18,7 @@ export default function PrismCanvas() {
 
   return (
     <div
-      className="absolute inset-0 pointer-events-none overflow-hidden"
+      className="absolute inset-0 pointer-events-none overflow-hidden bg-[#000]"
       style={{ zIndex: 0 }}
     >
       <Canvas

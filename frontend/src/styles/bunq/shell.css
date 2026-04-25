@@ -99,7 +99,7 @@
   border: 1px solid var(--line-1);
 }
 
-/* ---- Chat rail (collapsed) ---- */
+/* ---- Chat rail ---- */
 .chatrail {
   background: var(--bg-0);
   border-right: 1px solid var(--line-0);
@@ -107,13 +107,51 @@
   flex-direction: column;
   position: relative;
   z-index: 10;
+  overflow: hidden;
+  transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .chatrail--collapsed {
   width: 52px;
+}
+.chatrail--expanded {
+  width: 268px;
+}
+
+/* ---- Collapsed body ---- */
+.chatrail__collapsed-body {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   padding: 14px 0;
   gap: 6px;
+  width: 52px;
+  flex: 1;
+  flex-shrink: 0;
 }
+.chatrail--expanded .chatrail__collapsed-body {
+  display: none;
+}
+
+/* ---- Expanded body ---- */
+.chatrail__expanded-body {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+  flex: 1;
+  min-width: 268px;
+  opacity: 0;
+  transition: opacity 180ms ease 40ms;
+  pointer-events: none;
+}
+.chatrail--expanded .chatrail__expanded-body {
+  opacity: 1;
+  pointer-events: auto;
+}
+.chatrail--collapsed .chatrail__expanded-body {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .chatrail__toggle,
 .chatrail__new {
   width: 34px; height: 34px;
@@ -155,11 +193,7 @@
 }
 .chatrail__spacer { flex: 1; }
 
-/* ---- Chat rail (expanded) ---- */
-.chatrail--expanded {
-  width: 268px;
-  padding: 14px 12px;
-}
+/* ---- Expanded section (shared rules) ---- */
 .chatrail__head {
   display: flex;
   align-items: center;

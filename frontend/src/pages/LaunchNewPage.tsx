@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createLaunch, addJurisdiction, JURISDICTION_CATALOG, type LaunchKind } from '../api/launch';
+import { createLaunch, JURISDICTION_CATALOG, type LaunchKind } from '../api/launch';
 import KindBadge from '../components/KindBadge';
 
 const DEMO_MARKETS = ['NL', 'DE', 'FR', 'GB', 'US', 'IE'];
@@ -77,7 +77,7 @@ export default function LaunchNewPage() {
         brief: state.brief.trim(),
         license: state.license.trim() || undefined,
         kind: state.kind,
-        markets: state.markets,
+        jurisdictions: state.markets,
       });
     } catch (err) {
       set({
@@ -86,14 +86,6 @@ export default function LaunchNewPage() {
       });
       return;
     }
-
-    await Promise.all(
-      state.markets.map((code) =>
-        addJurisdiction(launch.id, code).catch((e) =>
-          console.warn(`addJurisdiction(${code}) failed:`, e),
-        ),
-      ),
-    );
 
     navigate(`/launches/${launch.id}`);
   }

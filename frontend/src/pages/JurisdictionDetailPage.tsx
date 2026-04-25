@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { getJurisdictionLaunches, type JurisdictionLaunchRow } from '../api/jurisdictions';
+import { getJurisdictionTriage, type JurisdictionLaunchRow, type JurisdictionTriage } from '../api/jurisdictions';
 import { jurisdictionLabel, downloadProofPack } from '../api/launch';
-import type { Verdict } from '../api/launch';
 import KindBadge from '../components/KindBadge';
-import { IconChevron, IconDownload, IconGraph } from '../components/icons';
+import { IconDownload, IconGraph } from '../components/icons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -20,19 +19,7 @@ function formatRelative(dateStr?: string): string {
   return `${days}D AGO`;
 }
 
-type Status = 'compliant' | 'warning' | 'noncompliant';
-
-function verdictToStatus(v: Verdict): Status | null {
-  switch (v) {
-    case 'GREEN': return 'compliant';
-    case 'AMBER': return 'warning';
-    case 'RED':   return 'noncompliant';
-    default:      return null;
-  }
-}
-
 // ── JurisHeaderGradient ───────────────────────────────────────────────────────
-// Verbatim port of the handoff component (three blurred blobs + SVG grain + masked title)
 
 interface HeaderGradientProps {
   countryName: string;
@@ -134,73 +121,176 @@ function JurisHeaderGradient({ countryName, total, lastRunRelative }: HeaderGrad
   );
 }
 
-// ── Group order ───────────────────────────────────────────────────────────────
+// ── Kanban column configs ──────────────────────────────────────────────────────
 
-const GROUP_ORDER: Array<{ status: Status; label: string; verdict: Verdict }> = [
-  { status: 'compliant',    label: 'Compliant',      verdict: 'GREEN' },
-  { status: 'warning',      label: 'Needs changes',  verdict: 'AMBER' },
-  { status: 'noncompliant', label: 'Not compliant',  verdict: 'RED'   },
+const COLUMNS: Array<{
+  key: keyof Pick<JurisdictionTriage, 'keep' | 'modify' | 'drop'>;
+  label: string;
+  accent: string;
+  dotColor: string;
+}> = [
+  { key: 'keep',   label: 'KEEP',   accent: 'var(--success)', dotColor: 'var(--success)' },
+  { key: 'modify', label: 'MODIFY', accent: 'var(--warning)', dotColor: 'var(--warning)' },
+  { key: 'drop',   label: 'DROP',   accent: 'var(--danger)',  dotColor: 'var(--danger)'  },
 ];
+
+// ── Kanban card ───────────────────────────────────────────────────────────────
+
+interface KanbanCardProps {
+  row: JurisdictionLaunchRow;
+  code: string;
+  accent: string;
+}
+
+function KanbanCard({ row, code, accent }: KanbanCardProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      className="juris__feature"
+      style={{
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: '12px 14px',
+        borderLeft: `3px solid ${accent}`,
+      }}
+      onClick={() => navigate(`/launches/${row.launchId}`)}
+    >
+      {/* Top row: kind badge + name */}
+      <div className="juris__feat-name" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <KindBadge kind={row.kind} />
+        <Link
+          to={`/launches/${row.launchId}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{ color: 'var(--ink-0)', textDecoration: 'none', fontWeight: 500 }}
+        >
+          {row.name}
+        </Link>
+      </div>
+
+      {/* Summary */}
+      {row.summary && (
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>
+          {row.summary}
+        </div>
+      )}
+
+      {/* Required changes */}
+      {row.requiredChanges && row.requiredChanges.length > 0 && (
+        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--warning)', lineHeight: 1.5 }}>
+          {row.requiredChanges.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
+
+      {/* Blockers */}
+      {row.blockers && row.blockers.length > 0 && (
+        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--danger)', lineHeight: 1.5 }}>
+          {row.blockers.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      )}
+
+      {/* Footer: stats */}
+      <div className="juris__feat-note" style={{ fontSize: 11 }}>
+        {row.gapsCount} gap{row.gapsCount !== 1 ? 's' : ''}
+        {' · '}
+        {row.sanctionsHits} sanction{row.sanctionsHits !== 1 ? 's' : ''}
+        {' · '}
+        last run {formatRelative(row.lastRunAt)}
+      </div>
+
+      {/* Actions */}
+      <div
+        style={{ display: 'flex', gap: 6, marginTop: 2 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          title="Download proof pack"
+          disabled={!row.proofPackAvailable}
+          onClick={(e) => {
+            e.stopPropagation();
+            downloadProofPack(row.launchId, code);
+          }}
+          className="btn btn--icon btn--sm"
+          style={{
+            opacity: row.proofPackAvailable ? 1 : 0.3,
+            cursor: row.proofPackAvailable ? 'pointer' : 'not-allowed',
+            color: 'var(--ink-1)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+          }}
+        >
+          <IconDownload size={11} />
+          <span>Proof Pack</span>
+        </button>
+        <button
+          title="Open compliance graph"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/jurisdictions/${code}/launches/${row.launchId}`);
+          }}
+          className="btn btn--icon btn--sm"
+          style={{
+            color: 'var(--ink-1)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+          }}
+        >
+          <IconGraph size={11} />
+          <span>Graph</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function JurisdictionDetailPage() {
   const { code } = useParams<{ code: string }>();
-  const navigate  = useNavigate();
 
-  const [data,       setData]       = useState<{ code: string; launches: JurisdictionLaunchRow[] } | null>(null);
-  const [error,      setError]      = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<Status | 'all'>('all');
-  const [openGroups, setOpenGroups] = useState<Record<Status, boolean>>({
-    compliant: true, warning: true, noncompliant: true,
-  });
+  const [triage, setTriage] = useState<JurisdictionTriage | null>(null);
+  const [error,  setError]  = useState<string | null>(null);
 
   useEffect(() => {
     if (!code) return;
     let cancelled = false;
-    getJurisdictionLaunches(code)
-      .then(d  => !cancelled && setData(d))
+    getJurisdictionTriage(code)
+      .then(d  => !cancelled && setTriage(d))
       .catch(e => !cancelled && setError(e instanceof Error ? e.message : String(e)));
     return () => { cancelled = true; };
   }, [code]);
 
-  const label   = jurisdictionLabel(code ?? '');
-  const launches = data?.launches ?? [];
+  const label = jurisdictionLabel(code ?? '');
 
-  // Freshest lastRunAt across all launches
+  const allRows = triage
+    ? [...triage.keep, ...triage.modify, ...triage.drop]
+    : [];
+
+  const total = allRows.length;
+
   const lastRunRelative = (() => {
-    const dates = launches.map(l => l.lastRunAt).filter(Boolean) as string[];
+    const dates = allRows.map(r => r.lastRunAt).filter(Boolean) as string[];
     if (!dates.length) return '—';
     const newest = dates.reduce((a, b) => new Date(a) > new Date(b) ? a : b);
     return formatRelative(newest);
   })();
-
-  // Summary counts
-  const counts: Record<Status, number> = { compliant: 0, warning: 0, noncompliant: 0 };
-  launches.forEach(l => {
-    const s = verdictToStatus(l.verdict);
-    if (s) counts[s]++;
-  });
-  const total = launches.length;
-  const pct   = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
-
-  function toggleGroup(s: Status) {
-    setOpenGroups(prev => ({ ...prev, [s]: !prev[s] }));
-  }
-
-  // Filtered groups
-  const visibleGroups = GROUP_ORDER.filter(
-    g => activeFilter === 'all' || activeFilter === g.status,
-  );
 
   return (
     <div className="juris" style={{ gridTemplateColumns: '1fr', height: '100vh', minHeight: 0 }}>
       <div className="juris__panel" style={{ borderLeft: 'none', overflowY: 'auto' }}>
 
         {/* Back link — above hero */}
-        <div style={{
-          position: 'absolute', top: 14, left: 32, zIndex: 20,
-        }}>
+        <div style={{ position: 'absolute', top: 14, left: 32, zIndex: 20 }}>
           <Link
             to="/jurisdictions"
             className="mono-label"
@@ -211,7 +301,7 @@ export default function JurisdictionDetailPage() {
         </div>
 
         {/* Loading / error */}
-        {data === null && !error && (
+        {triage === null && !error && (
           <div style={{ padding: '48px 32px', textAlign: 'center' }}>
             <span className="mono-label" style={{ color: 'var(--ink-3)' }}>Loading…</span>
           </div>
@@ -230,8 +320,8 @@ export default function JurisdictionDetailPage() {
           </div>
         )}
 
-        {/* Hero — always rendered once we have label */}
-        {(data !== null || error) && (
+        {/* Hero — always rendered once we have data */}
+        {(triage !== null || error) && (
           <JurisHeaderGradient
             countryName={label}
             total={total}
@@ -239,11 +329,9 @@ export default function JurisdictionDetailPage() {
           />
         )}
 
-        {data !== null && (
+        {triage !== null && (
           <div className="juris__panel-body">
-
             {total === 0 ? (
-              /* Empty state */
               <div className="juris__empty">
                 <div className="juris__empty-h">No launches in {label} yet</div>
                 <div className="juris__empty-sub">
@@ -254,136 +342,63 @@ export default function JurisdictionDetailPage() {
                 </button>
               </div>
             ) : (
-              <>
-                {/* Stats summary */}
-                <div className="juris__summary">
-                  {GROUP_ORDER.map(({ status, label: gLabel }) => (
-                    <button
-                      key={status}
-                      className={`juris__stat ${activeFilter === status ? 'juris__stat--active' : ''}`}
-                      onClick={() => setActiveFilter(prev => prev === status ? 'all' : status)}
-                    >
-                      <div className="juris__stat-head">
-                        <span className="juris__stat-dot" style={{
-                          background: status === 'compliant'
-                            ? 'var(--success)'
-                            : status === 'warning'
-                              ? 'var(--warning)'
-                              : 'var(--danger)',
-                        }} />
-                        {gLabel}
+              /* 3-column kanban */
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 16,
+                  padding: '16px 0',
+                }}
+              >
+                {COLUMNS.map(({ key, label: colLabel, accent, dotColor }) => {
+                  const rows = triage[key];
+                  return (
+                    <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {/* Column header */}
+                      <div
+                        className="juris__stat"
+                        style={{ cursor: 'default', pointerEvents: 'none' }}
+                      >
+                        <div className="juris__stat-head">
+                          <span className="juris__stat-dot" style={{ background: dotColor }} />
+                          {colLabel}
+                        </div>
+                        <div className="juris__stat-num">
+                          {rows.length}
+                        </div>
+                        <div className="juris__stat-bar">
+                          <div
+                            className="juris__stat-bar-fill"
+                            style={{
+                              width: total > 0 ? `${Math.round((rows.length / total) * 100)}%` : '0%',
+                              background: accent,
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="juris__stat-num">
-                        {counts[status]}<small>{pct(counts[status])}%</small>
-                      </div>
-                      <div className="juris__stat-bar">
-                        <div
-                          className="juris__stat-bar-fill"
-                          style={{
-                            width: `${pct(counts[status])}%`,
-                            background: status === 'compliant'
-                              ? 'var(--success)'
-                              : status === 'warning'
-                                ? 'var(--warning)'
-                                : 'var(--danger)',
-                          }}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
 
-                {/* Grouped collapsible list */}
-                <div className="juris__list thin-scroll">
-                  {visibleGroups.map(({ status, label: gLabel, verdict }) => {
-                    const items = launches.filter(l => l.verdict === verdict);
-                    if (items.length === 0) return null;
-                    const isOpen = openGroups[status];
-
-                    return (
-                      <div className="juris__group" key={status}>
-                        <button
-                          className={`juris__group-row juris__group-row--${status}`}
-                          onClick={() => toggleGroup(status)}
-                        >
-                          <span
-                            className={`juris__group-caret ${isOpen ? 'juris__group-caret--open' : ''}`}
-                          >
-                            <IconChevron size={12} />
+                      {/* Cards */}
+                      {rows.length === 0 ? (
+                        <div className="juris__empty" style={{ padding: '16px 12px', textAlign: 'center' }}>
+                          <span className="mono-label" style={{ fontSize: 11, color: 'var(--ink-3)' }}>
+                            Nothing here
                           </span>
-                          <span className={`juris__feat-status juris__feat-status--${status}`} />
-                          <span className="juris__group-name">{gLabel}</span>
-                          <span className="juris__group-count">{items.length}</span>
-                        </button>
-
-                        {isOpen && (
-                          <div className="juris__group-features">
-                            {items.map((launch) => (
-                              <div
-                                key={launch.launchId}
-                                className="juris__feature"
-                                onClick={() => navigate(`/launches/${launch.launchId}`)}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                <span className={`juris__feat-status juris__feat-status--${status}`} />
-
-                                <div className="juris__feat-body">
-                                  <div className="juris__feat-name">
-                                    <KindBadge kind={launch.kind} />{' '}
-                                    {launch.name}
-                                  </div>
-                                  <div className={[
-                                    'juris__feat-note',
-                                    status === 'warning'      ? 'juris__feat-note--warn' : '',
-                                    status === 'noncompliant' ? 'juris__feat-note--bad'  : '',
-                                  ].filter(Boolean).join(' ')}>
-                                    {launch.gapsCount} gaps
-                                    {' · '}
-                                    {launch.sanctionsHits} sanction{launch.sanctionsHits !== 1 ? 's' : ''}
-                                    {' · '}
-                                    last run {formatRelative(launch.lastRunAt)}
-                                  </div>
-                                </div>
-
-                                {/* Action buttons — stop propagation so row click doesn't also fire */}
-                                <span className="juris__feat-arrow" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                  <button
-                                    title="Download proof pack"
-                                    disabled={!launch.proofPackAvailable}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (code) downloadProofPack(launch.launchId, code);
-                                    }}
-                                    className="btn btn--icon btn--sm"
-                                    style={{
-                                      opacity: launch.proofPackAvailable ? 1 : 0.3,
-                                      cursor: launch.proofPackAvailable ? 'pointer' : 'not-allowed',
-                                      color: 'var(--ink-1)',
-                                    }}
-                                  >
-                                    <IconDownload size={12} />
-                                  </button>
-                                  <button
-                                    title="Open compliance graph"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (code) navigate(`/jurisdictions/${code}/launches/${launch.launchId}`);
-                                    }}
-                                    className="btn btn--icon btn--sm"
-                                    style={{ color: 'var(--ink-1)' }}
-                                  >
-                                    <IconGraph size={12} />
-                                  </button>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
+                        </div>
+                      ) : (
+                        rows.map((row) => (
+                          <KanbanCard
+                            key={row.launchId}
+                            row={row}
+                            code={code ?? ''}
+                            accent={accent}
+                          />
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
