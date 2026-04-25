@@ -526,7 +526,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           <button
             disabled={uploadBusy}
             onClick={() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); }}
-            className={`flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 font-mono text-[12px] transition-colors ${uploadBusy ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed' : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'}`}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${uploadBusy ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
           >
             <IconPlus size={11} />
             {uploadLabel}
@@ -638,8 +638,8 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
                 key={k ?? 'all'}
                 onClick={() => setKindFilter(k)}
                 className={`font-mono text-[10px] px-2.5 py-1 rounded-full transition-colors ${kindFilter === k
-                  ? 'bg-[#FF7819] text-white'
-                  : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
+                  ? 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border border-[rgba(239,106,42,0.3)] font-semibold'
+                  : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08] border border-transparent'
                   }`}
               >
                 {k === undefined ? 'All' : k.charAt(0).toUpperCase() + k.slice(1)}
@@ -737,7 +737,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
                   setUploadModalOpen(false);
                   handleUpload(file, jur);
                 }}
-                className={`rounded-full px-3 py-1.5 font-mono text-[12px] transition-colors ${(!pendingFile || uploadBusy) ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed' : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'}`}
+                className={`rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${(!pendingFile || uploadBusy) ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
               >
                 Upload
               </button>

@@ -379,16 +379,32 @@ export default function LaunchDetailPage() {
                 )}
                 <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 999, padding: 3 }}>
                   <button
-                    className={`chip chip--sm${view === '2d' ? ' chip--orange' : ''}`}
+                    className="chip chip--sm"
                     onClick={() => setView('2d')}
-                    style={{ borderRadius: 999, border: 'none', cursor: 'pointer', padding: '4px 14px' }}
+                    style={{
+                      background: view === '2d' ? 'var(--orange-wash)' : 'transparent',
+                      color: view === '2d' ? 'var(--orange)' : 'var(--ink-2)',
+                      border: view === '2d' ? '1px solid rgba(239,106,42,0.3)' : '1px solid transparent',
+                      borderRadius: 999,
+                      cursor: 'pointer',
+                      padding: '4px 14px',
+                      fontWeight: view === '2d' ? 600 : 400,
+                    }}
                   >
                     2D
                   </button>
                   <button
-                    className={`chip chip--sm${view === '3d' ? ' chip--orange' : ''}`}
+                    className="chip chip--sm"
                     onClick={() => setView('3d')}
-                    style={{ borderRadius: 999, border: 'none', cursor: 'pointer', padding: '4px 14px' }}
+                    style={{
+                      background: view === '3d' ? 'var(--orange-wash)' : 'transparent',
+                      color: view === '3d' ? 'var(--orange)' : 'var(--ink-2)',
+                      border: view === '3d' ? '1px solid rgba(239,106,42,0.3)' : '1px solid transparent',
+                      borderRadius: 999,
+                      cursor: 'pointer',
+                      padding: '4px 14px',
+                      fontWeight: view === '3d' ? 600 : 400,
+                    }}
                   >
                     Globe
                   </button>
@@ -681,7 +697,7 @@ export default function LaunchDetailPage() {
 
                       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                         <button
-                          className="btn btn--orange btn--sm"
+                          className="btn btn--orange-hollow btn--sm"
                           onClick={() => downloadProofPack(id!, code)}
                         >
                           Download proof pack

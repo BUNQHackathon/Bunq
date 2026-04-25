@@ -68,10 +68,5 @@ export async function getComplianceMap(
 ): Promise<ComplianceGraphPayload> {
   const path = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/compliance-map`;
   if (USE_MOCK) return mockGet<ComplianceGraphPayload>(path);
-  try {
-    return await getJson<ComplianceGraphPayload>(path);
-  } catch (err) {
-    console.warn(`Compliance map not available yet for ${launchId}/${code}, falling back to mock:`, err);
-    return mockGet<ComplianceGraphPayload>(path);
-  }
+  return getJson<ComplianceGraphPayload>(path);
 }

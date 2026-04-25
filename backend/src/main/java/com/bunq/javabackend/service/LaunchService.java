@@ -2,6 +2,7 @@ package com.bunq.javabackend.service;
 
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
 import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
+import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
@@ -55,6 +56,7 @@ public class LaunchService {
     private final AutoDocService autoDocService;
     private final BedrockService bedrockService;
     private final ObjectMapper objectMapper;
+    private final EvidenceService evidenceService;
 
     public Launch createLaunch(CreateLaunchRequestDTO req) {
         String now = Instant.now().toString();
@@ -96,16 +98,15 @@ public class LaunchService {
                     %s
                     \"""
 
-                    Output:""".formatted(brief);
+                    Output:"""
+                    .formatted(brief);
 
             String requestJson = objectMapper.writeValueAsString(Map.of(
                     "anthropic_version", "bedrock-2023-05-31",
                     "max_tokens", 256,
                     "messages", List.of(Map.of(
                             "role", "user",
-                            "content", prompt
-                    ))
-            ));
+                            "content", prompt))));
 
             JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
             String text = response.path("content").get(0).path("text").asText("").strip();
@@ -127,7 +128,8 @@ public class LaunchService {
                 if (!val.isEmpty()) {
                     seen.putIfAbsent(val.toLowerCase(), val);
                 }
-                if (seen.size() == 10) break;
+                if (seen.size() == 10)
+                    break;
             }
             return new ArrayList<>(seen.values());
         } catch (Exception e) {
@@ -230,7 +232,8 @@ public class LaunchService {
                         .map(s -> s.getDocumentIds() == null ? 0 : s.getDocumentIds().size())
                         .orElse(0)
                 : 0;
-        if (regulationsCovered == 0) return "UNKNOWN";
+        if (regulationsCovered == 0)
+            return "UNKNOWN";
         return run.getVerdict();
     }
 
@@ -257,7 +260,8 @@ public class LaunchService {
                 .build();
         jurisdictionRunRepository.save(run);
 
-        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
+        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline
+        // async
         List<Document> docs = autoDocService.forJurisdiction(code);
         List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
@@ -285,7 +289,8 @@ public class LaunchService {
         run.setLastRunAt(Instant.now().toString());
         jurisdictionRunRepository.save(run);
 
-        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
+        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline
+        // async
         List<Document> docs = autoDocService.forJurisdiction(code);
         List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
@@ -313,6 +318,18 @@ public class LaunchService {
                 .toList();
     }
 
+    public GraphDAG getComplianceMap(String launchId, String code) {
+        var runOpt = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code);
+        if (runOpt.isEmpty()) {
+            return GraphDAG.builder().nodes(List.of()).edges(List.of()).build();
+        }
+        String sessionId = runOpt.get().getCurrentSessionId();
+        if (sessionId == null || sessionId.isBlank()) {
+            return GraphDAG.builder().nodes(List.of()).edges(List.of()).build();
+        }
+        return evidenceService.getComplianceMap(sessionId);
+    }
+
     public void deleteLaunch(String id) {
         Launch launch = launchRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + id));
@@ -335,22 +352,35 @@ public class LaunchService {
     }
 
     private String computeAggregateVerdict(List<JurisdictionRun> runs) {
-        if (runs.isEmpty()) return null;
+        if (runs.isEmpty())
+            return null;
         boolean hasRed = false;
         boolean hasAmber = false;
         boolean hasGreen = false;
         boolean allUnknown = true;
         for (JurisdictionRun run : runs) {
             String v = displayedVerdict(run);
-            if ("RED".equals(v)) { hasRed = true; allUnknown = false; }
-            else if ("AMBER".equals(v)) { hasAmber = true; allUnknown = false; }
-            else if ("GREEN".equals(v)) { hasGreen = true; allUnknown = false; }
-            else if (!"UNKNOWN".equals(v) && v != null) { allUnknown = false; }
+            if ("RED".equals(v)) {
+                hasRed = true;
+                allUnknown = false;
+            } else if ("AMBER".equals(v)) {
+                hasAmber = true;
+                allUnknown = false;
+            } else if ("GREEN".equals(v)) {
+                hasGreen = true;
+                allUnknown = false;
+            } else if (!"UNKNOWN".equals(v) && v != null) {
+                allUnknown = false;
+            }
         }
-        if (hasRed) return "RED";
-        if (hasAmber) return "AMBER";
-        if (hasGreen) return "GREEN";
-        if (allUnknown) return "UNKNOWN";
+        if (hasRed)
+            return "RED";
+        if (hasAmber)
+            return "AMBER";
+        if (hasGreen)
+            return "GREEN";
+        if (allUnknown)
+            return "UNKNOWN";
         return null;
     }
 }

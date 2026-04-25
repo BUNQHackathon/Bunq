@@ -31,8 +31,8 @@ function IconSend({ disabled }: { disabled?: boolean }) {
     >
       <path
         d="M2 8l12-6-6 12V9L2 8z"
-        fill="white"
-        stroke="white"
+        fill="#ef6a2a"
+        stroke="#ef6a2a"
         strokeWidth="0.5"
         strokeLinejoin="round"
       />
@@ -99,8 +99,12 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder }: SearchB
         <button
           type="submit"
           disabled={disabled || !query.trim()}
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition hover:brightness-110"
-          style={{ background: '#ef6a2a', opacity: (disabled || !query.trim()) ? 0.5 : 1 }}
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
+          style={{
+            background: 'rgba(239,106,42,0.10)',
+            border: '1px solid rgba(239,106,42,0.3)',
+            opacity: (disabled || !query.trim()) ? 0.5 : 1,
+          }}
           aria-label="Send"
         >
           <IconSend disabled={disabled || !query.trim()} />
