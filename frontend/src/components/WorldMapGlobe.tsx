@@ -45,43 +45,19 @@ function readIso3(props: Record<string, unknown>): string {
   return '';
 }
 
-function disposeMaterial(m: any) {
-  if (!m) return;
-  const textureKeys = ['map','bumpMap','normalMap','roughnessMap','metalnessMap','emissiveMap','specularMap','alphaMap','envMap','aoMap','displacementMap','lightMap'];
-  for (const k of textureKeys) { (m[k] as any)?.dispose?.(); }
-  m.dispose?.();
-}
-
 function disposeGlobe(instance: InstanceType<typeof Globe> | null): void {
   if (!instance) return;
-  try {
-    // pauseAnimation must run before dispose to stop RAF from re-referencing disposed objects
-    (instance as any).pauseAnimation?.();
-  } catch { /* best-effort */ }
-  try {
-    (instance as any)._destructor?.();
-  } catch { /* best-effort */ }
-  try {
-    const scene = (instance as unknown as {
-      scene?: () => {
-        traverse: (cb: (obj: {
-          geometry?: { dispose?: () => void };
-          material?: any | any[];
-        }) => void) => void;
-      };
-    }).scene?.();
-    scene?.traverse((obj) => {
-      obj.geometry?.dispose?.();
-      if (Array.isArray(obj.material)) obj.material.forEach(disposeMaterial);
-      else disposeMaterial(obj.material);
-    });
-  } catch { /* best-effort */ }
+  // Order matters: pause RAF, then release GPU context BEFORE _destructor
+  // disposes the renderer — forceContextLoss is a no-op on a disposed renderer
+  // and without it the WebGL context leaks (browsers cap at 8-16).
+  try { (instance as any).pauseAnimation?.(); } catch { /* best-effort */ }
   try {
     const r = (instance as unknown as {
-      renderer?: () => { dispose: () => void; forceContextLoss: () => void };
+      renderer?: () => { forceContextLoss: () => void };
     }).renderer?.();
-    if (r) { r.forceContextLoss(); r.dispose(); }
+    r?.forceContextLoss?.();
   } catch { /* best-effort */ }
+  try { (instance as any)._destructor?.(); } catch { /* best-effort */ }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
