@@ -53,6 +53,7 @@ export default function AppShell() {
   const [resetToken, setResetToken] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+  const isAsk = location.pathname === '/ask';
   const sessionMatch = useMatch('/legacy/session/:sessionId');
 
   // Clear active chat when the user navigates away from the Ask page.
@@ -98,6 +99,7 @@ export default function AppShell() {
               activeChatId={activeChatId}
               onSelect={selectChat}
               onNewChat={newChat}
+              overlay={isAsk}
             />
           )}
           <div className="frame__view">

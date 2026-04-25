@@ -10,6 +10,7 @@ export interface ChatRailProps {
   activeChatId: string | null;
   onSelect: (chatId: string) => void;
   onNewChat: () => void;
+  overlay?: boolean;
 }
 
 // ─── Date grouping helpers ────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ export default function ChatRail({
   activeChatId,
   onSelect,
   onNewChat,
+  overlay = false,
 }: ChatRailProps) {
   const { chats, loading, error, refresh } = useChatList();
   const [query, setQuery] = useState('');
@@ -78,7 +80,7 @@ export default function ChatRail({
 
   return (
     <aside
-      className={`chatrail ${expanded ? 'chatrail--expanded' : 'chatrail--collapsed'}`}
+      className={`chatrail ${expanded ? 'chatrail--expanded' : 'chatrail--collapsed'} ${overlay ? 'chatrail--overlay' : 'chatrail--push'}`}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
