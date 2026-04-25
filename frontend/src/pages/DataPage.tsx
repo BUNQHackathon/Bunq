@@ -518,18 +518,18 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         }}
       />
       {/* Breadcrumb bar */}
-      <div className="shrink-0 h-12 px-6 flex items-center justify-between border-b border-white/[0.05]">
+      <div className="shrink-0 h-12 px-3 sm:px-6 flex items-center justify-between border-b border-white/[0.05]">
         <div className="flex items-center gap-4">
           <span className="font-mono text-[12px] text-white/60">
             {breadcrumbPrefix} / {breadcrumbName} · {breadcrumbCount} files
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             disabled={uploadBusy}
             onClick={requireJudge(() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); })}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${uploadBusy ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
+            className={`whitespace-nowrap flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${uploadBusy ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
           >
             <IconPlus size={11} />
             {uploadLabel}
@@ -537,7 +537,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => { setTypeMenuOpen((o) => !o); setSortMenuOpen(false); }}
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[12px] transition-colors ${typeFilter ? 'border-[#FF7819]/60 text-white bg-[#FF7819]/10' : 'border-white/[0.12] text-white/70 hover:bg-white/[0.04]'}`}
+              className={`whitespace-nowrap flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[12px] transition-colors ${typeFilter ? 'border-[#FF7819]/60 text-white bg-[#FF7819]/10' : 'border-white/[0.12] text-white/70 hover:bg-white/[0.04]'}`}
             >
               <IconFilter size={11} />
               {typeFilter ? `Type: ${typeFilter.toUpperCase()}` : 'Type'}
@@ -565,7 +565,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => { setSortMenuOpen((o) => !o); setTypeMenuOpen(false); }}
-              className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors"
+              className="whitespace-nowrap flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors"
             >
               Sort: {sortKey === 'recent' ? 'Recent' : sortKey === 'oldest' ? 'Oldest' : sortKey === 'name' ? 'Name' : 'Size'}
               <IconChevron size={11} />
@@ -601,7 +601,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
       {/* Main row */}
       <div className="flex-1 overflow-hidden flex">
         {/* Left tree */}
-        <div className="shrink-0 w-[260px] bg-prism-panel border-r border-white/[0.05] overflow-y-auto flex flex-col">
+        <div className="hidden md:block shrink-0 w-[260px] bg-prism-panel border-r border-white/[0.05] overflow-y-auto flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
             <span className="font-mono uppercase text-[11px] text-white/30 tracking-widest">
               Library
@@ -630,7 +630,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         </div>
 
         {/* Center */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           <div className="font-mono uppercase text-[11px] text-white/30 tracking-widest mb-3">
             Documents
           </div>
@@ -681,7 +681,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           onClick={() => setUploadModalOpen(false)}
         >
           <div
-            className="w-[420px] rounded-xl border border-white/[0.1] bg-prism-panel p-5 shadow-2xl"
+            className="w-[calc(100vw-32px)] max-w-[420px] rounded-xl border border-white/[0.1] bg-prism-panel p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="font-mono uppercase text-[11px] text-white/40 tracking-widest mb-4">

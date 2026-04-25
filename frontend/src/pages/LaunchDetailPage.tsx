@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import useJudgesGate from '../auth/useJudgesGate';
 import {
   getLaunch,
@@ -694,7 +696,30 @@ export default function LaunchDetailPage() {
                           <div className="mono-label">Compliance summary</div>
                           {run.summary && (
                             <div className="fjp__detail-value" style={{ marginBottom: actionItems.length > 0 ? 10 : 0 }}>
-                              {run.summary}
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => <p style={{ margin: '0 0 6px 0' }}>{children}</p>,
+                                  ul: ({ children }) => <ul style={{ margin: '4px 0', paddingLeft: 16, listStyle: 'disc' }}>{children}</ul>,
+                                  ol: ({ children }) => <ol style={{ margin: '4px 0', paddingLeft: 18 }}>{children}</ol>,
+                                  li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+                                  strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
+                                  em: ({ children }) => <em>{children}</em>,
+                                  code: ({ className, children }) =>
+                                    className?.startsWith('language-') ? (
+                                      <pre style={{ margin: '6px 0', padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 6, overflowX: 'auto', fontSize: 12 }}><code>{children}</code></pre>
+                                    ) : (
+                                      <code style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.08)', borderRadius: 4, fontSize: 12 }}>{children}</code>
+                                    ),
+                                  a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" style={{ color: '#fb923c', textDecoration: 'underline' }}>{children}</a>,
+                                  h1: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                                  h2: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                                  h3: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                                  hr: () => <hr style={{ margin: '6px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />,
+                                }}
+                              >
+                                {run.summary}
+                              </ReactMarkdown>
                             </div>
                           )}
                           {actionItems.length > 0 ? (
