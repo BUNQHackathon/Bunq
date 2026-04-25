@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrismCanvas from '../components/PrismCanvas';
-import { postChatStream, citationFileName, type Citation, type GraphRef } from '../api/chat';
+import { postChatStream, citationFileName, getChatHistory, type Citation, type GraphRef } from '../api/chat';
 import GraphRefChips from '../components/GraphRefChips';
 import { matchGraphRefsFromPrompt } from '../api/mock';
 import { USE_MOCK } from '../api/launch';
+import { useChatNav } from '../lib/chatNav';
 
 // ─── Local data ───────────────────────────────────────────────────────────────
 
@@ -110,32 +111,6 @@ function SearchBar({ query, setQuery, onSubmit, disabled }: SearchBarProps) {
           boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
         }}
       >
-        {/* Chips */}
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          <span
-            className="flex items-center gap-1 rounded-pill px-2.5 py-1 text-[12px] text-white/80"
-            style={{ background: '#1F1F1F' }}
-          >
-            🇳🇱 NL
-          </span>
-          <span
-            className="flex items-center gap-1 rounded-pill px-2.5 py-1 text-[12px] text-white/80"
-            style={{ background: '#1F1F1F' }}
-          >
-            AML
-          </span>
-          <button
-            type="button"
-            className="text-white/35 hover:text-white/60 transition text-[13px] leading-none px-1"
-            aria-label="Clear chips"
-          >
-            ×
-          </button>
-          <div
-            className="w-px h-4 mx-1"
-            style={{ background: 'rgba(255,255,255,0.1)' }}
-          />
-        </div>
 
         {/* Input */}
         <input
@@ -147,24 +122,6 @@ function SearchBar({ query, setQuery, onSubmit, disabled }: SearchBarProps) {
           style={{ caretColor: '#FF7819' }}
           disabled={disabled}
         />
-
-        {/* Paperclip */}
-        <button
-          type="button"
-          className="hidden sm:block text-white/35 hover:text-white/60 transition shrink-0"
-          aria-label="Attach file"
-        >
-          <IconPaperclip />
-        </button>
-
-        {/* Filter */}
-        <button
-          type="button"
-          className="hidden sm:block text-white/35 hover:text-white/60 transition shrink-0"
-          aria-label="Filter"
-        >
-          <IconFilter />
-        </button>
 
         {/* Send */}
         <button
@@ -232,6 +189,39 @@ export default function AskPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
+
+  const { activeChatId, resetToken } = useChatNav();
+
+  useEffect(() => {
+    if (activeChatId === null) return;
+    let cancelled = false;
+    abortRef.current?.abort();
+    setSubmittedQuery(null);
+    setAnswer(null);
+    setCitations([]);
+    setGraphRefs([]);
+    setError(null);
+    setLoading(false);
+    setCurrentChatId(activeChatId);
+    getChatHistory(activeChatId).then((history) => {
+      if (cancelled) return;
+      const first = history.messages.find((m) => m.role === 'USER');
+      if (first) setQuery(first.content);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeChatId]);
+
+  useEffect(() => {
+    if (resetToken === 0) return;
+    abortRef.current?.abort();
+    setSubmittedQuery(null);
+    setAnswer(null);
+    setCitations([]);
+    setGraphRefs([]);
+    setError(null);
+    setLoading(false);
+    setQuery('');
+  }, [resetToken]);
 
   function handleOpenGraph(ref: GraphRef) {
     navigate(`/jurisdictions/${ref.jurisdictionCode}/launches/${ref.launchId}`);
