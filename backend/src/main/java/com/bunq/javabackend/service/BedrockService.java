@@ -58,7 +58,7 @@ public class BedrockService {
             String requestJson = """
                     {
                       "anthropic_version": "bedrock-2023-05-31",
-                      "max_tokens": 4096,
+                      "max_tokens": 32768,
                       "system": [
                         {
                           "type": "text",
@@ -87,9 +87,26 @@ public class BedrockService {
             if (content.isArray()) {
                 for (JsonNode block : content) {
                     if ("tool_use".equals(block.path("type").asText())) {
-                        return block.path("input");
+                        JsonNode input = block.path("input");
+                        // DIAG: log empty/suspect tool_use inputs to surface truncation
+                        String stopReason = root.path("stop_reason").asText("?");
+                        if (input.isMissingNode() || input.isEmpty()) {
+                            log.warn("Bedrock tool_use input EMPTY (stop_reason={}, raw_block={})",
+                                    stopReason, block.toString().substring(0, Math.min(500, block.toString().length())));
+                        } else if ("max_tokens".equals(stopReason)) {
+                            log.warn("Bedrock tool_use TRUNCATED at max_tokens (stop_reason={}, input_keys={}, sample={})",
+                                    stopReason,
+                                    input.propertyNames(),
+                                    input.toString().substring(0, Math.min(800, input.toString().length())));
+                        }
+                        return input;
                     }
                 }
+                // No tool_use block found — log what came back instead
+                log.warn("Bedrock returned no tool_use block (stop_reason={}, content_types={})",
+                        root.path("stop_reason").asText("?"),
+                        java.util.stream.StreamSupport.stream(content.spliterator(), false)
+                                .map(b -> b.path("type").asText("?")).toList());
             }
             return root;
         } catch (Exception e) {
