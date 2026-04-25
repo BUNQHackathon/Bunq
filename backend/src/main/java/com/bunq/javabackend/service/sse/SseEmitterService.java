@@ -68,7 +68,7 @@ public class SseEmitterService {
         } catch (IOException e) {
             log.debug("Failed to send initial SSE event to session {} (client likely disconnected)", sessionId);
             sessionEmitters.remove(emitter);
-            emitter.completeWithError(e);
+            try { emitter.complete(); } catch (Exception ignored) {}
         }
 
         log.info("Session {} subscribed to SSE (active connections: {})", sessionId, sessionEmitters.size());
@@ -98,9 +98,7 @@ public class SseEmitterService {
 
         for (SseEmitter d : dead) {
             sessionEmitters.remove(d);
-            try {
-                d.completeWithError(new IOException("Send failed"));
-            } catch (Exception ignored) {}
+            try { d.complete(); } catch (Exception ignored) {}
         }
     }
 
@@ -155,9 +153,7 @@ public class SseEmitterService {
             }
             for (SseEmitter d : dead) {
                 sessionEmitters.remove(d);
-                try {
-                    d.completeWithError(new IOException("Heartbeat failed"));
-                } catch (Exception ignored) {}
+                try { d.complete(); } catch (Exception ignored) {}
             }
             if (sessionEmitters.isEmpty()) {
                 emitters.remove(sessionId, sessionEmitters);

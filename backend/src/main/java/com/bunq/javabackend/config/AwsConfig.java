@@ -61,12 +61,12 @@ public class AwsConfig {
         return BedrockRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .apiCallTimeout(Duration.ofSeconds(180))
-                        .apiCallAttemptTimeout(Duration.ofSeconds(150))
+                        .apiCallTimeout(Duration.ofSeconds(600))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(540))
                         .build())
                 .httpClientBuilder(ApacheHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
-                        .socketTimeout(Duration.ofSeconds(150)))
+                        .socketTimeout(Duration.ofSeconds(540)))
                 .build();
     }
 
@@ -75,12 +75,12 @@ public class AwsConfig {
         return BedrockRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .apiCallTimeout(Duration.ofSeconds(180))
-                        .apiCallAttemptTimeout(Duration.ofSeconds(150))
+                        .apiCallTimeout(Duration.ofSeconds(600))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(540))
                         .build())
                 .httpClientBuilder(NettyNioAsyncHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
-                        .readTimeout(Duration.ofSeconds(150)))
+                        .readTimeout(Duration.ofSeconds(540)))
                 .build();
     }
 

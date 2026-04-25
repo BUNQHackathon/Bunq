@@ -13,17 +13,17 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class AsyncConfig {
 
-    private static final int POOL_SIZE = 8;
+    private static final int POOL_SIZE = 16;
 
     @Bean("pipelineExecutor")
     public Executor pipelineExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(POOL_SIZE);
         executor.setMaxPoolSize(POOL_SIZE);
-        executor.setQueueCapacity(100);
+        executor.setQueueCapacity(200);
         executor.setThreadNamePrefix("pipeline-worker-");
         executor.initialize();
-        log.info("pipelineExecutor initialised: corePoolSize={} maxPoolSize={} queueCapacity=100", POOL_SIZE, POOL_SIZE);
+        log.info("pipelineExecutor initialised: corePoolSize={} maxPoolSize={} queueCapacity=200", POOL_SIZE, POOL_SIZE);
         return executor;
     }
 }

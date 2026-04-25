@@ -15,12 +15,13 @@ import com.bunq.javabackend.service.bedrock.ToolDefinitions;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
+import com.bunq.javabackend.service.pipeline.TextChunker;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import com.bunq.javabackend.util.IdGenerator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -32,10 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ExtractObligationsStage implements Stage {
 
     private final BedrockService bedrockService;
@@ -44,9 +45,26 @@ public class ExtractObligationsStage implements Stage {
     private final SessionRepository sessionRepository;
     private final ObjectMapper objectMapper;
     private final S3Client s3Client;
+    private final Executor pipelineExecutor;
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
+
+    public ExtractObligationsStage(BedrockService bedrockService,
+                                   ObligationRepository obligationRepository,
+                                   DocumentRepository documentRepository,
+                                   SessionRepository sessionRepository,
+                                   ObjectMapper objectMapper,
+                                   S3Client s3Client,
+                                   @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+        this.bedrockService = bedrockService;
+        this.obligationRepository = obligationRepository;
+        this.documentRepository = documentRepository;
+        this.sessionRepository = sessionRepository;
+        this.objectMapper = objectMapper;
+        this.s3Client = s3Client;
+        this.pipelineExecutor = pipelineExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -134,24 +152,28 @@ public class ExtractObligationsStage implements Stage {
     }
 
     private void runBedrockExtraction(PipelineContext ctx, String text, Document doc) {
-        Map<String, String> userInput = Map.of(
-                "regulation_text", text,
-                "regulation_id", "REG-" + ctx.getSessionId(),
-                "article", "general",
-                "paragraph_id", "1"
-        );
-
-        JsonNode toolInput = bedrockService.invokeModelWithTool(
-                BedrockModel.SONNET.getModelId(),
-                SystemPrompts.EXTRACT_OBLIGATIONS,
-                userInput,
-                ToolDefinitions.EXTRACT_OBLIGATIONS_TOOL
-        );
-
+        List<String> chunks = TextChunker.chunk(text);
         String documentId = doc != null ? doc.getId() : null;
-        List<Obligation> extracted = parseObligations(toolInput, ctx.getSessionId(), documentId);
+        log.info("Splitting doc {} ({} chars) into {} chunks", documentId, text.length(), chunks.size());
 
-        for (Obligation obl : extracted) {
+        int totalChunks = chunks.size();
+        List<CompletableFuture<List<Obligation>>> futures = new ArrayList<>(totalChunks);
+        for (int i = 0; i < totalChunks; i++) {
+            final int chunkIdx = i;
+            final String chunkText = chunks.get(i);
+            futures.add(CompletableFuture.supplyAsync(
+                    () -> extractChunk(ctx, chunkText, doc, chunkIdx, totalChunks),
+                    pipelineExecutor));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        List<Obligation> all = new ArrayList<>();
+        for (CompletableFuture<List<Obligation>> f : futures) {
+            all.addAll(f.join());
+        }
+
+        for (Obligation obl : all) {
             obligationRepository.save(obl);
             ctx.getObligations().add(obl);
             ctx.getSseEmitterService().send(ctx.getSessionId(), "obligation.extracted",
@@ -163,8 +185,31 @@ public class ExtractObligationsStage implements Stage {
             documentRepository.save(doc);
         }
 
-        log.info("ExtractObligationsStage: extracted {} obligations for session {} (document={})",
-                extracted.size(), ctx.getSessionId(), documentId);
+        log.info("ExtractObligationsStage: extracted {} obligations for session {} (document={}, chunks={})",
+                all.size(), ctx.getSessionId(), documentId, totalChunks);
+    }
+
+    private List<Obligation> extractChunk(PipelineContext ctx, String chunkText, Document doc,
+                                          int chunkIdx, int totalChunks) {
+        String documentId = doc != null ? doc.getId() : null;
+        log.info("Extracting chunk {}/{} for document {} (session {})",
+                chunkIdx + 1, totalChunks, documentId, ctx.getSessionId());
+
+        Map<String, String> userInput = Map.of(
+                "regulation_text", chunkText,
+                "regulation_id", "REG-" + ctx.getSessionId(),
+                "article", "general",
+                "paragraph_id", String.valueOf(chunkIdx + 1)
+        );
+
+        JsonNode toolInput = bedrockService.invokeModelWithTool(
+                BedrockModel.SONNET.getModelId(),
+                SystemPrompts.EXTRACT_OBLIGATIONS,
+                userInput,
+                ToolDefinitions.EXTRACT_OBLIGATIONS_TOOL
+        );
+
+        return parseObligations(toolInput, ctx.getSessionId(), documentId);
     }
 
     private Obligation cloneObligation(Obligation original, String sessionId) {
