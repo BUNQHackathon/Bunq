@@ -20,10 +20,11 @@ if (typeof document !== 'undefined' && !document.getElementById(REVEAL_STYLE_ID)
   document.head.appendChild(s);
 }
 
+// Reversed: amber (outer) rises first and quick, red core arrives last and slow.
 const ORB_ANIMATIONS: [string, string, string] = [
-  'heroGradientReveal 850ms cubic-bezier(0.34, 1.18, 0.64, 1) both',
-  'heroGradientReveal 1100ms 80ms cubic-bezier(0.22, 0.61, 0.36, 1) both',
   'heroGradientReveal 1400ms 180ms cubic-bezier(0.16, 1, 0.3, 1) both',
+  'heroGradientReveal 1100ms 80ms cubic-bezier(0.22, 0.61, 0.36, 1) both',
+  'heroGradientReveal 850ms cubic-bezier(0.34, 1.18, 0.64, 1) both',
 ];
 
 export default function HeroGradient({
