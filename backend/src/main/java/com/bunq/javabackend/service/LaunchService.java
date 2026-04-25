@@ -67,9 +67,13 @@ public class LaunchService {
                 .updatedAt(now)
                 .build();
         launchRepository.save(launch);
-        if (req.getJurisdictions() != null && !req.getJurisdictions().isEmpty()) {
+        if (req.getJurisdictions() != null) {
             for (String code : req.getJurisdictions()) {
-                provisionJurisdiction(launch.getId(), code);
+                try {
+                    provisionJurisdiction(launch.getId(), code);
+                } catch (Exception e) {
+                    log.warn("Failed to add jurisdiction {} for launch {}: {}", code, launch.getId(), e.getMessage());
+                }
             }
         }
         return launch;
@@ -224,6 +228,8 @@ public class LaunchService {
 
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
                 .counterparties(List.of())
+                .launchId(launchId)
+                .jurisdictionCode(code)
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 
@@ -250,6 +256,8 @@ public class LaunchService {
 
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
                 .counterparties(List.of())
+                .launchId(launchId)
+                .jurisdictionCode(code)
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 

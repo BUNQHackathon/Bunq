@@ -7,6 +7,7 @@ import {
   jurisdictionLabel,
   type LaunchDetail,
   type Verdict,
+  type JurisdictionStatus,
 } from '../api/launch';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
@@ -32,6 +33,21 @@ function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
     (w, r) => (VERDICT_RANK[r.verdict] > VERDICT_RANK[w.verdict] ? r : w),
     valid[0],
   ).verdict;
+}
+
+type AggregateState =
+  | { kind: 'running' }
+  | { kind: 'failed' }
+  | { kind: 'verdict'; verdict: Verdict }
+  | null;
+
+function aggregateState(rs: { status: JurisdictionStatus; verdict: Verdict }[]): AggregateState {
+  if (rs.length === 0) return null;
+  if (rs.some((r) => r.status === 'RUNNING' || r.status === 'PENDING')) return { kind: 'running' };
+  const completed = rs.filter((r) => r.status === 'COMPLETE');
+  if (completed.length === 0) return { kind: 'failed' };
+  const worst = worstVerdict(completed);
+  return worst ? { kind: 'verdict', verdict: worst } : null;
 }
 
 // ── Pulse keyframe injected once ─────────────────────────────────────────────
@@ -94,10 +110,8 @@ export default function LaunchDetailPage() {
 
   const onSelect = (iso3: string) => setSelectedIso3(iso3 || null);
 
-  // ── Aggregate verdict ───────────────────────────────────────────────────────
-  const aggVerdict = detail
-    ? (detail.launch.aggregateVerdict ?? worstVerdict(detail.jurisdictions))
-    : null;
+  // ── Aggregate state ─────────────────────────────────────────────────────────
+  const aggState: AggregateState = detail ? aggregateState(detail.jurisdictions) : null;
 
   // ── Selected jurisdiction run ───────────────────────────────────────────────
   const selectedIso2 = selectedIso3 ? (ISO3_TO_ISO2[selectedIso3] ?? selectedIso3) : null;
@@ -162,7 +176,17 @@ export default function LaunchDetailPage() {
             <h1 className="serif-display" style={{ fontSize: 44, margin: 0 }}>
               {launch?.name ?? id}
             </h1>
-            {aggVerdict && <VerdictPill verdict={aggVerdict} />}
+            {aggState?.kind === 'verdict' && <VerdictPill verdict={aggState.verdict} />}
+            {aggState?.kind === 'running' && (
+              <span className="chip chip--sm" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>
+                RUNNING
+              </span>
+            )}
+            {aggState?.kind === 'failed' && (
+              <span className="chip chip--sm" style={{ color: 'var(--danger, #d94a4a)', borderColor: 'rgba(217,74,74,0.3)' }}>
+                FAILED
+              </span>
+            )}
           </div>
           {launch?.brief && (
             <p style={{ color: 'var(--ink-2)', marginTop: 12, maxWidth: 640, fontSize: 15, margin: '12px 0 0' }}>
@@ -260,7 +284,7 @@ export default function LaunchDetailPage() {
               {jurisdictionLabel(selectedIso2)}
             </h3>
 
-            <VerdictPill verdict={selectedRun.verdict} />
+            {selectedRun.status === 'COMPLETE' && <VerdictPill verdict={selectedRun.verdict} />}
 
             {selectedRun.status === 'RUNNING' && (
               <span
@@ -367,7 +391,13 @@ export default function LaunchDetailPage() {
                 <span className="mono-label" style={{ letterSpacing: '0.04em' }}>
                   {j.jurisdictionCode}
                 </span>
-                <VerdictPill verdict={j.verdict} showEmoji={false} />
+                {j.status === 'COMPLETE' ? (
+                  <VerdictPill verdict={j.verdict} showEmoji={false} />
+                ) : j.status === 'FAILED' ? (
+                  <span className="mono-label" style={{ color: 'var(--danger, #d94a4a)' }}>FAILED</span>
+                ) : (
+                  <span className="mono-label" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>RUNNING</span>
+                )}
               </button>
             );
           })}

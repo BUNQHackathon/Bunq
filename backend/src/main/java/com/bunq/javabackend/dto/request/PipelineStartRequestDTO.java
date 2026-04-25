@@ -21,4 +21,6 @@ public class PipelineStartRequestDTO {
     private List<CounterpartyDTO> counterparties;
     @Size(max = 10_000, message = "briefText must not exceed 10000 characters")
     private String briefText;
+    private String launchId;
+    private String jurisdictionCode;
 }

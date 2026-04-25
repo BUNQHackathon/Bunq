@@ -7,10 +7,12 @@ import com.bunq.javabackend.dto.response.events.StageCompletedEvent;
 import com.bunq.javabackend.dto.response.events.StageFailedEvent;
 import com.bunq.javabackend.dto.response.events.StageStartedEvent;
 import com.bunq.javabackend.exception.PipelineStageException;
+import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.sanction.Counterparty;
 import com.bunq.javabackend.model.enums.CounterpartyType;
 import com.bunq.javabackend.model.session.Session;
 import com.bunq.javabackend.model.enums.SessionState;
+import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import com.bunq.javabackend.repository.SessionRepository;
 import com.bunq.javabackend.service.SessionService;
 import com.bunq.javabackend.service.pipeline.stage.ExtractControlsStage;
@@ -38,6 +40,7 @@ public class PipelineOrchestrator {
 
     private final SessionService sessionService;
     private final SessionRepository sessionRepository;
+    private final JurisdictionRunRepository jurisdictionRunRepository;
     private final SseEmitterService sseEmitterService;
     private final IngestStage ingestStage;
     private final ExtractObligationsStage extractObligationsStage;
@@ -62,6 +65,9 @@ public class PipelineOrchestrator {
         sessionRepository.findById(sessionId)
                 .map(Session::getJurisdictionCode)
                 .ifPresent(ctx::setJurisdictionCode);
+
+        String launchId = request.getLaunchId();
+        String jurisdictionCode = request.getJurisdictionCode();
 
         try {
             // CREATED → UPLOADING
@@ -102,6 +108,27 @@ public class PipelineOrchestrator {
             // SANCTIONS → COMPLETE
             sessionService.updateState(sessionId, SessionState.COMPLETE);
 
+            if (launchId != null && jurisdictionCode != null) {
+                try {
+                    jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
+                            .ifPresent(run -> {
+                                run.setStatus("COMPLETE");
+                                run.setLastRunAt(Instant.now().toString());
+                                if (ctx.getSummary() != null) {
+                                    String overall = ctx.getSummary().getOverall();
+                                    run.setVerdict(overall != null ? overall.toUpperCase() : null);
+                                    run.setGapsCount(ctx.getSummary().getGapCount());
+                                }
+                                run.setSanctionsHits(ctx.getSanctionHits() != null ? ctx.getSanctionHits().size() : 0);
+                                run.setProofPackS3Key(ctx.getReportUrl());
+                                jurisdictionRunRepository.save(run);
+                            });
+                } catch (Exception e) {
+                    log.error("Failed to update JurisdictionRun for launch={} code={}: {}",
+                            launchId, jurisdictionCode, e.getMessage(), e);
+                }
+            }
+
             sseEmitterService.send(sessionId, PipelineCompletedEvent.builder()
                     .sessionId(sessionId)
                     .timestamp(Instant.now())
@@ -126,6 +153,19 @@ public class PipelineOrchestrator {
                     .errorCode("PIPELINE_ERROR")
                     .message(e.getMessage())
                     .build());
+            if (launchId != null && jurisdictionCode != null) {
+                try {
+                    jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
+                            .ifPresent(run -> {
+                                run.setStatus("FAILED");
+                                run.setLastRunAt(Instant.now().toString());
+                                jurisdictionRunRepository.save(run);
+                            });
+                } catch (Exception ex) {
+                    log.error("Failed to mark JurisdictionRun FAILED for launch={} code={}",
+                            launchId, jurisdictionCode, ex);
+                }
+            }
             try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ignored) {}
             sseEmitterService.complete(sessionId);
         }
@@ -148,7 +188,8 @@ public class PipelineOrchestrator {
         emitStarted(ctx.getSessionId(), stage.stage());
         return stage.execute(ctx)
                 .thenRun(() -> emitCompleted(ctx.getSessionId(), stage.stage(), System.currentTimeMillis() - start))
-                .exceptionally(ex -> {
+                .handle((v, ex) -> {
+                    if (ex == null) return null;
                     sseEmitterService.send(ctx.getSessionId(), StageFailedEvent.builder()
                             .sessionId(ctx.getSessionId())
                             .timestamp(Instant.now())
@@ -156,8 +197,10 @@ public class PipelineOrchestrator {
                             .errorCode("STAGE_ERROR")
                             .message(ex.getMessage())
                             .build());
-                    log.error("Async stage {} failed: {}", stage.stage(), ex.getMessage());
-                    return null;
+                    log.error("Async stage {} failed: {}", stage.stage(), ex.getMessage(), ex);
+                    Throwable cause = ex instanceof java.util.concurrent.CompletionException && ex.getCause() != null ? ex.getCause() : ex;
+                    throw new PipelineStageException(stage.stage(),
+                            "Stage " + stage.stage() + " failed: " + cause.getMessage(), cause);
                 });
     }
 
