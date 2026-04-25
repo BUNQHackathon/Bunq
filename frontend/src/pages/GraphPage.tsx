@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import useJudgesGate from '../auth/useJudgesGate';
 import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
 import { getComplianceMap } from '../api/jurisdictions';
 import { getLaunch, jurisdictionFlag, jurisdictionLabel, runJurisdiction } from '../api/launch';
@@ -114,11 +115,9 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const nodeGRef = useRef<d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown> | null>(null);
-  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (nodes.length === 0 || initializedRef.current) return;
-    initializedRef.current = true;
+    if (nodes.length === 0) return;
     const container = containerRef.current;
     const svgEl = svgRef.current;
     if (!container || !svgEl) return;
@@ -127,6 +126,7 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
     const H = container.clientHeight;
 
     nodes.forEach((n, i) => {
+      if (n.x !== undefined && n.y !== undefined) return;
       const angle = (i / nodes.length) * 2 * Math.PI;
       const r = 200 + Math.random() * 80;
       n.x = W / 2 + Math.cos(angle) * r;
@@ -162,6 +162,8 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       .force('charge', d3.forceManyBody<GraphNode>().strength(-280))
       .force('center', d3.forceCenter(W / 2, H / 2))
       .force('collision', d3.forceCollide<GraphNode>(d => d.size + 22));
+
+    sim.alpha(1).alphaDecay(0.0228).velocityDecay(0.4).restart();
 
     // Link stroke uses a soft warm-white matching the canvas dark bg
     const linkSel = g.append('g').selectAll<SVGLineElement, GraphLink>('line').data(links).join('line')
@@ -260,7 +262,6 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       sim.stop();
       container.removeEventListener('mousemove', handleMouseMove);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, links]);
 
   useEffect(() => {
@@ -462,6 +463,7 @@ export default function GraphPage() {
   const { code, id } = useParams<{ code?: string; id?: string }>();
   const isLive = Boolean(code && id);
   const navigate = useNavigate();
+  const { requireJudge, modal } = useJudgesGate();
 
   const [nodes, setNodes] = useState<GraphNode[]>(isLive ? [] : MOCK_NODES);
   const [links, setLinks] = useState<GraphLink[]>(isLive ? [] : MOCK_LINKS);
@@ -498,10 +500,21 @@ export default function GraphPage() {
           severity: n.severity,
           recommendedAction: n.recommendedAction,
         }));
-        const mappedLinks: GraphLink[] = payload.edges.map(e => ({
-          source: e.source,
-          target: e.target,
-        }));
+        const nodeIds = new Set(mappedNodes.map(n => n.id));
+        const mappedLinks: GraphLink[] = payload.edges
+          .map(e => {
+            let source = e.source;
+            let target = e.target;
+            if ((!source || !target) && e.id) {
+              const idx = e.id.indexOf('->');
+              if (idx > 0) {
+                source = source ?? e.id.slice(0, idx);
+                target = target ?? e.id.slice(idx + 2);
+              }
+            }
+            return source && target ? { source, target } : null;
+          })
+          .filter((l): l is { source: string; target: string } => l !== null && nodeIds.has(l.source) && nodeIds.has(l.target));
         setNodes(mappedNodes);
         setLinks(mappedLinks);
         setLoading(false);
@@ -561,6 +574,7 @@ export default function GraphPage() {
   // Use a single-column grid (1fr) override so canvas fills the view.
   return (
     <div style={{ height: '100%', display: 'grid', gridTemplateColumns: '1fr', background: 'var(--bg-0)' }}>
+      {modal}
       <div className="graph__canvas" style={{ position: 'relative', overflow: 'hidden' }}>
 
         {/* Toolbar — absolute, top of canvas */}
@@ -670,7 +684,7 @@ export default function GraphPage() {
                 className="btn btn--orange-hollow btn--sm"
                 style={{ marginTop: 8, marginLeft: 8 }}
                 disabled={rerunning}
-                onClick={async () => {
+                onClick={requireJudge(async () => {
                   setRerunning(true);
                   setRerunMsg(null);
                   try {
@@ -682,7 +696,7 @@ export default function GraphPage() {
                   } finally {
                     setRerunning(false);
                   }
-                }}
+                })}
               >
                 {rerunning ? 'Starting…' : 'Rerun analysis'}
               </button>

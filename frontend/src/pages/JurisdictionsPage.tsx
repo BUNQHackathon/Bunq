@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useAuth } from '../auth/useAuth';
 import { listJurisdictionsOverview, getJurisdictionTriage, type JurisdictionOverview, type JurisdictionTriage } from '../api/jurisdictions';
 import { jurisdictionLabel } from '../api/launch';
 import type { Verdict } from '../api/launch';
@@ -346,6 +347,7 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function JurisdictionsPage() {
+  const { isAuthenticated } = useAuth();
   const [view, setView] = useState<'map' | 'globe'>('globe');
   const [overview, setOverview] = useState<JurisdictionOverview[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -368,7 +370,7 @@ export default function JurisdictionsPage() {
     setTriage(null);
     if (!selectedCode) return;
     let cancelled = false;
-    getJurisdictionTriage(selectedCode)
+    getJurisdictionTriage(selectedCode, !isAuthenticated)
       .then(d => { if (!cancelled) setTriage(d); })
       .catch(() => { /* triage stays null; stat cards show 0s */ });
     return () => { cancelled = true; };

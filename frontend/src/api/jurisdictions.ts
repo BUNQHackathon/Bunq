@@ -43,9 +43,12 @@ export interface ComplianceGraphNode {
 }
 
 export interface ComplianceGraphEdge {
-  source: string;
-  target: string;
-  type: 'maps_to' | 'covers' | 'has_gap' | 'evidenced_by';
+  id: string;
+  type?: string;
+  label?: string;
+  // optional — present in some payload variants; otherwise parse from id
+  source?: string;
+  target?: string;
 }
 
 export interface ComplianceGraphPayload {
@@ -57,8 +60,8 @@ export async function listJurisdictionsOverview(): Promise<JurisdictionOverview[
   return getJson<JurisdictionOverview[]>('/jurisdictions');
 }
 
-export async function getJurisdictionTriage(code: string): Promise<JurisdictionTriage> {
-  const path = `/jurisdictions/${encodeURIComponent(code)}/triage`;
+export async function getJurisdictionTriage(code: string, readOnly?: boolean): Promise<JurisdictionTriage> {
+  const path = `/jurisdictions/${encodeURIComponent(code)}/triage${readOnly ? '?readOnly=true' : ''}`;
   return getJson<JurisdictionTriage>(path);
 }
 

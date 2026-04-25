@@ -13,6 +13,7 @@ import SessionDetailPage from './pages/SessionDetailPage';
 import ObligationDetailPage from './pages/ObligationDetailPage';
 import ControlDetailPage from './pages/ControlDetailPage';
 import { useMode } from './components/ModeToggle';
+import LoginPage from './pages/LoginPage';
 
 function ModeAwareRedirect() {
   const [mode] = useMode();
@@ -22,6 +23,7 @@ function ModeAwareRedirect() {
 export default function App() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<ModeAwareRedirect />} />
         <Route path="/ask" element={<AskPage />} />

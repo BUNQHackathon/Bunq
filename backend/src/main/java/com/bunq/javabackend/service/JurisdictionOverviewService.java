@@ -60,7 +60,7 @@ public class JurisdictionOverviewService {
                 .toList();
     }
 
-    public JurisdictionTriageDTO triage(String code) {
+    public JurisdictionTriageDTO triage(String code, boolean readOnly) {
         var runs = jurisdictionRunRepository.findByJurisdiction(code);
         List<JurisdictionTriageDTO.KeepCard> keep = new ArrayList<>();
         List<JurisdictionTriageDTO.ModifyCard> modify = new ArrayList<>();
@@ -114,41 +114,43 @@ public class JurisdictionOverviewService {
         }
 
         // For launches with no run at all for this jurisdiction: create PENDING run and fire pipeline
-        List<Launch> allLaunches = launchRepository.findAll();
-        for (Launch launch : allLaunches) {
-            if (analyzedLaunchIds.contains(launch.getId())) continue;
+        if (!readOnly) {
+            List<Launch> allLaunches = launchRepository.findAll();
+            for (Launch launch : allLaunches) {
+                if (analyzedLaunchIds.contains(launch.getId())) continue;
 
-            // Concurrency guard: re-check existence before creating
-            if (jurisdictionRunRepository.findByLaunchIdAndCode(launch.getId(), code).isPresent()) continue;
+                // Concurrency guard: re-check existence before creating
+                if (jurisdictionRunRepository.findByLaunchIdAndCode(launch.getId(), code).isPresent()) continue;
 
-            var session = sessionService.createSessionForJurisdiction(launch.getId(), code);
+                var session = sessionService.createSessionForJurisdiction(launch.getId(), code);
 
-            var docs = autoDocService.forJurisdiction(code);
-            var docIds = docs.stream().map(com.bunq.javabackend.model.document.Document::getId).toList();
-            session.setDocumentIds(docIds);
-            sessionRepository.save(session);
+                var docs = autoDocService.forJurisdiction(code);
+                var docIds = docs.stream().map(com.bunq.javabackend.model.document.Document::getId).toList();
+                session.setDocumentIds(docIds);
+                sessionRepository.save(session);
 
-            JurisdictionRun newRun = JurisdictionRun.builder()
-                    .launchId(launch.getId())
-                    .jurisdictionCode(code)
-                    .currentSessionId(session.getId())
-                    .status("RUNNING")
-                    .verdict(null)
-                    .gapsCount(0)
-                    .sanctionsHits(0)
-                    .lastRunAt(Instant.now().toString())
-                    .build();
-            jurisdictionRunRepository.save(newRun);
+                JurisdictionRun newRun = JurisdictionRun.builder()
+                        .launchId(launch.getId())
+                        .jurisdictionCode(code)
+                        .currentSessionId(session.getId())
+                        .status("PENDING")
+                        .verdict(null)
+                        .gapsCount(0)
+                        .sanctionsHits(0)
+                        .lastRunAt(Instant.now().toString())
+                        .build();
+                jurisdictionRunRepository.save(newRun);
 
-            PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
-                    .counterparties(List.of())
-                    .launchId(launch.getId())
-                    .jurisdictionCode(code)
-                    .build();
-            pipelineOrchestrator.start(session.getId(), req);
+                PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
+                        .counterparties(List.of())
+                        .launchId(launch.getId())
+                        .jurisdictionCode(code)
+                        .build();
+                pipelineOrchestrator.start(session.getId(), req);
 
-            pending.add(new JurisdictionTriageDTO.PendingCard(
-                    launch.getId(), launch.getName(), launch.getKind(), "PENDING"));
+                pending.add(new JurisdictionTriageDTO.PendingCard(
+                        launch.getId(), launch.getName(), launch.getKind(), "PENDING"));
+            }
         }
 
         return new JurisdictionTriageDTO(code, keep, modify, drop, pending);

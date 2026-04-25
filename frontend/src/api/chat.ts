@@ -1,4 +1,10 @@
 import { API_BASE } from './client';
+import { getAuthToken } from '../auth/useAuth';
+
+function authHeader(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 // ─── Types ────────────────────────────────────────────────
 export type KbType = 'REGULATIONS' | 'POLICIES' | 'CONTROLS';
@@ -96,6 +102,7 @@ export async function postChatStream(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
+      ...authHeader(),
     },
     body: JSON.stringify(req),
     signal,
@@ -204,7 +211,7 @@ export interface RagQueryResponse {
 export async function postRagQuery(req: RagQueryRequest): Promise<RagQueryResponse> {
   const res = await fetch(`${API_BASE}/rag/query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeader() },
     body: JSON.stringify(req),
   });
   if (!res.ok) {
@@ -233,7 +240,7 @@ export function simpleCitationToCitation(s: SimpleCitation): Citation {
 // ─── History ──────────────────────────────────────────────
 export async function getChatHistory(chatId: string): Promise<ChatHistory> {
   const res = await fetch(`${API_BASE}/chat/${encodeURIComponent(chatId)}/history`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...authHeader() },
   });
   if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
   return res.json() as Promise<ChatHistory>;
@@ -251,7 +258,7 @@ export interface ChatSummary {
 
 export async function listChats(limit = 100): Promise<ChatSummary[]> {
   const res = await fetch(`${API_BASE}/chat?limit=${limit}`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...authHeader() },
   });
   if (!res.ok) throw new Error(`Chat list failed: ${res.status}`);
   return res.json() as Promise<ChatSummary[]>;
