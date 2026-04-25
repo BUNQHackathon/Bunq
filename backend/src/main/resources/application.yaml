@@ -1,6 +1,8 @@
 spring:
   application:
     name: java-backend
+  config:
+    import: optional:file:.env[.properties]
   threads:
     virtual:
       enabled: true
