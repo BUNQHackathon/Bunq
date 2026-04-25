@@ -7,10 +7,11 @@ import {
   IconClose,
 } from './icons';
 
-const NAV_SHORTCUTS: { key: '1' | '2' | '3'; path: string }[] = [
+const NAV_SHORTCUTS: { key: '1' | '2' | '3' | '4'; path: string }[] = [
   { key: '1', path: '/ask' },
   { key: '2', path: '/launches' },
   { key: '3', path: '/jurisdictions' },
+  { key: '4', path: '/data' },
 ];
 import HeaderSearch from './HeaderSearch';
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
@@ -149,10 +150,10 @@ export default function TopNav() {
 
         {/* Center nav */}
         <nav className="topnav__center">
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
-          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
-          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" shortcut="2" modKey={modKey} />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="4" modKey={modKey} />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
         </nav>
 
         {/* Right */}
@@ -194,10 +195,10 @@ export default function TopNav() {
           </button>
         </div>
         <nav className="drawer__nav" onClick={() => setDrawerOpen(false)}>
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
-          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
-          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" shortcut="2" modKey={modKey} />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="4" modKey={modKey} />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
         </nav>
         <div className="drawer__search">
           <HeaderSearch fullWidth />

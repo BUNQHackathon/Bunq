@@ -68,12 +68,12 @@ function IconSend({ disabled }: { disabled?: boolean }) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { label: 'PRIVACY', color: '#B08AFF' },
-  { label: 'AML', color: '#FF9F55' },
-  { label: 'LICENSING', color: '#A8D66C' },
-  { label: 'TERMS', color: '#5ECFA0' },
-  { label: 'SANCTIONS', color: '#6EB7E8' },
-  { label: 'REPORTS', color: '#E05050' },
+  { label: 'PRIVACY', color: '#8ee06b' },
+  { label: 'AML', color: '#5fd6c6' },
+  { label: 'LICENSING', color: '#6ab8ff' },
+  { label: 'TERMS', color: '#5a90d4' },
+  { label: 'SANCTIONS', color: '#4a8fe8' },
+  { label: 'REPORTS', color: '#e03a3a' },
 ];
 
 function CategoryRow() {
@@ -119,7 +119,7 @@ function SearchBar({ query, setQuery, onSubmit, disabled }: SearchBarProps) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask about bunq's compliance across the EU…"
           className="flex-1 bg-transparent outline-none text-white text-[15px] min-w-0"
-          style={{ caretColor: '#FF7819' }}
+          style={{ caretColor: '#ef6a2a' }}
           disabled={disabled}
         />
 
@@ -128,7 +128,7 @@ function SearchBar({ query, setQuery, onSubmit, disabled }: SearchBarProps) {
           type="submit"
           disabled={disabled || !query.trim()}
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition hover:brightness-110"
-          style={{ background: '#FF7819', opacity: (disabled || !query.trim()) ? 0.5 : 1 }}
+          style={{ background: '#ef6a2a', opacity: (disabled || !query.trim()) ? 0.5 : 1 }}
           aria-label="Send"
         >
           <IconSend disabled={disabled || !query.trim()} />
@@ -145,9 +145,6 @@ interface TryAskingProps {
 function TryAsking({ onSelect }: TryAskingProps) {
   return (
     <div className="flex flex-wrap justify-center items-center gap-3 mt-8">
-      <span className="font-mono uppercase tracking-[0.2em] text-[11px] text-white/40 shrink-0">
-        TRY ASKING
-      </span>
       {suggestedQuestions.map((q) => (
         <button
           key={q}
@@ -155,7 +152,7 @@ function TryAsking({ onSelect }: TryAskingProps) {
           onClick={() => onSelect(q)}
           className="rounded-pill border px-4 py-2 text-[13px] text-white/80 transition hover:text-white"
           style={{
-            background: 'rgba(14,10,8,0.65)',
+            background: 'rgba(20,20,20,0.7)',
             borderColor: 'rgba(246,241,234,0.14)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
@@ -309,7 +306,7 @@ export default function AskPage() {
               className="font-serif font-normal italic text-white leading-[0.95] tracking-tight mt-1"
               style={{ fontSize: 'clamp(40px, 9vw, 124px)' }}
             >
-              into its colours<span className="text-prism-orange not-italic">.</span>
+              into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
             </h1>
             <p className="text-white/55 text-[15px] mt-6">
               One prompt. Cross-jurisdictional answers, always backed by source.
