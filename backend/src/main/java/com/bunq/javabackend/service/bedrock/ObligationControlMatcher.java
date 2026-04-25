@@ -37,7 +37,7 @@ public class ObligationControlMatcher {
             }).toList());
 
             JsonNode toolInput = bedrockService.invokeModelWithTool(
-                    BedrockModel.SONNET.getModelId(),
+                    BedrockModel.HAIKU.getModelId(),
                     SystemPrompts.MATCH_OBLIGATIONS_TO_CONTROLS,
                     userInput,
                     ToolDefinitions.MATCH_OBLIGATION_TO_CONTROLS_TOOL

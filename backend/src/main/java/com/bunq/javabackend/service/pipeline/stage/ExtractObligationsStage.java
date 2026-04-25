@@ -214,7 +214,7 @@ public class ExtractObligationsStage implements Stage {
         );
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
-                BedrockModel.SONNET.getModelId(),
+                BedrockModel.HAIKU.getModelId(),
                 SystemPrompts.EXTRACT_OBLIGATIONS,
                 userInput,
                 ToolDefinitions.EXTRACT_OBLIGATIONS_TOOL
