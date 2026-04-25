@@ -21,12 +21,8 @@ const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
 function overviewToColor(verdict: Verdict): string {
-  switch (verdict) {
-    case 'GREEN':   return 'var(--success)';
-    case 'AMBER':   return 'var(--warning)';
-    case 'RED':     return 'var(--danger)';
-    default:        return 'rgba(160,150,140,0.4)';
-  }
+  if (verdict === 'PENDING') return '#1E1E1E';
+  return '#FF7819';
 }
 
 function verdictStatus(verdict: Verdict): 'compliant' | 'warning' | 'noncompliant' | 'pending' {
@@ -94,16 +90,8 @@ function JurisMapPanel({
           {/* Legend */}
           <div className="juris__legend">
             <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: 'var(--success)' }} />
-              Compliant
-            </span>
-            <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: 'var(--warning)' }} />
-              Needs review
-            </span>
-            <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: 'var(--danger)' }} />
-              Breaches
+              <span className="juris__legend-dot" style={{ background: '#FF7819' }} />
+              Active
             </span>
             <span className="juris__legend-item">
               <span className="juris__legend-dot" style={{ background: 'rgba(160,150,140,0.5)' }} />
@@ -119,39 +107,18 @@ function JurisMapPanel({
           <span className="mono-label" style={{ color: 'var(--ink-3)' }}>
             Loading jurisdictions…
           </span>
+        ) : view === 'globe' ? (
+          <WorldMapGlobe
+            data={mapData}
+            selected={selectedIso3}
+            onSelect={onSelect}
+          />
         ) : (
-          <>
-            <div
-              style={{
-                position: 'absolute', inset: 0,
-                opacity: view === 'map' ? 1 : 0,
-                pointerEvents: view === 'map' ? 'auto' : 'none',
-                transition: 'opacity 0.3s',
-              }}
-            >
-              <WorldMapD3
-                data={mapData}
-                selected={selectedIso3}
-                onSelect={onSelect}
-                height={640}
-              />
-            </div>
-            <div
-              style={{
-                position: 'absolute', inset: 0,
-                opacity: view === 'globe' ? 1 : 0,
-                pointerEvents: view === 'globe' ? 'auto' : 'none',
-                transition: 'opacity 0.3s',
-              }}
-            >
-              <WorldMapGlobe
-                data={mapData}
-                selected={selectedIso3}
-                onSelect={onSelect}
-                height={640}
-              />
-            </div>
-          </>
+          <WorldMapD3
+            data={mapData}
+            selected={selectedIso3}
+            onSelect={onSelect}
+          />
         )}
       </div>
 
