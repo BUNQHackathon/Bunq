@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import PrismCanvas from '../components/PrismCanvas';
 import { postChatStream, citationFileName, getChatHistory, type Citation, type GraphRef } from '../api/chat';
 import GraphRefChips from '../components/GraphRefChips';
@@ -170,14 +172,19 @@ export default function AskPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
-  const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   const { activeChatId, resetToken } = useChatNav();
 
-  // Auto-scroll to latest message whenever the transcript grows.
+  // Auto-scroll only when a brand-new message is appended (user submit / new assistant bubble).
+  // No scrolling during streaming, citations, or graphRefs updates — let the user read at their own pace.
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages.length, messages[messages.length - 1]?.content]);
+    requestAnimationFrame(() => {
+      if (scrollerRef.current) {
+        scrollerRef.current.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: 'smooth' });
+      }
+    });
+  }, [messages.length]);
 
   // Load a prior chat from the rail.
   useEffect(() => {
@@ -399,6 +406,7 @@ export default function AskPage() {
 
       {/* Transcript */}
       <div
+        ref={scrollerRef}
         className="relative flex-1 min-h-0 overflow-y-auto px-4 md:px-6"
         style={{ zIndex: 10 }}
       >
@@ -422,7 +430,6 @@ export default function AskPage() {
               <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
             </div>
           )}
-          <div ref={transcriptEndRef} />
         </div>
       </div>
 
@@ -486,12 +493,41 @@ function ChatBubble({ message, loading, onOpenGraph }: ChatBubbleProps) {
       >
         <div className="px-5 py-4">
           {message.content ? (
-            <pre className="text-white/85 text-[14px] leading-relaxed whitespace-pre-wrap font-sans m-0">
-              {message.content}
+            <div className="text-white/85 text-[14px] leading-relaxed">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => <h1 className="text-white text-[20px] font-semibold mt-4 mb-2 first:mt-0">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-white text-[17px] font-semibold mt-4 mb-2 first:mt-0">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-white text-[15px] font-semibold mt-3 mb-1.5 first:mt-0">{children}</h3>,
+                  p: ({ children }) => <p className="text-white/85 text-[14px] leading-relaxed my-2 first:mt-0 last:mb-0">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-5 my-2 space-y-1">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-5 my-2 space-y-1">{children}</ol>,
+                  li: ({ children }) => <li className="text-white/85 text-[14px] leading-relaxed">{children}</li>,
+                  strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                  a: ({ children, href }) => <a className="text-orange-400 hover:text-orange-300 underline underline-offset-2" href={href} target="_blank" rel="noreferrer">{children}</a>,
+                  code: ({ className, children }) => {
+                    const isBlock = className?.startsWith('language-');
+                    if (isBlock) {
+                      return (
+                        <pre className="my-2 p-3 rounded-lg bg-black/40 border border-white/10 overflow-x-auto">
+                          <code className="text-[12px] font-mono text-white/85">{children}</code>
+                        </pre>
+                      );
+                    }
+                    return <code className="px-1 py-0.5 rounded bg-white/10 text-orange-300 text-[12px] font-mono">{children}</code>;
+                  },
+                  hr: () => <hr className="my-3 border-white/10" />,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-orange-400/50 pl-3 my-2 text-white/70 italic">{children}</blockquote>,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
               {loading && (
                 <span className="inline-block w-[2px] h-[14px] ml-[2px] bg-orange-400 animate-pulse align-middle" />
               )}
-            </pre>
+            </div>
           ) : (
             <p className="text-white/30 text-[13px] font-mono animate-pulse m-0">Generating…</p>
           )}
