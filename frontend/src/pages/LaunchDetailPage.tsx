@@ -27,11 +27,15 @@ const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 );
 
 // ── Aggregate verdict (worst of children) ────────────────────────────────────
-const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1 };
+const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1, UNKNOWN: -1 };
 
 function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
   const valid = rs.filter((r) => VERDICT_RANK[r.verdict] >= 0);
-  if (valid.length === 0) return rs.length > 0 ? 'PENDING' : null;
+  if (valid.length === 0) {
+    if (rs.length === 0) return null;
+    if (rs.every((r) => r.verdict === 'UNKNOWN')) return 'UNKNOWN';
+    return 'PENDING';
+  }
   return valid.reduce(
     (w, r) => (VERDICT_RANK[r.verdict] > VERDICT_RANK[w.verdict] ? r : w),
     valid[0],
@@ -69,6 +73,14 @@ function verdictToStatus(v: Verdict): StatusKey {
   if (v === 'GREEN') return 'compliant';
   if (v === 'RED') return 'noncompliant';
   return 'warning';
+}
+
+function statusLabelForRun(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
+  if (isRunning) return 'Running…';
+  if (run.verdict === 'UNKNOWN') return 'Unknown';
+  if (key === 'compliant') return 'Compliant';
+  if (key === 'warning') return 'Needs review';
+  return 'Breach';
 }
 
 function runStatusKey(run: JurisdictionRun): StatusKey {
@@ -583,6 +595,8 @@ export default function LaunchDetailPage() {
                   run.lastRunAt ? `Last run ${new Date(run.lastRunAt).toLocaleDateString()}` : '',
                 ].filter(Boolean).join(' · ');
 
+                const countsLine = `Obligations: ${run.obligationsCount ?? 0} • Controls: ${run.controlsCount ?? 0} • Gaps: ${run.gapsCount ?? 0}`;
+
                 const requiredAction =
                   run.requiredChanges?.[0] ??
                   run.blockers?.[0] ??
@@ -606,10 +620,13 @@ export default function LaunchDetailPage() {
                         {/* StripLiveLabel replaces static "Running…" with live SSE stage name */}
                         {isRunning
                           ? <StripLiveLabel launchId={id!} code={code} onDone={refetch} />
-                          : statusLabel(key, false)}
+                          : statusLabelForRun(run, key, false)}
                       </span>
-                      <span className="fjp__row-summary">
-                        {run.summary ?? defaultSummary}
+                      <span className="fjp__row-summary" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                        <span>{run.summary ?? defaultSummary}</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--mono)' }}>
+                          {countsLine}
+                        </span>
                       </span>
                       <button
                         className="fjp__deselect"
@@ -633,11 +650,13 @@ export default function LaunchDetailPage() {
                         <div className="fjp__detail-block fjp__detail-block--wide">
                           <div className="mono-label">Stats</div>
                           <div className="fjp__detail-refs">
+                            <span className="fjp__ref">Obligations {run.obligationsCount ?? 0}</span>
+                            <span className="fjp__ref">Controls {run.controlsCount ?? 0}</span>
                             <span className="fjp__ref">Gaps {run.gapsCount}</span>
                             <span className="fjp__ref">Sanctions {run.sanctionsHits}</span>
                             {run.obligationsCovered !== undefined && run.obligationsTotal !== undefined && (
                               <span className="fjp__ref">
-                                Obligations {run.obligationsCovered}/{run.obligationsTotal}
+                                Coverage {run.obligationsCovered}/{run.obligationsTotal}
                               </span>
                             )}
                             {run.lastRunAt && (

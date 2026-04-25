@@ -34,4 +34,8 @@ public class LaunchRepository {
     public List<Launch> findAll() {
         return StreamSupport.stream(table.scan().items().spliterator(), false).toList();
     }
+
+    public void deleteById(String id) {
+        table.deleteItem(Key.builder().partitionValue(id).build());
+    }
 }

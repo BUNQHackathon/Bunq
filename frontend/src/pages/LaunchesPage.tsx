@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listLaunches, getLaunch, type Launch, type LaunchKind, type JurisdictionRun } from '../api/launch';
+import { listLaunches, getLaunch, deleteLaunch, type Launch, type LaunchKind, type JurisdictionRun } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import VerdictPill from '../components/VerdictPill';
-import { IconPlus } from '../components/icons';
+import { IconPlus, IconClose } from '../components/icons';
 
 const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1 };
 
@@ -34,6 +34,22 @@ export default function LaunchesPage() {
   const [rows, setRows] = useState<LaunchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(e: React.MouseEvent, launch: Launch) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Delete launch '${launch.name}'? This cannot be undone.`)) return;
+    setDeletingId(launch.id);
+    try {
+      await deleteLaunch(launch.id);
+      setRows((prev) => prev.filter((r) => r.launch.id !== launch.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete launch');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -152,8 +168,35 @@ export default function LaunchesPage() {
                 key={launch.id}
                 to={`/launches/${launch.id}`}
                 className="doccard"
-                style={{ textDecoration: 'none' }}
+                style={{ textDecoration: 'none', position: 'relative', opacity: deletingId === launch.id ? 0.5 : 1 }}
               >
+                <button
+                  type="button"
+                  onClick={(e) => handleDelete(e, launch)}
+                  disabled={deletingId === launch.id}
+                  aria-label={`Delete launch ${launch.name}`}
+                  title="Delete launch"
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 4,
+                    color: 'var(--ink-2)',
+                    cursor: 'pointer',
+                    zIndex: 2,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger, #d94a4a)'; e.currentTarget.style.background = 'rgba(217,74,74,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--ink-2)'; e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <IconClose size={12} />
+                </button>
                 <div className="doccard__head">
                   <span className={`srcrow__dot srcrow__dot--${kindDotClass(launch.kind)}`} />
                   <span className="mono-label">{launch.kind ?? 'PRODUCT'}</span>

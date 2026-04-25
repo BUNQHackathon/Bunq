@@ -7,6 +7,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +48,15 @@ public class SessionRepository {
     public List<Session> scanAll(int limit) {
         return StreamSupport.stream(table.scan().items().spliterator(), false)
                 .limit(limit)
+                .toList();
+    }
+
+    public List<Session> findByLaunchId(String launchId) {
+        var index = table.index("launch-sessions-index");
+        var qc = QueryConditional.keyEqualTo(Key.builder().partitionValue(launchId).build());
+        return index.query(r -> r.queryConditional(qc))
+                .stream()
+                .flatMap(p -> p.items().stream())
                 .toList();
     }
 }

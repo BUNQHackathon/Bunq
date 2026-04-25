@@ -16,9 +16,11 @@ import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.launch.Launch;
 import com.bunq.javabackend.model.launch.LaunchKind;
 import com.bunq.javabackend.model.session.Session;
+import com.bunq.javabackend.repository.ControlRepository;
 import com.bunq.javabackend.repository.GapRepository;
 import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import com.bunq.javabackend.repository.LaunchRepository;
+import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.repository.SessionRepository;
 import com.bunq.javabackend.service.pipeline.PipelineOrchestrator;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,8 @@ public class LaunchService {
     private final LaunchRepository launchRepository;
     private final JurisdictionRunRepository jurisdictionRunRepository;
     private final GapRepository gapRepository;
+    private final ObligationRepository obligationRepository;
+    private final ControlRepository controlRepository;
     private final SessionService sessionService;
     private final SessionRepository sessionRepository;
     private final PipelineOrchestrator pipelineOrchestrator;
@@ -94,16 +98,15 @@ public class LaunchService {
                     %s
                     \"""
 
-                    Output:""".formatted(brief);
+                    Output:"""
+                    .formatted(brief);
 
             String requestJson = objectMapper.writeValueAsString(Map.of(
                     "anthropic_version", "bedrock-2023-05-31",
                     "max_tokens", 256,
                     "messages", List.of(Map.of(
                             "role", "user",
-                            "content", prompt
-                    ))
-            ));
+                            "content", prompt))));
 
             JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
             String text = response.path("content").get(0).path("text").asText("").strip();
@@ -125,7 +128,8 @@ public class LaunchService {
                 if (!val.isEmpty()) {
                     seen.putIfAbsent(val.toLowerCase(), val);
                 }
-                if (seen.size() == 10) break;
+                if (seen.size() == 10)
+                    break;
             }
             return new ArrayList<>(seen.values());
         } catch (Exception e) {
@@ -151,48 +155,7 @@ public class LaunchService {
     private List<JurisdictionRunResponseDTO> mapRunsWithSummary(List<JurisdictionRun> runs) {
         List<JurisdictionRunResponseDTO> result = new ArrayList<>();
         for (JurisdictionRun run : runs) {
-            String verdict = run.getVerdict();
-            String summary;
-            List<String> requiredChanges;
-            List<String> blockers;
             boolean proofPackAvailable = run.getProofPackS3Key() != null;
-
-            if ("GREEN".equals(verdict)) {
-                summary = "Can ship as-is";
-                requiredChanges = List.of();
-                blockers = List.of();
-            } else if ("AMBER".equals(verdict)) {
-                summary = "Requires changes";
-                List<Gap> gaps = run.getCurrentSessionId() != null
-                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
-                        : List.of();
-                requiredChanges = gaps.stream()
-                        .flatMap(g -> g.getRecommendedActions() == null ? java.util.stream.Stream.empty()
-                                : g.getRecommendedActions().stream())
-                        .map(RecommendedAction::getAction)
-                        .filter(a -> a != null && !a.isBlank())
-                        .distinct()
-                        .limit(10)
-                        .toList();
-                blockers = List.of();
-            } else if ("RED".equals(verdict)) {
-                summary = "Blocked";
-                List<Gap> gaps = run.getCurrentSessionId() != null
-                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
-                        : List.of();
-                blockers = gaps.stream()
-                        .filter(g -> g.getResidualRisk() != null)
-                        .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
-                        .limit(3)
-                        .map(Gap::getNarrative)
-                        .filter(n -> n != null)
-                        .toList();
-                requiredChanges = List.of();
-            } else {
-                summary = "Analysis in progress";
-                requiredChanges = List.of();
-                blockers = List.of();
-            }
 
             Integer regulationsCovered = run.getCurrentSessionId() != null
                     ? sessionRepository.findById(run.getCurrentSessionId())
@@ -200,9 +163,78 @@ public class LaunchService {
                             .orElse(0)
                     : 0;
 
-            result.add(toDto(run, summary, requiredChanges, blockers, proofPackAvailable, regulationsCovered));
+            Integer obligationsCount = run.getCurrentSessionId() != null
+                    ? obligationRepository.findBySessionId(run.getCurrentSessionId()).size()
+                    : 0;
+            Integer controlsCount = run.getCurrentSessionId() != null
+                    ? controlRepository.findBySessionId(run.getCurrentSessionId()).size()
+                    : 0;
+
+            String verdict;
+            String summary;
+            List<String> requiredChanges;
+            List<String> blockers;
+
+            if (regulationsCovered == 0) {
+                verdict = "UNKNOWN";
+                summary = "No regulations found for this jurisdiction";
+                requiredChanges = List.of();
+                blockers = List.of();
+            } else {
+                verdict = run.getVerdict();
+                if ("GREEN".equals(verdict)) {
+                    summary = "Can ship as-is";
+                    requiredChanges = List.of();
+                    blockers = List.of();
+                } else if ("AMBER".equals(verdict)) {
+                    summary = "Requires changes";
+                    List<Gap> gaps = run.getCurrentSessionId() != null
+                            ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                            : List.of();
+                    requiredChanges = gaps.stream()
+                            .flatMap(g -> g.getRecommendedActions() == null ? java.util.stream.Stream.empty()
+                                    : g.getRecommendedActions().stream())
+                            .map(RecommendedAction::getAction)
+                            .filter(a -> a != null && !a.isBlank())
+                            .distinct()
+                            .limit(10)
+                            .toList();
+                    blockers = List.of();
+                } else if ("RED".equals(verdict)) {
+                    summary = "Blocked";
+                    List<Gap> gaps = run.getCurrentSessionId() != null
+                            ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                            : List.of();
+                    blockers = gaps.stream()
+                            .filter(g -> g.getResidualRisk() != null)
+                            .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
+                            .limit(3)
+                            .map(Gap::getNarrative)
+                            .filter(n -> n != null)
+                            .toList();
+                    requiredChanges = List.of();
+                } else {
+                    summary = "Analysis in progress";
+                    requiredChanges = List.of();
+                    blockers = List.of();
+                }
+            }
+
+            result.add(toDto(run, verdict, summary, requiredChanges, blockers, proofPackAvailable,
+                    regulationsCovered, obligationsCount, controlsCount));
         }
         return result;
+    }
+
+    private String displayedVerdict(JurisdictionRun run) {
+        Integer regulationsCovered = run.getCurrentSessionId() != null
+                ? sessionRepository.findById(run.getCurrentSessionId())
+                        .map(s -> s.getDocumentIds() == null ? 0 : s.getDocumentIds().size())
+                        .orElse(0)
+                : 0;
+        if (regulationsCovered == 0)
+            return "UNKNOWN";
+        return run.getVerdict();
     }
 
     private JurisdictionRun provisionJurisdiction(String launchId, String code) {
@@ -228,7 +260,8 @@ public class LaunchService {
                 .build();
         jurisdictionRunRepository.save(run);
 
-        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
+        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline
+        // async
         List<Document> docs = autoDocService.forJurisdiction(code);
         List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
@@ -256,7 +289,8 @@ public class LaunchService {
         run.setLastRunAt(Instant.now().toString());
         jurisdictionRunRepository.save(run);
 
-        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
+        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline
+        // async
         List<Document> docs = autoDocService.forJurisdiction(code);
         List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
@@ -296,6 +330,21 @@ public class LaunchService {
         return evidenceService.getComplianceMap(sessionId);
     }
 
+    public void deleteLaunch(String id) {
+        Launch launch = launchRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Launch not found: " + id));
+        List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(id);
+        for (JurisdictionRun run : runs) {
+            jurisdictionRunRepository.delete(run);
+        }
+        List<Session> sessions = sessionRepository.findByLaunchId(id);
+        for (Session session : sessions) {
+            sessionRepository.deleteById(session.getId());
+        }
+        launchRepository.deleteById(launch.getId());
+        log.info("Deleted launch {} (runs={}, sessions={})", id, runs.size(), sessions.size());
+    }
+
     public LaunchSummaryDTO toSummaryWithCount(Launch launch) {
         List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(launch.getId());
         String aggregateVerdict = computeAggregateVerdict(runs);
@@ -303,18 +352,35 @@ public class LaunchService {
     }
 
     private String computeAggregateVerdict(List<JurisdictionRun> runs) {
+        if (runs.isEmpty())
+            return null;
         boolean hasRed = false;
         boolean hasAmber = false;
         boolean hasGreen = false;
+        boolean allUnknown = true;
         for (JurisdictionRun run : runs) {
-            String v = run.getVerdict();
-            if ("RED".equals(v)) hasRed = true;
-            else if ("AMBER".equals(v)) hasAmber = true;
-            else if ("GREEN".equals(v)) hasGreen = true;
+            String v = displayedVerdict(run);
+            if ("RED".equals(v)) {
+                hasRed = true;
+                allUnknown = false;
+            } else if ("AMBER".equals(v)) {
+                hasAmber = true;
+                allUnknown = false;
+            } else if ("GREEN".equals(v)) {
+                hasGreen = true;
+                allUnknown = false;
+            } else if (!"UNKNOWN".equals(v) && v != null) {
+                allUnknown = false;
+            }
         }
-        if (hasRed) return "RED";
-        if (hasAmber) return "AMBER";
-        if (hasGreen) return "GREEN";
+        if (hasRed)
+            return "RED";
+        if (hasAmber)
+            return "AMBER";
+        if (hasGreen)
+            return "GREEN";
+        if (allUnknown)
+            return "UNKNOWN";
         return null;
     }
 }

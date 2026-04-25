@@ -61,6 +61,12 @@ public class LaunchController {
         return ResponseEntity.ok(launchService.getLaunch(id));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteLaunch(@PathVariable String id) {
+        launchService.deleteLaunch(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/rerun-failed")
     public ResponseEntity<List<JurisdictionRunResponseDTO>> rerunFailed(@PathVariable String id) {
         var runs = launchService.rerunFailed(id);

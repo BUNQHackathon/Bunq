@@ -2,7 +2,7 @@ import { API_BASE, getJson, postJson } from './client';
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
-export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING';
+export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING' | 'UNKNOWN';
 export type JurisdictionStatus = 'RUNNING' | 'COMPLETE' | 'FAILED' | 'PENDING';
 export type LaunchKind = 'PRODUCT' | 'POLICY' | 'PROCESS';
 
@@ -30,6 +30,9 @@ export interface JurisdictionRun {
   sanctionsHits: number;
   obligationsCovered?: number;
   obligationsTotal?: number;
+  obligationsCount?: number;
+  controlsCount?: number;
+  regulationsCovered?: number;
   proofPackS3Key?: string;
   lastRunAt?: string;
   status: JurisdictionStatus;
@@ -78,7 +81,7 @@ export function normalizeRun(r: Partial<JurisdictionRun> & { verdict?: Verdict |
   const verdict: Verdict =
     rawVerdict === null || rawVerdict === undefined
       ? 'PENDING'
-      : (rawVerdict === 'GREEN' || rawVerdict === 'AMBER' || rawVerdict === 'RED' || rawVerdict === 'PENDING'
+      : (rawVerdict === 'GREEN' || rawVerdict === 'AMBER' || rawVerdict === 'RED' || rawVerdict === 'PENDING' || rawVerdict === 'UNKNOWN'
         ? rawVerdict
         : 'PENDING');
   const status: JurisdictionStatus =
@@ -155,6 +158,13 @@ export const JURISDICTION_CATALOG: Array<{ code: string; name: string; flag: str
   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
   { code: 'US', name: 'United States', flag: '🇺🇸' },
 ];
+
+export async function deleteLaunch(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/launches/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`/launches/${id} failed: ${res.status}`);
+}
 
 export async function rerunFailedJurisdictions(launchId: string): Promise<JurisdictionRun[]> {
   const res = await postJson<JurisdictionRun[]>(`/launches/${encodeURIComponent(launchId)}/rerun-failed`);

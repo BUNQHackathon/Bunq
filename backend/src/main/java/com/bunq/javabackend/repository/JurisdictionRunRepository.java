@@ -58,4 +58,12 @@ public class JurisdictionRunRepository {
     public List<JurisdictionRun> findAll() {
         return StreamSupport.stream(table.scan().items().spliterator(), false).toList();
     }
+
+    public void delete(JurisdictionRun run) {
+        var key = Key.builder()
+                .partitionValue(run.getLaunchId())
+                .sortValue(run.getJurisdictionCode())
+                .build();
+        table.deleteItem(key);
+    }
 }

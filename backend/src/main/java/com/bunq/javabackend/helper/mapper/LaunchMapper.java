@@ -57,14 +57,14 @@ public class LaunchMapper {
                 .build();
     }
 
-    public static JurisdictionRunResponseDTO toDto(JurisdictionRun r, String summary,
+    public static JurisdictionRunResponseDTO toDto(JurisdictionRun r, String verdict, String summary,
             List<String> requiredChanges, List<String> blockers, boolean proofPackAvailable,
-            Integer regulationsCovered) {
+            Integer regulationsCovered, Integer obligationsCount, Integer controlsCount) {
         return JurisdictionRunResponseDTO.builder()
                 .launchId(r.getLaunchId())
                 .jurisdictionCode(r.getJurisdictionCode())
                 .currentSessionId(r.getCurrentSessionId())
-                .verdict(r.getVerdict())
+                .verdict(verdict)
                 .gapsCount(r.getGapsCount())
                 .sanctionsHits(r.getSanctionsHits())
                 .proofPackS3Key(r.getProofPackS3Key())
@@ -77,6 +77,8 @@ public class LaunchMapper {
                 .blockers(blockers)
                 .proofPackAvailable(proofPackAvailable)
                 .regulationsCovered(regulationsCovered)
+                .obligationsCount(obligationsCount)
+                .controlsCount(controlsCount)
                 .build();
     }
 }
