@@ -132,7 +132,7 @@ public class JurisdictionOverviewService {
                     .launchId(launch.getId())
                     .jurisdictionCode(code)
                     .currentSessionId(session.getId())
-                    .status("PENDING")
+                    .status("RUNNING")
                     .verdict(null)
                     .gapsCount(0)
                     .sanctionsHits(0)
