@@ -35,6 +35,7 @@ export default function App() {
         <Route path="/doc/:docId" element={<DocPage />} />
         <Route path="/library/:docId" element={<LibraryDocPage />} />
         <Route path="/jurisdictions" element={<JurisdictionsPage />} />
+        <Route path="/jurisdictions/:code" element={<JurisdictionsPage />} />
         <Route path="/jurisdictions/:code/launches/:id" element={<GraphPage />} />
         <Route path="/session/:id" element={<SessionDetailPage />} />
         <Route path="/obligation/:id" element={<ObligationDetailPage />} />

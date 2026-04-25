@@ -104,7 +104,7 @@ export default function LaunchesPage() {
             <div className="mono-label mono-label--ink" style={{ marginBottom: 10 }}>
               LAUNCHES · {loading ? '…' : rows.length} ACTIVE
             </div>
-            <h1 className="serif-display" style={{ fontSize: 56, margin: 0 }}>
+            <h1 className="serif-display" style={{ fontSize: 'clamp(28px, 6vw, 56px)', margin: 0 }}>
               Product launches<span style={{ color: 'var(--orange)' }}>.</span>
             </h1>
           </div>

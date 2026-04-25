@@ -372,3 +372,34 @@
   color: var(--ink-3);
   font-size: 13px;
 }
+
+@media (max-width: 640px) {
+  .fjp__body { padding: 16px 14px 32px; }
+
+  .fjp__map-wrap {
+    padding-left: 14px;
+    padding-right: 14px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .fjp__row-head {
+    grid-template-columns: 28px 1fr 24px;
+    grid-template-areas: "flag summary button" "status status status";
+    row-gap: 6px;
+  }
+  .fjp__row-flag { grid-area: flag; }
+  .fjp__row-name { grid-area: status; }
+  .fjp__row-status { grid-area: status; }
+  .fjp__row-summary { grid-area: summary; }
+  .fjp__deselect { grid-area: button; }
+
+  .fjp__detail-grid { grid-template-columns: 1fr; }
+
+  .fjp__brief-overlay {
+    max-width: calc(100vw - 28px);
+    bottom: 16px;
+    left: 14px;
+    right: 14px;
+  }
+}

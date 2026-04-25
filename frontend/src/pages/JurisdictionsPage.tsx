@@ -1,12 +1,15 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { listJurisdictionsOverview, getJurisdictionTriage, type JurisdictionOverview, type JurisdictionTriage } from '../api/jurisdictions';
-import { jurisdictionLabel } from '../api/launch';
+import { jurisdictionLabel, JURISDICTION_CATALOG } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import HeroGradient from '../components/HeroGradient';
 import { IconSearch, IconChevron } from '../components/icons';
+
+const VALID_CODES = new Set(JURISDICTION_CATALOG.map(j => j.code));
 
 // ── ISO conversions ───────────────────────────────────────────────────────────
 
@@ -348,10 +351,12 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
 
 export default function JurisdictionsPage() {
   const { isAuthenticated } = useAuth();
+  const { code: routeCode } = useParams<{ code?: string }>();
   const [view, setView] = useState<'map' | 'globe'>('globe');
   const [overview, setOverview] = useState<JurisdictionOverview[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selectedCode, setSelectedCode] = useState<string | null>(null); // ISO-2
+  const normalizedRouteCode = routeCode && VALID_CODES.has(routeCode.toUpperCase()) ? routeCode.toUpperCase() : null;
+  const [selectedCode, setSelectedCode] = useState<string | null>(normalizedRouteCode); // ISO-2
   const [searchQuery, setSearchQuery] = useState('');
   const [triage, setTriage] = useState<JurisdictionTriage | null>(null);
 
@@ -375,6 +380,10 @@ export default function JurisdictionsPage() {
       .catch(() => { /* triage stays null; stat cards show 0s */ });
     return () => { cancelled = true; };
   }, [selectedCode]);
+
+  useEffect(() => {
+    setSelectedCode(routeCode && VALID_CODES.has(routeCode.toUpperCase()) ? routeCode.toUpperCase() : null);
+  }, [routeCode]);
 
   // ── Build map data (ISO-3 → color) using semantic tokens ─────────────────
   const mapData = useMemo(() => {
