@@ -162,7 +162,10 @@ export default function WorldMapD3({
       const W = dims.w;
       const H = dims.h;
 
-      const proj = d3.geoNaturalEarth1().scale(W / 5.8).translate([W / 2, H / 2]);
+      // Natural-earth1 world is ~5 units wide, ~2.6 tall at scale 1.
+      // Scale by max so we fill the limiting dimension, then zoom in for Europe focus.
+      const projScale = Math.max(W / 5.0, H / 2.6) * 1.3;
+      const proj = d3.geoNaturalEarth1().scale(projScale).translate([W / 2, H / 2]).center([5.3, 35]);
       const path = d3.geoPath().projection(proj);
       pathGenRef.current = path;
 

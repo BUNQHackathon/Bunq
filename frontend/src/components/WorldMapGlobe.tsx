@@ -178,7 +178,7 @@ export default function WorldMapGlobe({
             globe.pointOfView({ lat, lng, altitude: 1.4 }, 700);
           }
         }) as never)
-        .pointOfView({ lat: 48, lng: 10, altitude: 1.8 });
+        .pointOfView({ lat: 48, lng: 5.3, altitude: 1.8 });
 
       globeRef.current = globe;
 

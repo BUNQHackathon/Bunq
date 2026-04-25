@@ -92,9 +92,10 @@ interface HeroProps {
   review: number;
   block: number;
   anyRunning: boolean;
+  animate?: boolean;
 }
 
-function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
+function Hero({ title, total, ok, review, block, anyRunning, animate }: HeroProps) {
   const headerHeight = 220;
   const bgColor = '#0b0a09';
   const titleFadeStart = 15;
@@ -105,14 +106,14 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
       className="juris__hero"
       style={{ minHeight: `${headerHeight}px`, background: bgColor }}
     >
-      <HeroGradient />
+      <HeroGradient animate={animate} />
 
       <div
         style={{
           position: 'relative',
           zIndex: 2,
           textAlign: 'left',
-          padding: '10px 32px 1px',
+          padding: '10px 32px 24px',
         }}
       >
         <div className="juris__hero-eyebrow">
@@ -204,7 +205,7 @@ export default function LaunchDetailPage() {
   // Map canvas ref for ResizeObserver
   const canvasRef = useRef<HTMLDivElement>(null);
   const [mapHeight, setMapHeight] = useState<number>(
-    typeof window !== 'undefined' ? Math.max(420, window.innerHeight - 240) : 520,
+    typeof window !== 'undefined' ? Math.max(420, window.innerHeight - 48) : 520,
   );
 
   // Refs for row elements (for scroll-into-view on map select)
@@ -335,7 +336,7 @@ export default function LaunchDetailPage() {
               <Link to="/launches" className="juris__map-eyebrow">
                 ← ALL LAUNCHES
               </Link>
-              <span className="juris__map-h">{launch?.name ?? id}</span>
+              <span className="juris__map-h">{launch?.name ?? ' '}</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
@@ -483,12 +484,14 @@ export default function LaunchDetailPage() {
       {/* ── Right column ────────────────────────────────────────────────────── */}
       <div className="fjp">
         <Hero
-          title={launch?.name ?? (id ?? '')}
+          key={id}
+          title={launch?.name ?? ' '}
           total={counts.total}
           ok={counts.ok}
           review={counts.review}
           block={counts.block}
           anyRunning={anyRunning}
+          animate
         />
 
         <div className="fjp__body">
