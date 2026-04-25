@@ -15,23 +15,24 @@ import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GroundCheckStage implements Stage {
 
     private final BedrockService bedrockService;
@@ -40,6 +41,23 @@ public class GroundCheckStage implements Stage {
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
+    private final Executor pipelineExecutor;
+
+    public GroundCheckStage(BedrockService bedrockService,
+                            MappingRepository mappingRepository,
+                            ObligationRepository obligationRepository,
+                            ObjectMapper objectMapper,
+                            AuditLogService auditLogService,
+                            EvidenceRepository evidenceRepository,
+                            @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+        this.bedrockService = bedrockService;
+        this.mappingRepository = mappingRepository;
+        this.obligationRepository = obligationRepository;
+        this.objectMapper = objectMapper;
+        this.auditLogService = auditLogService;
+        this.evidenceRepository = evidenceRepository;
+        this.pipelineExecutor = pipelineExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -61,48 +79,53 @@ public class GroundCheckStage implements Stage {
             Map<String, Obligation> oblMap = obligations.stream()
                     .collect(Collectors.toMap(Obligation::getId, o -> o, (a, b) -> a));
 
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (Mapping mapping : mappings) {
                 if (mapping.getSemanticReason() == null) continue;
 
-                Obligation obl = oblMap.get(mapping.getObligationId());
-                if (obl == null) {
-                    obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
+                Obligation resolvedObl = oblMap.get(mapping.getObligationId());
+                if (resolvedObl == null) {
+                    resolvedObl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
                 }
+                final Obligation obl = resolvedObl;
 
-                String sourceText = obl != null && obl.getSource() != null
-                        ? obl.getSource().getSourceText()
-                        : "";
+                futures.add(CompletableFuture.supplyAsync(() -> {
+                    String sourceText = obl != null && obl.getSource() != null
+                            ? obl.getSource().getSourceText()
+                            : "";
 
-                boolean verified = groundCheck(mapping.getSemanticReason(), sourceText);
+                    boolean verified = groundCheck(mapping.getSemanticReason(), sourceText);
 
-                if (!verified) {
-                    mapping.setReviewerNotes("ground-check failed: claim not found in source text");
-                    mappingRepository.save(mapping);
-                    try {
-                        auditLogService.append(ctx.getSessionId(), mapping.getId(),
-                                "mapping_ground_check_failed", "pipeline:ground-check",
-                                Map.of("reason", "not found in retrieved chunk",
-                                        "evidence_sha256s", evidenceHashes));
-                    } catch (Exception e) {
-                        log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
+                    if (!verified) {
+                        mapping.setReviewerNotes("ground-check failed: claim not found in source text");
+                        mappingRepository.save(mapping);
+                        try {
+                            auditLogService.append(ctx.getSessionId(), mapping.getId(),
+                                    "mapping_ground_check_failed", "pipeline:ground-check",
+                                    Map.of("reason", "not found in retrieved chunk",
+                                            "evidence_sha256s", evidenceHashes));
+                        } catch (Exception e) {
+                            log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
+                        }
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
+                                Map.of("mappingId", mapping.getId(),
+                                        "reason", "not found in retrieved chunk"));
+                    } else {
+                        try {
+                            auditLogService.append(ctx.getSessionId(), mapping.getId(),
+                                    "mapping_verified", "pipeline:ground-check",
+                                    Map.of("confidence", mapping.getMappingConfidence(),
+                                            "evidence_sha256s", evidenceHashes));
+                        } catch (Exception e) {
+                            log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
+                        }
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.verified",
+                                MappingMapper.toDto(mapping));
                     }
-                    ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
-                            Map.of(
-                                    "mappingId", mapping.getId(),
-                                    "reason", "not found in retrieved chunk"));
-                } else {
-                    try {
-                        auditLogService.append(ctx.getSessionId(), mapping.getId(),
-                                "mapping_verified", "pipeline:ground-check",
-                                Map.of("confidence", mapping.getMappingConfidence(),
-                                        "evidence_sha256s", evidenceHashes));
-                    } catch (Exception e) {
-                        log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
-                    }
-                    ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.verified",
-                            MappingMapper.toDto(mapping));
-                }
+                    return null;
+                }, pipelineExecutor));
             }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
             log.info("GroundCheckStage: verified {} mappings for session {}", mappings.size(), ctx.getSessionId());
         });

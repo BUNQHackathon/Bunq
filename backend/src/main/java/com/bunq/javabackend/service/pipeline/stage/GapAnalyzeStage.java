@@ -17,24 +17,36 @@ import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
 import com.bunq.javabackend.util.IdGenerator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GapAnalyzeStage implements Stage {
 
     private final GapScorer gapScorer;
     private final GapRepository gapRepository;
     private final ObligationRepository obligationRepository;
     private final MappingRepository mappingRepository;
+    private final Executor pipelineExecutor;
+
+    public GapAnalyzeStage(GapScorer gapScorer, GapRepository gapRepository,
+                           ObligationRepository obligationRepository, MappingRepository mappingRepository,
+                           @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+        this.gapScorer = gapScorer;
+        this.gapRepository = gapRepository;
+        this.obligationRepository = obligationRepository;
+        this.mappingRepository = mappingRepository;
+        this.pipelineExecutor = pipelineExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -63,8 +75,14 @@ public class GapAnalyzeStage implements Stage {
                     .filter(o -> !coveredObligationIds.contains(o.getId()))
                     .toList();
 
+            log.info("GapAnalyzeStage: scoring {} gaps in parallel for session {}", uncovered.size(), ctx.getSessionId());
+            List<CompletableFuture<Gap>> futures = new ArrayList<>(uncovered.size());
             for (Obligation obl : uncovered) {
-                Gap gap = scoreGap(obl, ctx.getSessionId());
+                futures.add(CompletableFuture.supplyAsync(() -> scoreGap(obl, ctx.getSessionId()), pipelineExecutor));
+            }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            for (CompletableFuture<Gap> f : futures) {
+                Gap gap = f.join();
                 gapRepository.save(gap);
                 ctx.getGaps().add(gap);
                 ctx.getSseEmitterService().send(ctx.getSessionId(), "gap.identified",

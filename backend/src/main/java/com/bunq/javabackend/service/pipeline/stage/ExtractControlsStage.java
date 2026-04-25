@@ -17,24 +17,25 @@ import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import com.bunq.javabackend.util.IdGenerator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ExtractControlsStage implements Stage {
 
     private final BedrockService bedrockService;
@@ -43,9 +44,26 @@ public class ExtractControlsStage implements Stage {
     private final SessionRepository sessionRepository;
     private final ObjectMapper objectMapper;
     private final S3Client s3Client;
+    private final Executor pipelineExecutor;
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
+
+    public ExtractControlsStage(BedrockService bedrockService,
+                                ControlRepository controlRepository,
+                                DocumentRepository documentRepository,
+                                SessionRepository sessionRepository,
+                                ObjectMapper objectMapper,
+                                S3Client s3Client,
+                                @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+        this.bedrockService = bedrockService;
+        this.controlRepository = controlRepository;
+        this.documentRepository = documentRepository;
+        this.sessionRepository = sessionRepository;
+        this.objectMapper = objectMapper;
+        this.s3Client = s3Client;
+        this.pipelineExecutor = pipelineExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -84,44 +102,51 @@ public class ExtractControlsStage implements Stage {
             if (policyDocIds.isEmpty()) {
                 // No policy-kind documents attached — fall back to single Bedrock call on concatenated text
                 log.info("No policy-kind documents for session {}; running single Bedrock extraction", ctx.getSessionId());
-                runBedrockExtraction(ctx, policyText, null);
+                runBedrockExtraction(ctx, policyText, null, ctx.getControls());
                 return;
             }
 
-            for (String docId : policyDocIds) {
-                Document doc = documentRepository.findById(docId).orElse(null);
-                if (doc == null) {
-                    log.warn("Document {} not found in library; skipping", docId);
-                    continue;
-                }
+            List<Control> collectedControls = Collections.synchronizedList(new ArrayList<>());
 
-                if (doc.isControlsExtracted()) {
-                    // Cache hit — clone existing controls into this session
-                    List<Control> originals = controlRepository.findByDocumentId(doc.getId());
-                    log.info("Cache hit for document {} ({} controls); cloning into session {}",
-                            doc.getId(), originals.size(), ctx.getSessionId());
+            List<CompletableFuture<Void>> futures = policyDocIds.stream()
+                    .map(docId -> CompletableFuture.runAsync(() -> {
+                        Document doc = documentRepository.findById(docId).orElse(null);
+                        if (doc == null) {
+                            log.warn("Document {} not found in library; skipping", docId);
+                            return;
+                        }
 
-                    for (Control original : originals) {
-                        Control clone = cloneControl(original, ctx.getSessionId());
-                        controlRepository.save(clone);
-                        ctx.getControls().add(clone);
-                        ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
-                                ControlMapper.toDto(clone));
-                    }
+                        if (doc.isControlsExtracted()) {
+                            // Cache hit — clone existing controls into this session
+                            List<Control> originals = controlRepository.findByDocumentId(doc.getId());
+                            log.info("Cache hit for document {} ({} controls); cloning into session {}",
+                                    doc.getId(), originals.size(), ctx.getSessionId());
 
-                    ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
-                            Map.of("documentId", doc.getId(), "kind", "policy",
-                                    "recordsReused", originals.size()));
-                } else {
-                    // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
-                    String loaded = loadExtractedText(doc);
-                    String textToExtract = (loaded != null && !loaded.isBlank())
-                            ? loaded
-                            : policyText;
-                    log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
-                    runBedrockExtraction(ctx, textToExtract, doc);
-                }
-            }
+                            for (Control original : originals) {
+                                Control clone = cloneControl(original, ctx.getSessionId());
+                                controlRepository.save(clone);
+                                collectedControls.add(clone);
+                                ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
+                                        ControlMapper.toDto(clone));
+                            }
+
+                            ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
+                                    Map.of("documentId", doc.getId(), "kind", "policy",
+                                            "recordsReused", originals.size()));
+                        } else {
+                            // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
+                            String loaded = loadExtractedText(doc);
+                            String textToExtract = (loaded != null && !loaded.isBlank())
+                                    ? loaded
+                                    : policyText;
+                            log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
+                            runBedrockExtraction(ctx, textToExtract, doc, collectedControls);
+                        }
+                    }, pipelineExecutor))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            ctx.getControls().addAll(collectedControls);
         });
     }
 
@@ -139,7 +164,7 @@ public class ExtractControlsStage implements Stage {
         return null;
     }
 
-    private void runBedrockExtraction(PipelineContext ctx, String text, Document doc) {
+    private void runBedrockExtraction(PipelineContext ctx, String text, Document doc, List<Control> sink) {
         Map<String, String> userInput = Map.of("policy_text", text, "policy_id", "POL-" + ctx.getSessionId());
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
@@ -154,7 +179,7 @@ public class ExtractControlsStage implements Stage {
 
         for (Control ctrl : extracted) {
             controlRepository.save(ctrl);
-            ctx.getControls().add(ctrl);
+            sink.add(ctrl);
             ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
                     ControlMapper.toDto(ctrl));
         }

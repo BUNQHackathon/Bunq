@@ -143,7 +143,13 @@ public class PipelineOrchestrator {
 
         } catch (Exception e) {
             log.error("Pipeline failed for session {}: {}", sessionId, e.getMessage(), e);
-            PipelineStage failedStage = e instanceof PipelineStageException pse
+            Throwable root = e;
+            while ((root instanceof java.util.concurrent.CompletionException
+                    || root instanceof java.util.concurrent.ExecutionException)
+                    && root.getCause() != null) {
+                root = root.getCause();
+            }
+            PipelineStage failedStage = root instanceof PipelineStageException pse
                     ? pse.getStage()
                     : PipelineStage.INGEST;
             sseEmitterService.send(sessionId, StageFailedEvent.builder()

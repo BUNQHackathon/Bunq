@@ -9,11 +9,8 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -41,13 +38,13 @@ public class ObligationRepository {
     }
 
     public List<Obligation> findBySessionId(String sessionId) {
-        ScanEnhancedRequest request = ScanEnhancedRequest.builder()
-                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
-                        .expression("session_id = :sid")
-                        .expressionValues(Map.of(":sid", AttributeValue.builder().s(sessionId).build()))
-                        .build())
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(
+                        Key.builder().partitionValue(sessionId).build()))
                 .build();
-        return StreamSupport.stream(table.scan(request).items().spliterator(), false).toList();
+        return table.index("session-id-index").query(request).stream()
+                .flatMap(page -> StreamSupport.stream(page.items().spliterator(), false))
+                .toList();
     }
 
     public List<Obligation> scanAll(int limit) {

@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,44 +97,54 @@ public class ExtractObligationsStage implements Stage {
             if (regulationDocIds.isEmpty()) {
                 // No regulation-kind documents attached — fall back to single Bedrock call on concatenated text
                 log.info("No regulation-kind documents for session {}; running single Bedrock extraction", ctx.getSessionId());
-                runBedrockExtraction(ctx, regulation, null);
+                List<Obligation> singleBuffer = new ArrayList<>();
+                runBedrockExtraction(ctx, regulation, null, singleBuffer);
+                ctx.getObligations().addAll(singleBuffer);
                 return;
             }
 
+            List<Obligation> parallelBuffer = Collections.synchronizedList(new ArrayList<>());
+            List<CompletableFuture<Void>> docFutures = new ArrayList<>();
+
             for (String docId : regulationDocIds) {
-                Document doc = documentRepository.findById(docId).orElse(null);
-                if (doc == null) {
-                    log.warn("Document {} not found in library; skipping", docId);
-                    continue;
-                }
-
-                if (doc.isObligationsExtracted()) {
-                    // Cache hit — clone existing obligations into this session
-                    List<Obligation> originals = obligationRepository.findByDocumentId(doc.getId());
-                    log.info("Cache hit for document {} ({} obligations); cloning into session {}",
-                            doc.getId(), originals.size(), ctx.getSessionId());
-
-                    for (Obligation original : originals) {
-                        Obligation clone = cloneObligation(original, ctx.getSessionId());
-                        obligationRepository.save(clone);
-                        ctx.getObligations().add(clone);
-                        ctx.getSseEmitterService().send(ctx.getSessionId(), "obligation.extracted",
-                                ObligationMapper.toDto(clone));
+                docFutures.add(CompletableFuture.runAsync(() -> {
+                    Document doc = documentRepository.findById(docId).orElse(null);
+                    if (doc == null) {
+                        log.warn("Document {} not found in library; skipping", docId);
+                        return;
                     }
 
-                    ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
-                            Map.of("documentId", doc.getId(), "kind", "regulation",
-                                    "recordsReused", originals.size()));
-                } else {
-                    // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getRegulation()
-                    String loaded = loadExtractedText(doc);
-                    String textToExtract = (loaded != null && !loaded.isBlank())
-                            ? loaded
-                            : regulation;
-                    log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
-                    runBedrockExtraction(ctx, textToExtract, doc);
-                }
+                    if (doc.isObligationsExtracted()) {
+                        // Cache hit — clone existing obligations into this session
+                        List<Obligation> originals = obligationRepository.findByDocumentId(doc.getId());
+                        log.info("Cache hit for document {} ({} obligations); cloning into session {}",
+                                doc.getId(), originals.size(), ctx.getSessionId());
+
+                        for (Obligation original : originals) {
+                            Obligation clone = cloneObligation(original, ctx.getSessionId());
+                            obligationRepository.save(clone);
+                            parallelBuffer.add(clone);
+                            ctx.getSseEmitterService().send(ctx.getSessionId(), "obligation.extracted",
+                                    ObligationMapper.toDto(clone));
+                        }
+
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
+                                Map.of("documentId", doc.getId(), "kind", "regulation",
+                                        "recordsReused", originals.size()));
+                    } else {
+                        // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getRegulation()
+                        String loaded = loadExtractedText(doc);
+                        String textToExtract = (loaded != null && !loaded.isBlank())
+                                ? loaded
+                                : regulation;
+                        log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
+                        runBedrockExtraction(ctx, textToExtract, doc, parallelBuffer);
+                    }
+                }, pipelineExecutor));
             }
+
+            CompletableFuture.allOf(docFutures.toArray(new CompletableFuture[0])).join();
+            ctx.getObligations().addAll(parallelBuffer);
         });
     }
 
@@ -151,7 +162,7 @@ public class ExtractObligationsStage implements Stage {
         return null;
     }
 
-    private void runBedrockExtraction(PipelineContext ctx, String text, Document doc) {
+    private void runBedrockExtraction(PipelineContext ctx, String text, Document doc, List<Obligation> buffer) {
         List<String> chunks = TextChunker.chunk(text);
         String documentId = doc != null ? doc.getId() : null;
         log.info("Splitting doc {} ({} chars) into {} chunks", documentId, text.length(), chunks.size());
@@ -175,7 +186,7 @@ public class ExtractObligationsStage implements Stage {
 
         for (Obligation obl : all) {
             obligationRepository.save(obl);
-            ctx.getObligations().add(obl);
+            buffer.add(obl);
             ctx.getSseEmitterService().send(ctx.getSessionId(), "obligation.extracted",
                     ObligationMapper.toDto(obl));
         }
