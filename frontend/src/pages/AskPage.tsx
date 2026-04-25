@@ -68,12 +68,12 @@ function IconSend({ disabled }: { disabled?: boolean }) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { label: 'PRIVACY', color: '#B08AFF' },
-  { label: 'AML', color: '#FF9F55' },
-  { label: 'LICENSING', color: '#A8D66C' },
-  { label: 'TERMS', color: '#5ECFA0' },
-  { label: 'SANCTIONS', color: '#6EB7E8' },
-  { label: 'REPORTS', color: '#E05050' },
+  { label: 'PRIVACY', color: '#8ee06b' },
+  { label: 'AML', color: '#5fd6c6' },
+  { label: 'LICENSING', color: '#6ab8ff' },
+  { label: 'TERMS', color: '#5a90d4' },
+  { label: 'SANCTIONS', color: '#4a8fe8' },
+  { label: 'REPORTS', color: '#e03a3a' },
 ];
 
 function CategoryRow() {
