@@ -8,16 +8,4 @@
       "candidate_controls": {"type": "array", "items": {"type": "object"}}
     }
   },
-  "output_schema": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "control_id": {"type": "string"},
-        "match_score": {"type": "number", "minimum": 0, "maximum": 100},
-        "mapping_type": {"enum": ["direct", "partial", "requires_multiple"]},
-        "reason": {"type": "string"}
-      }
-    }
-  }
 }

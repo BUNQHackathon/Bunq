@@ -10,19 +10,4 @@
       "section_id": {"type": "string"}
     }
   },
-  "output_schema": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "control_type": {"enum": ["technical", "organizational", "procedural"]},
-        "category": {"enum": ["preventive", "detective", "corrective"]},
-        "description": {"type": "string"},
-        "evidence_type": {"type": "string"},
-        "implementation_status": {"enum": ["planned", "in_progress", "implemented", "unclear"]},
-        "source_text_snippet": {"type": "string"},
-        "extraction_confidence": {"type": "number"}
-      }
-    }
-  }
 }

@@ -155,10 +155,16 @@ public class PipelineOrchestrator {
                     .build());
             if (launchId != null && jurisdictionCode != null) {
                 try {
+                    String stageName = failedStage.name();
+                    Throwable rootCause = e.getCause() != null ? e.getCause() : e;
+                    String errorMsg = e.getClass().getSimpleName() + ": " + rootCause.getMessage();
+                    String truncatedError = errorMsg.length() > 1000 ? errorMsg.substring(0, 1000) : errorMsg;
                     jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
                             .ifPresent(run -> {
                                 run.setStatus("FAILED");
                                 run.setLastRunAt(Instant.now().toString());
+                                run.setFailedStage(stageName);
+                                run.setLastError(truncatedError);
                                 jurisdictionRunRepository.save(run);
                             });
                 } catch (Exception ex) {

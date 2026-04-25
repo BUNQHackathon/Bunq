@@ -270,6 +270,18 @@ public class LaunchService {
         return run;
     }
 
+    public List<JurisdictionRun> rerunFailed(String launchId) {
+        launchRepository.findById(launchId)
+                .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
+        List<JurisdictionRun> all = jurisdictionRunRepository.findByLaunchId(launchId);
+        List<JurisdictionRun> failed = all.stream()
+                .filter(r -> "FAILED".equals(r.getStatus()))
+                .toList();
+        return failed.stream()
+                .map(r -> runJurisdiction(launchId, r.getJurisdictionCode()))
+                .toList();
+    }
+
     public LaunchSummaryDTO toSummaryWithCount(Launch launch) {
         List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(launch.getId());
         String aggregateVerdict = computeAggregateVerdict(runs);

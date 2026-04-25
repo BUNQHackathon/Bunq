@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,6 +36,9 @@ import java.util.stream.Collectors;
 public class IngestStage implements Stage {
 
     private static final long MAX_PLAIN_TEXT_BYTES = 5 * 1024 * 1024L; // 5 MB
+
+    /** Dedup map: prevents two concurrent sessions from double-extracting the same doc. */
+    private final ConcurrentHashMap<String, CompletableFuture<String>> inFlightExtractions = new ConcurrentHashMap<>();
 
     private final SessionRepository sessionRepository;
     private final DocumentRepository documentRepository;
@@ -98,24 +103,37 @@ public class IngestStage implements Stage {
                     ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached", payload);
 
                 } else if (containsIgnoreCase(doc.getContentType(), "pdf")) {
-                    // Textract path
-                    log.info("Running Textract for document {} s3Key={}", docId, doc.getS3Key());
-                    extractedText = textractAsyncService.extractText(uploadsBucket, doc.getS3Key(), ctx);
+                    // Textract path — deduped so concurrent sessions share one job per docId
+                    final String finalDocId = docId;
+                    CompletableFuture<String> future = inFlightExtractions.computeIfAbsent(docId, id -> {
+                        CompletableFuture<String> f = CompletableFuture.supplyAsync(() -> {
+                            try {
+                                log.info("Running Textract for document {} s3Key={}", finalDocId, doc.getS3Key());
+                                String text = textractAsyncService.extractText(uploadsBucket, doc.getS3Key(), ctx);
+                                Integer pageCount = estimatePageCount(text);
+                                String extractionKey = "extractions/" + finalDocId + ".txt";
+                                s3Client.putObject(PutObjectRequest.builder()
+                                                .bucket(uploadsBucket)
+                                                .key(extractionKey)
+                                                .contentType("text/plain; charset=utf-8")
+                                                .build(),
+                                        RequestBody.fromString(text, StandardCharsets.UTF_8));
+                                log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, extractionKey, text.length());
+                                doc.setExtractionS3Key(extractionKey);
+                                doc.setExtractedAt(now);
+                                doc.setPageCount(pageCount);
+                                documentRepository.save(doc);
+                                return text;
+                            } catch (Exception e) {
+                                throw new CompletionException(e);
+                            }
+                        });
+                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                        return f;
+                    });
+                    extractedText = future.join();
 
                     Integer pageCount = estimatePageCount(extractedText);
-                    String extractionKey = "extractions/" + docId + ".txt";
-                    s3Client.putObject(PutObjectRequest.builder()
-                                    .bucket(uploadsBucket)
-                                    .key(extractionKey)
-                                    .contentType("text/plain; charset=utf-8")
-                                    .build(),
-                            RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
-                    log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, extractionKey, extractedText.length());
-                    doc.setExtractionS3Key(extractionKey);
-                    doc.setExtractedAt(now);
-                    doc.setPageCount(pageCount);
-                    documentRepository.save(doc);
-
                     Map<String, Object> payload = new LinkedHashMap<>();
                     payload.put("documentId", docId);
                     payload.put("kind", doc.getKind());
@@ -124,27 +142,40 @@ public class IngestStage implements Stage {
                     ctx.getSseEmitterService().send(ctx.getSessionId(), "document.extracted", payload);
 
                 } else if (containsIgnoreCase(doc.getContentType(), "audio")) {
-                    // Transcribe path
-                    log.info("Running Transcribe for document {} s3Key={}", docId, doc.getS3Key());
-                    try {
-                        extractedText = transcribeAsyncService.transcribeAudio(uploadsBucket, doc.getS3Key(), ctx);
-                    } catch (Exception e) {
-                        log.warn("Transcribe failed for document {}: {}", docId, e.getMessage());
-                        extractedText = "";
-                    }
-
-                    String audioExtractionKey = "extractions/" + docId + ".txt";
-                    s3Client.putObject(PutObjectRequest.builder()
-                                    .bucket(uploadsBucket)
-                                    .key(audioExtractionKey)
-                                    .contentType("text/plain; charset=utf-8")
-                                    .build(),
-                            RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
-                    log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, audioExtractionKey, extractedText.length());
-                    doc.setExtractionS3Key(audioExtractionKey);
-                    doc.setExtractedAt(now);
-                    doc.setPageCount(null);
-                    documentRepository.save(doc);
+                    // Transcribe path — deduped so concurrent sessions share one job per docId
+                    final String finalDocId = docId;
+                    CompletableFuture<String> future = inFlightExtractions.computeIfAbsent(docId, id -> {
+                        CompletableFuture<String> f = CompletableFuture.supplyAsync(() -> {
+                            try {
+                                log.info("Running Transcribe for document {} s3Key={}", finalDocId, doc.getS3Key());
+                                String text;
+                                try {
+                                    text = transcribeAsyncService.transcribeAudio(uploadsBucket, doc.getS3Key(), ctx);
+                                } catch (Exception e) {
+                                    log.warn("Transcribe failed for document {}: {}", finalDocId, e.getMessage());
+                                    text = "";
+                                }
+                                String audioExtractionKey = "extractions/" + finalDocId + ".txt";
+                                s3Client.putObject(PutObjectRequest.builder()
+                                                .bucket(uploadsBucket)
+                                                .key(audioExtractionKey)
+                                                .contentType("text/plain; charset=utf-8")
+                                                .build(),
+                                        RequestBody.fromString(text, StandardCharsets.UTF_8));
+                                log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, audioExtractionKey, text.length());
+                                doc.setExtractionS3Key(audioExtractionKey);
+                                doc.setExtractedAt(now);
+                                doc.setPageCount(null);
+                                documentRepository.save(doc);
+                                return text;
+                            } catch (Exception e) {
+                                throw new CompletionException(e);
+                            }
+                        });
+                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                        return f;
+                    });
+                    extractedText = future.join();
 
                     Map<String, Object> payload = new LinkedHashMap<>();
                     payload.put("documentId", docId);
@@ -154,30 +185,43 @@ public class IngestStage implements Stage {
                     ctx.getSseEmitterService().send(ctx.getSessionId(), "document.extracted", payload);
 
                 } else {
-                    // Plain text / JSON / other — download bytes from S3 (5 MB guard)
+                    // Plain text / JSON / other — download bytes from S3 (5 MB guard) — deduped per docId
                     if (doc.getSizeBytes() != null && doc.getSizeBytes() > MAX_PLAIN_TEXT_BYTES) {
                         log.warn("Skipping S3 download for document {} — sizeBytes={} exceeds 5 MB limit",
                                 docId, doc.getSizeBytes());
                         extractedText = "";
                     } else {
-                        byte[] bytes = s3Client.getObjectAsBytes(
-                                GetObjectRequest.builder()
-                                        .bucket(uploadsBucket)
-                                        .key(doc.getS3Key())
-                                        .build())
-                                .asByteArray();
-                        extractedText = new String(bytes, StandardCharsets.UTF_8);
-                        String plainExtractionKey = "extractions/" + docId + ".txt";
-                        s3Client.putObject(PutObjectRequest.builder()
-                                        .bucket(uploadsBucket)
-                                        .key(plainExtractionKey)
-                                        .contentType("text/plain; charset=utf-8")
-                                        .build(),
-                                RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
-                        log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, plainExtractionKey, extractedText.length());
-                        doc.setExtractionS3Key(plainExtractionKey);
-                        doc.setExtractedAt(now);
-                        documentRepository.save(doc);
+                        final String finalDocId = docId;
+                        CompletableFuture<String> future = inFlightExtractions.computeIfAbsent(docId, id -> {
+                            CompletableFuture<String> f = CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    byte[] bytes = s3Client.getObjectAsBytes(
+                                            GetObjectRequest.builder()
+                                                    .bucket(uploadsBucket)
+                                                    .key(doc.getS3Key())
+                                                    .build())
+                                            .asByteArray();
+                                    String text = new String(bytes, StandardCharsets.UTF_8);
+                                    String plainExtractionKey = "extractions/" + finalDocId + ".txt";
+                                    s3Client.putObject(PutObjectRequest.builder()
+                                                    .bucket(uploadsBucket)
+                                                    .key(plainExtractionKey)
+                                                    .contentType("text/plain; charset=utf-8")
+                                                    .build(),
+                                            RequestBody.fromString(text, StandardCharsets.UTF_8));
+                                    log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, plainExtractionKey, text.length());
+                                    doc.setExtractionS3Key(plainExtractionKey);
+                                    doc.setExtractedAt(now);
+                                    documentRepository.save(doc);
+                                    return text;
+                                } catch (Exception e) {
+                                    throw new CompletionException(e);
+                                }
+                            });
+                            f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                            return f;
+                        });
+                        extractedText = future.join();
 
                         Map<String, Object> payload = new LinkedHashMap<>();
                         payload.put("documentId", docId);

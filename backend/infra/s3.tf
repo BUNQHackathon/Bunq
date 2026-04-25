@@ -66,3 +66,16 @@ resource "aws_s3_bucket_public_access_block" "kb_sources" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+resource "aws_s3_bucket_cors_configuration" "kb_sources" {
+  for_each = toset(local.kb_sources)
+  bucket   = aws_s3_bucket.kb_sources[each.key].id
+
+  cors_rule {
+    allowed_methods = ["GET", "HEAD"]
+    allowed_origins = [var.amplify_origin, "http://localhost:5173", "http://localhost:3000"]
+    allowed_headers = ["*"]
+    expose_headers  = ["ETag", "Content-Length", "Content-Range"]
+    max_age_seconds = 3000
+  }
+}

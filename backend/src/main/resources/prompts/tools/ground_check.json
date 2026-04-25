@@ -8,11 +8,4 @@
       "retrieved_chunk_text": {"type": "string"}
     }
   },
-  "output_schema": {
-    "type": "object",
-    "properties": {
-      "verified": {"type": "boolean"},
-      "explanation": {"type": "string"}
-    }
-  }
 }

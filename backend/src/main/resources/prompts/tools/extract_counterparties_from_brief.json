@@ -7,16 +7,4 @@
       "brief_text": {"type": "string"}
     }
   },
-  "output_schema": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "name": {"type": "string"},
-        "country": {"type": "string"},
-        "type": {"enum": ["individual", "company", "organization", "government", "unknown"]},
-        "confidence": {"type": "number"}
-      }
-    }
-  }
 }

@@ -51,6 +51,8 @@ public class LaunchMapper {
                 .proofPackS3Key(r.getProofPackS3Key())
                 .lastRunAt(r.getLastRunAt())
                 .status(r.getStatus())
+                .failedStage(r.getFailedStage())
+                .lastError(r.getLastError())
                 .proofPackAvailable(r.getProofPackS3Key() != null)
                 .build();
     }
@@ -68,6 +70,8 @@ public class LaunchMapper {
                 .proofPackS3Key(r.getProofPackS3Key())
                 .lastRunAt(r.getLastRunAt())
                 .status(r.getStatus())
+                .failedStage(r.getFailedStage())
+                .lastError(r.getLastError())
                 .summary(summary)
                 .requiredChanges(requiredChanges)
                 .blockers(blockers)

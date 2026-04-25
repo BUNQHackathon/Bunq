@@ -45,4 +45,10 @@ public class JurisdictionRun {
 
     @Getter(onMethod_ = @DynamoDbAttribute("status"))
     private String status;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("failed_stage"))
+    private String failedStage;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("last_error"))
+    private String lastError;
 }

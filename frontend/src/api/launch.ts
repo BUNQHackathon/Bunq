@@ -156,6 +156,11 @@ export const JURISDICTION_CATALOG: Array<{ code: string; name: string; flag: str
   { code: 'US', name: 'United States', flag: '🇺🇸' },
 ];
 
+export async function rerunFailedJurisdictions(launchId: string): Promise<JurisdictionRun[]> {
+  const res = await postJson<JurisdictionRun[]>(`/launches/${encodeURIComponent(launchId)}/rerun-failed`);
+  return (Array.isArray(res) ? res : []).map(normalizeRun);
+}
+
 export function jurisdictionLabel(code: string): string {
   return JURISDICTION_CATALOG.find((j) => j.code === code)?.name ?? code;
 }

@@ -21,6 +21,8 @@ public class JurisdictionRunResponseDTO {
     private String proofPackS3Key;
     private String lastRunAt;
     private String status;
+    private String failedStage;
+    private String lastError;
     private String summary;
     private List<String> requiredChanges;
     private List<String> blockers;

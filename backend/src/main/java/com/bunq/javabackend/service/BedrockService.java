@@ -93,7 +93,8 @@ public class BedrockService {
             }
             return root;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to invoke Bedrock with tool", e);
+            log.error("Failed to invoke Bedrock with tool: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to invoke Bedrock with tool: " + e.getMessage(), e);
         }
     }
 }

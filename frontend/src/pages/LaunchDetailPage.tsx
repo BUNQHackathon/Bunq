@@ -3,12 +3,14 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   getLaunch,
   downloadProofPack,
+  rerunFailedJurisdictions,
   jurisdictionFlag,
   jurisdictionLabel,
   type LaunchDetail,
   type Verdict,
   type JurisdictionStatus,
 } from '../api/launch';
+import { useJurisdictionStream } from '../hooks/useJurisdictionStream';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import VerdictPill, { verdictToHex } from '../components/VerdictPill';
@@ -59,6 +61,48 @@ if (typeof document !== 'undefined' && !document.getElementById(PULSE_STYLE_ID))
   document.head.appendChild(s);
 }
 
+// ── Live stage indicator (additive, shown only when RUNNING + SSE active) ─────
+function JurisdictionLiveIndicator({
+  launchId,
+  code,
+  onDone,
+}: {
+  launchId: string;
+  code: string;
+  onDone: () => void;
+}) {
+  const { currentStage, status, lastEvent } = useJurisdictionStream(launchId, code, { onDone });
+
+  if (status === 'idle' || status === 'closed') return null;
+
+  const ordinal = lastEvent?.type === 'stage.started' ? lastEvent.ordinal : undefined;
+  const total = lastEvent?.type === 'stage.started' ? lastEvent.totalStages : undefined;
+  const label = currentStage
+    ? `${currentStage}${ordinal != null && total != null ? ` ${ordinal}/${total}` : ''}`
+    : status === 'connecting'
+    ? 'Connecting…'
+    : null;
+
+  if (!label) return null;
+
+  return (
+    <span
+      className="mono-label"
+      style={{
+        marginTop: 6,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        fontSize: 11,
+        color: 'var(--ink-2)',
+      }}
+    >
+      <span style={{ animation: 'ldPulse 1s ease-in-out infinite', display: 'inline-block' }}>▶</span>
+      {label}
+    </span>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function LaunchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -68,10 +112,15 @@ export default function LaunchDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'2d' | '3d'>('2d');
   const [selectedIso3, setSelectedIso3] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   // Keep a ref to detail so the interval closure can read current value
   const detailRef = useRef<LaunchDetail | null>(null);
   detailRef.current = detail;
+
+  // Exposed so SSE onDone can trigger a refetch
+  const loadRef = useRef<(() => void) | null>(null);
+  const refetch = () => loadRef.current?.();
 
   useEffect(() => {
     if (!id) return;
@@ -81,6 +130,8 @@ export default function LaunchDetailPage() {
       getLaunch(id)
         .then((d) => { if (!cancelled) setDetail(d); })
         .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); });
+
+    loadRef.current = load;
 
     load();
 
@@ -94,6 +145,7 @@ export default function LaunchDetailPage() {
     return () => {
       cancelled = true;
       clearInterval(t);
+      loadRef.current = null;
     };
   }, [id]);
 
@@ -112,6 +164,17 @@ export default function LaunchDetailPage() {
 
   // ── Aggregate state ─────────────────────────────────────────────────────────
   const aggState: AggregateState = detail ? aggregateState(detail.jurisdictions) : null;
+
+  const hasFailed = detail?.jurisdictions.some((r) => r.status === 'FAILED') ?? false;
+
+  const handleRerunFailed = () => {
+    if (!id || retrying) return;
+    setRetrying(true);
+    rerunFailedJurisdictions(id)
+      .then(() => { refetch(); })
+      .catch(() => {})
+      .finally(() => { setRetrying(false); });
+  };
 
   // ── Selected jurisdiction run ───────────────────────────────────────────────
   const selectedIso2 = selectedIso3 ? (ISO3_TO_ISO2[selectedIso3] ?? selectedIso3) : null;
@@ -195,8 +258,17 @@ export default function LaunchDetailPage() {
           )}
         </div>
 
-        {/* 2D / 3D segmented toggle */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        {/* 2D / 3D segmented toggle + retry */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {hasFailed && (
+            <button
+              className="btn btn--sm"
+              disabled={retrying}
+              onClick={handleRerunFailed}
+            >
+              {retrying ? 'Retrying…' : 'Retry failed'}
+            </button>
+          )}
           <button
             className={`chip chip--sm${view === '2d' ? ' chip--orange' : ''}`}
             onClick={() => setView('2d')}
@@ -287,12 +359,23 @@ export default function LaunchDetailPage() {
             {selectedRun.status === 'COMPLETE' && <VerdictPill verdict={selectedRun.verdict} />}
 
             {selectedRun.status === 'RUNNING' && (
-              <span
-                className="chip chip--sm"
-                style={{ marginTop: 10, display: 'inline-flex', animation: 'ldPulse 1.5s ease-in-out infinite' }}
-              >
-                Running…
-              </span>
+              <div style={{ marginTop: 10 }}>
+                <span
+                  className="chip chip--sm"
+                  style={{ display: 'inline-flex', animation: 'ldPulse 1.5s ease-in-out infinite' }}
+                >
+                  Running…
+                </span>
+                {id && selectedIso2 && (
+                  <div>
+                    <JurisdictionLiveIndicator
+                      launchId={id}
+                      code={selectedIso2}
+                      onDone={refetch}
+                    />
+                  </div>
+                )}
+              </div>
             )}
             {selectedRun.status === 'FAILED' && (
               <span
@@ -396,7 +479,7 @@ export default function LaunchDetailPage() {
                 ) : j.status === 'FAILED' ? (
                   <span className="mono-label" style={{ color: 'var(--danger, #d94a4a)' }}>FAILED</span>
                 ) : (
-                  <span className="mono-label" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>RUNNING</span>
+                  <StripLiveLabel launchId={id!} code={j.jurisdictionCode} onDone={refetch} />
                 )}
               </button>
             );
@@ -404,6 +487,21 @@ export default function LaunchDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Strip chip live label (shows current stage or RUNNING pulse) ──────────────
+function StripLiveLabel({ launchId, code, onDone }: { launchId: string; code: string; onDone: () => void }) {
+  const { currentStage, lastEvent } = useJurisdictionStream(launchId, code, { onDone });
+  const ordinal = lastEvent?.type === 'stage.started' ? lastEvent.ordinal : undefined;
+  const total = lastEvent?.type === 'stage.started' ? lastEvent.totalStages : undefined;
+  const label = currentStage
+    ? `${currentStage}${ordinal != null && total != null ? ` ${ordinal}/${total}` : ''}`
+    : 'RUNNING';
+  return (
+    <span className="mono-label" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>
+      {label}
+    </span>
   );
 }
 

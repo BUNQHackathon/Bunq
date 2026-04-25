@@ -15,12 +15,15 @@ import com.bunq.javabackend.repository.LaunchRepository;
 import com.bunq.javabackend.service.AutoDocService;
 import com.bunq.javabackend.service.LaunchService;
 import com.bunq.javabackend.service.ProofPackService;
+import com.bunq.javabackend.service.sse.SseEmitterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,6 +39,7 @@ public class LaunchController {
     private final ProofPackService proofPackService;
     private final JurisdictionRunRepository jurisdictionRunRepository;
     private final SidecarClient sidecarClient;
+    private final SseEmitterService sseEmitterService;
 
     @PostMapping
     public ResponseEntity<LaunchResponseDTO> createLaunch(@Valid @RequestBody CreateLaunchRequestDTO request) {
@@ -55,6 +59,13 @@ public class LaunchController {
     @GetMapping("/{id}")
     public ResponseEntity<LaunchResponseDTO> getLaunch(@PathVariable String id) {
         return ResponseEntity.ok(launchService.getLaunch(id));
+    }
+
+    @PostMapping("/{id}/rerun-failed")
+    public ResponseEntity<List<JurisdictionRunResponseDTO>> rerunFailed(@PathVariable String id) {
+        var runs = launchService.rerunFailed(id);
+        var dtos = runs.stream().map(LaunchMapper::toDto).toList();
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(dtos);
     }
 
     @PostMapping("/{id}/jurisdictions/{code}/run")
@@ -89,6 +100,26 @@ public class LaunchController {
                 .header(HttpHeaders.CONTENT_TYPE, "application/zip")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(bytes);
+    }
+
+    @GetMapping(value = "/{launchId}/jurisdictions/{code}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter jurisdictionStream(
+            @PathVariable String launchId,
+            @PathVariable String code) {
+        var run = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code)
+                .orElseThrow(() -> new NotFoundException(
+                        "JurisdictionRun not found: launch=" + launchId + " code=" + code));
+        String sessionId = run.getCurrentSessionId();
+        if (sessionId == null) {
+            SseEmitter emitter = new SseEmitter(0L);
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"message\":\"no active session\"}"));
+            } catch (Exception ignored) {
+            }
+            emitter.complete();
+            return emitter;
+        }
+        return sseEmitterService.register(sessionId);
     }
 
     @GetMapping("/{id}/jurisdictions/{code}/compliance-map")
