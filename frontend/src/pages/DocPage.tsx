@@ -25,22 +25,22 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const CATEGORY_COLOR: Record<string, string> = {
   'Terms & Conditions': 'text-prism-terms',
-  Privacy:             'text-prism-privacy',
-  AML:                 'text-prism-aml',
-  Licensing:           'text-prism-licensing',
-  Reports:             'text-prism-reports',
-  Pricing:             'text-prism-orange',
-  Sanctions:           'text-prism-sanctions',
+  Privacy: 'text-prism-privacy',
+  AML: 'text-prism-aml',
+  Licensing: 'text-prism-licensing',
+  Reports: 'text-prism-reports',
+  Pricing: 'text-prism-orange',
+  Sanctions: 'text-prism-sanctions',
 };
 
 const CATEGORY_DOT: Record<string, string> = {
   'Terms & Conditions': 'bg-prism-terms',
-  Privacy:             'bg-prism-privacy',
-  AML:                 'bg-prism-aml',
-  Licensing:           'bg-prism-licensing',
-  Reports:             'bg-prism-reports',
-  Pricing:             'bg-prism-orange',
-  Sanctions:           'bg-prism-sanctions',
+  Privacy: 'bg-prism-privacy',
+  AML: 'bg-prism-aml',
+  Licensing: 'bg-prism-licensing',
+  Reports: 'bg-prism-reports',
+  Pricing: 'bg-prism-orange',
+  Sanctions: 'bg-prism-sanctions',
 };
 
 function categoryColorClass(cat: string): string {
@@ -202,7 +202,12 @@ export default function DocPage() {
   }, [docId]);
 
   useEffect(() => {
-    listDocuments().then(setAllDocs).catch(() => {});
+    setPageNumber(1);
+    setNumPages(null);
+  }, [docId]);
+
+  useEffect(() => {
+    listDocuments().then(setAllDocs).catch(() => { });
   }, []);
 
   const byCategory = useMemo(() => {
@@ -331,20 +336,6 @@ export default function DocPage() {
 
           {/* Action chips */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-pill bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 hover:bg-white/[0.08] hover:text-white transition-colors"
-            >
-              <IconStar size={12} />
-              Summarise
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-pill bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 hover:bg-white/[0.08] hover:text-white transition-colors"
-            >
-              <IconChatBubble size={12} />
-              Cite in chat
-            </button>
             <a
               href={doc.downloadUrl}
               target="_blank"
@@ -354,13 +345,6 @@ export default function DocPage() {
               <IconDownload size={12} />
               Download PDF
             </a>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-pill bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 hover:bg-white/[0.08] hover:text-white transition-colors"
-            >
-              <IconDownload size={12} />
-              Export
-            </button>
           </div>
         </div>
 
@@ -464,6 +448,57 @@ export default function DocPage() {
               {/* Divider */}
               <div className="mb-8 mt-6 border-b border-[#E8E5E0]" />
 
+              {/* PDF Viewer */}
+              {doc.downloadUrl && (
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-[12px] text-[#666]">
+                      <button
+                        type="button"
+                        disabled={pageNumber <= 1}
+                        onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                        className="rounded-md border border-[#E8E5E0] px-2 py-1 disabled:opacity-40 hover:bg-[#F0EDE7]"
+                      >‹</button>
+                      <span className="font-mono">{pageNumber} / {numPages ?? '…'}</span>
+                      <button
+                        type="button"
+                        disabled={!numPages || pageNumber >= numPages}
+                        onClick={() => setPageNumber((p) => Math.min(numPages ?? p, p + 1))}
+                        className="rounded-md border border-[#E8E5E0] px-2 py-1 disabled:opacity-40 hover:bg-[#F0EDE7]"
+                      >›</button>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] text-[#666]">
+                      <button
+                        type="button"
+                        onClick={() => setScale((s) => Math.max(0.5, +(s - 0.1).toFixed(2)))}
+                        className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]"
+                      >−</button>
+                      <span className="font-mono w-[44px] text-center">{Math.round(scale * 100)}%</span>
+                      <button
+                        type="button"
+                        onClick={() => setScale((s) => Math.min(2.5, +(s + 0.1).toFixed(2)))}
+                        className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]"
+                      >+</button>
+                      <button
+                        type="button"
+                        onClick={() => setScale(1)}
+                        className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]"
+                      >Fit</button>
+                    </div>
+                  </div>
+                  <div className="flex justify-center rounded-lg border border-[#E8E5E0] bg-white p-3 overflow-auto">
+                    <Document
+                      file={doc.downloadUrl}
+                      onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+                      loading={<div className="py-12 text-[12px] text-[#999]">Loading PDF…</div>}
+                      error={<div className="py-12 text-[12px] text-red-500">Failed to load PDF</div>}
+                    >
+                      <Page pageNumber={pageNumber} scale={scale} renderAnnotationLayer={false} renderTextLayer={false} />
+                    </Document>
+                  </div>
+                </div>
+              )}
+
               {/* Sections */}
               {doc.sections.map((section, i) => (
                 <div key={i}>
@@ -549,31 +584,39 @@ export default function DocPage() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
-                  {chatMessages.map((msg, i) => (
-                    msg.role === 'user' ? (
-                      <div key={i} className="flex justify-end">
-                        <div
-                          className="max-w-[80%] rounded-2xl px-3 py-2.5 text-[12px] leading-[1.6] text-white"
-                          style={{ background: '#FF7819' }}
-                        >
-                          {msg.text}
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={i} className="flex justify-start">
-                        <div
-                          className="max-w-[85%] rounded-2xl px-3 py-2.5 text-[12px] leading-[1.6] text-white/80"
-                          style={{
-                            background: '#171717',
-                            border: '1px solid rgba(255,255,255,0.06)',
-                          }}
-                        >
-                          {msg.text}
-                        </div>
-                      </div>
-                    )
-                  ))}
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  {chatMessages.length === 0 ? (
+                    <div className="flex flex-1 items-center justify-center">
+                      <span className="font-mono text-[12px] text-white/30">No messages yet</span>
+                    </div>
+                  ) : (
+                    <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
+                      {chatMessages.map((msg, i) => (
+                        msg.role === 'user' ? (
+                          <div key={i} className="flex justify-end">
+                            <div
+                              className="max-w-[80%] rounded-2xl px-3 py-2.5 text-[12px] leading-[1.6] text-white"
+                              style={{ background: '#FF7819' }}
+                            >
+                              {msg.text}
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={i} className="flex justify-start">
+                            <div
+                              className="max-w-[85%] rounded-2xl px-3 py-2.5 text-[12px] leading-[1.6] text-white/80"
+                              style={{
+                                background: '#171717',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                              }}
+                            >
+                              {msg.text}
+                            </div>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Input */}

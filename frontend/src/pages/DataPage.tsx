@@ -183,9 +183,8 @@ function TreeNode({ node, level, selectedId, expandedIds, onSelect, onToggle }: 
   return (
     <div>
       <div
-        className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-white/[0.03] transition-colors ${
-          isSelected ? 'bg-white/[0.04]' : ''
-        }`}
+        className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-white/[0.03] transition-colors ${isSelected ? 'bg-white/[0.04]' : ''
+          }`}
         style={{ paddingLeft: `${16 + level * 12}px` }}
         onClick={() => {
           onSelect(node.id);
@@ -195,9 +194,8 @@ function TreeNode({ node, level, selectedId, expandedIds, onSelect, onToggle }: 
         {hasChildren ? (
           <IconChevron
             size={10}
-            className={`text-white/40 flex-shrink-0 transition-transform duration-150 ${
-              isExpanded ? 'rotate-0' : '-rotate-90'
-            }`}
+            className={`text-white/40 flex-shrink-0 transition-transform duration-150 ${isExpanded ? 'rotate-0' : '-rotate-90'
+              }`}
           />
         ) : (
           <span className="w-[10px] h-[10px] flex-shrink-0" />
@@ -208,11 +206,10 @@ function TreeNode({ node, level, selectedId, expandedIds, onSelect, onToggle }: 
         )}
 
         <span
-          className={`flex-1 min-w-0 truncate ${
-            level === 0
-              ? 'text-[12px] text-white/80'
-              : 'text-[11.5px] text-white/70'
-          } ${isSelected ? 'text-white' : ''}`}
+          className={`flex-1 min-w-0 truncate ${level === 0
+            ? 'text-[12px] text-white/80'
+            : 'text-[11.5px] text-white/70'
+            } ${isSelected ? 'text-white' : ''}`}
         >
           {node.name}
         </span>
@@ -313,11 +310,10 @@ function DocCard({ doc, onUseInAnalysis, usingId, useError = null }: DocCardProp
           <button
             disabled={isInFlight}
             onClick={(e) => { e.stopPropagation(); onUseInAnalysis?.(doc); }}
-            className={`w-full font-mono text-[11px] px-3 py-1.5 rounded-full transition-colors ${
-              isInFlight
-                ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed'
-                : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'
-            }`}
+            className={`w-full font-mono text-[11px] px-3 py-1.5 rounded-full transition-colors ${isInFlight
+              ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed'
+              : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'
+              }`}
           >
             {isInFlight ? 'Starting…' : 'Use in new analysis'}
           </button>
@@ -351,7 +347,7 @@ function ChatRow({ chat }: ChatRowProps) {
   return (
     <div
       className="px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] cursor-pointer flex flex-col gap-1"
-      onClick={() => {}}
+      onClick={() => { }}
     >
       <div className="flex items-baseline justify-between gap-4">
         <span className="text-[13.5px] text-white/85 font-medium truncate">{chat.title}</span>
@@ -392,7 +388,7 @@ export default function DataPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, kindFilter]);
 
   async function handleUseInAnalysis(doc: LibraryDocument): Promise<void> {
@@ -468,33 +464,6 @@ export default function DataPage() {
           <span className="font-mono text-[12px] text-white/60">
             {breadcrumbPrefix} / {breadcrumbName} · {breadcrumbCount} files
           </span>
-
-          {/* Source toggle */}
-          <div
-            className="flex items-center rounded-full p-0.5"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
-            <button
-              onClick={() => setSource('kb')}
-              className={`px-3 py-1 rounded-full font-mono text-[11px] transition-colors ${
-                source === 'kb'
-                  ? 'bg-[#FF7819] text-white'
-                  : 'text-white/40 hover:text-white/60'
-              }`}
-            >
-              KB Corpus
-            </button>
-            <button
-              onClick={() => setSource('library')}
-              className={`px-3 py-1 rounded-full font-mono text-[11px] transition-colors ${
-                source === 'library'
-                  ? 'bg-[#FF7819] text-white'
-                  : 'text-white/40 hover:text-white/60'
-              }`}
-            >
-              My Library
-            </button>
-          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -506,13 +475,7 @@ export default function DataPage() {
             Sort: Recent
             <IconChevron size={11} />
           </button>
-          <button
-            onClick={() => navigate('/graph')}
-            className="flex items-center gap-1.5 rounded-full border border-white/[0.12] px-3 py-1.5 font-mono text-[12px] text-white/70 hover:bg-white/[0.04] transition-colors"
-          >
-            Open in graph
-            <IconArrowRight size={11} />
-          </button>
+
         </div>
       </div>
 
@@ -562,11 +525,10 @@ export default function DataPage() {
                 <button
                   key={k ?? 'all'}
                   onClick={() => setKindFilter(k)}
-                  className={`font-mono text-[10px] px-2.5 py-1 rounded-full transition-colors ${
-                    kindFilter === k
-                      ? 'bg-[#FF7819] text-white'
-                      : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
-                  }`}
+                  className={`font-mono text-[10px] px-2.5 py-1 rounded-full transition-colors ${kindFilter === k
+                    ? 'bg-[#FF7819] text-white'
+                    : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
+                    }`}
                 >
                   {k === undefined ? 'All' : k.charAt(0).toUpperCase() + k.slice(1)}
                 </button>

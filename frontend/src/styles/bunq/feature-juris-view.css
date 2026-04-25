@@ -1,0 +1,369 @@
+/* ============================================================
+   Feature × Jurisdictions view (08)
+   Reuses .juris layout + .juris__map + .juris__hero from
+   jurisdictions-view.css. Adds .fjp* for the right panel.
+   ============================================================ */
+
+.fjp {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-0);
+  position: relative;
+  overflow-y: auto;
+}
+
+/* Wrapper around the reused JurisMapPanel — positioning context for overlay */
+.fjp__map-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.fjp__map-wrap > .juris__map {
+  flex: 1;
+  border-right: 0; /* parent .juris already has border via map's own rule */
+}
+
+/* Floating brief card overlaid on the map (bottom-left, above search bar) */
+.fjp__brief-overlay {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 76px;  /* above the .juris__map-foot search row */
+  z-index: 6;
+  max-width: 520px;
+  pointer-events: auto;
+}
+.fjp__brief-overlay .fjp__brief {
+  background: rgba(20, 17, 16, 0.92);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(239, 106, 42, 0.28);
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,0.7), 0 2px 0 rgba(255,255,255,0.02) inset;
+}
+
+.fjp__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 28px 32px;
+  min-height: 0;
+}
+
+/* ---------- Feature brief card (carryover from view 02) ---------- */
+.fjp__brief {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  position: relative;
+}
+.fjp__brief-meta {
+  margin-left: 4px;
+  color: var(--ink-2);
+}
+.fjp__edit {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.fjp__edit:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  border-color: var(--ink-4);
+}
+.fjp__brief-title {
+  font-size: 22px !important;
+  margin-top: 4px;
+}
+.fjp__brief-prompt {
+  margin-top: 6px;
+  padding: 12px 14px;
+  background: rgba(239, 106, 42, 0.06);
+  border: 1px solid rgba(239, 106, 42, 0.18);
+  border-left: 2px solid rgba(239, 106, 42, 0.55);
+  border-radius: var(--r-sm);
+}
+.fjp__brief-text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-1);
+  margin: 0;
+  font-style: italic;
+}
+.fjp__brief-textarea {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  font-family: var(--ui);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-0);
+  font-style: italic;
+}
+.fjp__brief-foot {
+  margin-top: 6px !important;
+}
+
+/* ---------- Filter chips ---------- */
+.fjp__filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+.fjp__filters-label {
+  color: var(--ink-2);
+}
+.fjp__chips {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-pill);
+  padding: 3px;
+}
+.fjp__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  font-family: var(--ui);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.fjp__chip:hover { color: var(--ink-0); }
+.fjp__chip--active {
+  background: var(--bg-3);
+  color: var(--ink-0);
+}
+.fjp__chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+.fjp__chip-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.fjp__chip--active .fjp__chip-count { color: var(--ink-1); }
+
+/* ---------- Country rows ---------- */
+.fjp__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fjp__row {
+  background: var(--bg-1);
+  border: 1px solid var(--line-0);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color .15s ease, background .15s ease;
+}
+.fjp__row:hover { border-color: var(--ink-4); }
+.fjp__row--open { background: var(--bg-2); border-color: var(--ink-4); }
+
+.fjp__row-head--static {
+  cursor: default !important;
+}
+
+/* Deselect × button */
+.fjp__deselect {
+  width: 24px; height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  color: var(--ink-3);
+  flex: none;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.fjp__deselect:hover { background: var(--bg-3); color: var(--ink-0); border-color: var(--ink-4); }
+
+/* Map markers */
+.fjp__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  z-index: 4;
+}
+.fjp__marker-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--mc, var(--ink-2));
+  border: 1.5px solid rgba(255,255,255,0.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--mc, var(--ink-2)) 18%, transparent);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.fjp__marker:hover .fjp__marker-dot { transform: scale(1.3); }
+.fjp__marker--on .fjp__marker-dot {
+  width: 13px; height: 13px;
+  border-color: rgba(255,255,255,0.5);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--mc, var(--ink-2)) 22%, transparent);
+}
+.fjp__marker-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-0);
+  background: rgba(12,10,9,0.85);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  padding: 2px 7px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+
+.fjp__row-head {
+  display: grid;
+  grid-template-columns: 28px auto auto 1fr 24px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--ui);
+  color: var(--ink-0);
+}
+.fjp__row-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+.fjp__row-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-0);
+  min-width: 110px;
+}
+.fjp__row-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.fjp__row-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+.fjp__row-status--compliant {
+  background: rgba(94, 184, 106, 0.10);
+  color: oklch(0.78 0.13 145);
+}
+.fjp__row-status--compliant .fjp__row-status-dot { background: var(--success); }
+.fjp__row-status--warning {
+  background: rgba(217, 176, 61, 0.10);
+  color: oklch(0.82 0.13 90);
+}
+.fjp__row-status--warning .fjp__row-status-dot { background: var(--warning); }
+.fjp__row-status--noncompliant {
+  background: rgba(217, 74, 74, 0.10);
+  color: oklch(0.74 0.16 25);
+}
+.fjp__row-status--noncompliant .fjp__row-status-dot { background: var(--danger); }
+
+.fjp__row-summary {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.fjp__row-caret {
+  color: var(--ink-3);
+  display: inline-flex;
+  transition: transform .15s ease;
+}
+.fjp__row-caret--open { transform: rotate(90deg); color: var(--ink-1); }
+
+/* Detail */
+.fjp__row-detail {
+  border-top: 1px solid var(--line-0);
+  padding: 14px 18px 18px;
+  background: var(--bg-1);
+}
+.fjp__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.fjp__detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fjp__detail-block--wide { grid-column: 1 / -1; }
+.fjp__detail-value {
+  font-size: 13px;
+  color: var(--ink-0);
+  font-weight: 500;
+}
+.fjp__detail-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.fjp__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  color: var(--ink-1);
+}
+
+.fjp__empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+}

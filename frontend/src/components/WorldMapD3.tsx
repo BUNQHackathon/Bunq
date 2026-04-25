@@ -105,6 +105,35 @@ export default function WorldMapD3({
       );
   }, [selected]);
 
+  // Pan/zoom map to the selected country (e.g. when picked from search)
+  useEffect(() => {
+    const svgEl = svgRef.current;
+    const path = pathGenRef.current;
+    const zoom = zoomRef.current;
+    const containerEl = containerRef.current;
+    if (!svgEl || !path || !zoom || !containerEl || !selected) return;
+    const feat = featuresRef.current.find(
+      (f) => readIso3(f.properties) === selected,
+    );
+    if (!feat) return;
+    const centroid = path.centroid(feat);
+    if (!centroid || Number.isNaN(centroid[0]) || Number.isNaN(centroid[1])) return;
+    const rect = containerEl.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    if (W <= 0 || H <= 0) return;
+    const scale = 2.5;
+    const tx = W / 2 - centroid[0] * scale;
+    const ty = H / 2 - centroid[1] * scale;
+    d3.select(svgEl)
+      .transition()
+      .duration(700)
+      .call(
+        zoom.transform as never,
+        d3.zoomIdentity.translate(tx, ty).scale(scale),
+      );
+  }, [selected]);
+
   // Main map initialisation — reruns when dims change
   useEffect(() => {
     if (!dims) return;

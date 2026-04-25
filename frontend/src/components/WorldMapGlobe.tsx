@@ -47,25 +47,17 @@ function readIso3(props: Record<string, unknown>): string {
 
 function disposeGlobe(instance: InstanceType<typeof Globe> | null): void {
   if (!instance) return;
+  // Order matters: pause RAF, then release GPU context BEFORE _destructor
+  // disposes the renderer — forceContextLoss is a no-op on a disposed renderer
+  // and without it the WebGL context leaks (browsers cap at 8-16).
+  try { (instance as any).pauseAnimation?.(); } catch { /* best-effort */ }
   try {
     const r = (instance as unknown as {
-      renderer?: () => { dispose: () => void; forceContextLoss: () => void };
+      renderer?: () => { forceContextLoss: () => void };
     }).renderer?.();
-    if (r) { r.forceContextLoss(); r.dispose(); }
-    const scene = (instance as unknown as {
-      scene?: () => {
-        traverse: (cb: (obj: {
-          geometry?: { dispose?: () => void };
-          material?: { dispose?: () => void } | Array<{ dispose?: () => void }>;
-        }) => void) => void;
-      };
-    }).scene?.();
-    scene?.traverse((obj) => {
-      if (obj.geometry?.dispose) obj.geometry.dispose();
-      if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose?.());
-      else if (obj.material?.dispose) obj.material.dispose();
-    });
+    r?.forceContextLoss?.();
   } catch { /* best-effort */ }
+  try { (instance as any)._destructor?.(); } catch { /* best-effort */ }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -88,6 +80,7 @@ function useResponsiveHeight(defaultHeight: number): number {
 
 export default function WorldMapGlobe({
   data,
+  selected,
   onSelect,
   onHover,
   height,
@@ -99,6 +92,8 @@ export default function WorldMapGlobe({
   const globeInitRef = useRef(false);
   const hoveredRef = useRef<GeoFeature | null>(null);
   const resizeObsRef = useRef<ResizeObserver | null>(null);
+  const canvasListenersRef = useRef<{ canvas: HTMLCanvasElement; onLost: (e: Event) => void; onRestored: () => void } | null>(null);
+  const featuresRef = useRef<GeoFeature[]>([]);
 
   // Stable callback refs — no re-init needed when callbacks change
   const onSelectRef = useRef(onSelect);
@@ -207,18 +202,24 @@ export default function WorldMapGlobe({
       }).renderer?.();
       const canvas = rendererObj?.domElement;
       if (canvas) {
-        canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); }, false);
-        canvas.addEventListener('webglcontextrestored', () => {
+        const onLost = (e: Event) => { e.preventDefault(); };
+        const onRestored = () => {
+          // guard against post-unmount context restore resurrecting the globe
+          if (!globeInitRef.current || cancelled) return;
           globeInitRef.current = false;
           disposeGlobe(globeRef.current);
           globeRef.current = null;
           initGlobe(features);
-        }, false);
+        };
+        canvas.addEventListener('webglcontextlost', onLost, false);
+        canvas.addEventListener('webglcontextrestored', onRestored, false);
+        canvasListenersRef.current = { canvas, onLost, onRestored };
       }
     }
 
     fetchFeatures().then((features) => {
       if (cancelled || !features.length) return;
+      featuresRef.current = features;
       initGlobe(features);
     });
 
@@ -226,12 +227,38 @@ export default function WorldMapGlobe({
       cancelled = true;
       resizeObsRef.current?.disconnect();
       resizeObsRef.current = null;
+      if (canvasListenersRef.current) {
+        const { canvas, onLost, onRestored } = canvasListenersRef.current;
+        canvas.removeEventListener('webglcontextlost', onLost, false);
+        canvas.removeEventListener('webglcontextrestored', onRestored, false);
+        canvasListenersRef.current = null;
+      }
       disposeGlobe(globeRef.current);
       globeRef.current = null;
       globeInitRef.current = false;
+      if (containerRef.current) {
+        while (containerRef.current.firstChild) containerRef.current.removeChild(containerRef.current.firstChild);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Pan camera when `selected` changes externally (e.g. from the search input).
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe || !selected) return;
+    const feat = featuresRef.current.find((f) => readIso3(f.properties) === selected);
+    if (!feat || !feat.bbox) return;
+    const lat = (feat.bbox[1] + feat.bbox[3]) / 2;
+    const lng = (feat.bbox[0] + feat.bbox[2]) / 2;
+    (globe as unknown as {
+      pointOfView: (p: { lat: number; lng: number; altitude: number }, ms?: number) => void;
+    }).pointOfView({ lat, lng, altitude: 1.4 }, 700);
+    const controls = (globe as unknown as {
+      controls?: () => { autoRotate: boolean };
+    }).controls?.();
+    if (controls) controls.autoRotate = false;
+  }, [selected]);
 
   return (
     <div
