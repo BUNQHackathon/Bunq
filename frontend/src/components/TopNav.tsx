@@ -14,7 +14,6 @@ const NAV_SHORTCUTS: { key: 'a' | 'l' | 'd' | 'j'; path: string }[] = [
   { key: 'd', path: '/data' },
   { key: 'j', path: '/jurisdictions' },
 ];
-import HeaderSearch from './HeaderSearch';
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
 
 function IconGlobe({ size = 14 }: { size?: number }) {

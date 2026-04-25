@@ -334,7 +334,6 @@ function inferKindAndType(filename: string): { kind: DocumentKind; contentType: 
 }
 
 export default function DataPage() {
-  const navigate = useNavigate();
   const { requireJudge, modal } = useJudgesGate();
 
   const source: 'library' = 'library';

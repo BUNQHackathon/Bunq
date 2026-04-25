@@ -14,7 +14,7 @@ import {
   type Verdict,
   type JurisdictionStatus,
 } from '../api/launch';
-import { useJurisdictionStream, type JurisdictionStreamEvent } from '../hooks/useJurisdictionStream';
+import { useJurisdictionStream } from '../hooks/useJurisdictionStream';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import VerdictPill, { verdictToHex } from '../components/VerdictPill';
@@ -93,13 +93,6 @@ function runStatusKey(run: JurisdictionRun): StatusKey {
   return verdictToStatus(run.verdict);
 }
 
-function statusLabel(key: StatusKey, isRunning: boolean): string {
-  if (isRunning) return 'Running…';
-  if (key === 'failed') return 'Failed';
-  if (key === 'compliant') return 'Compliant';
-  if (key === 'warning') return 'Needs review';
-  return 'Breach';
-}
 
 function statusTooltip(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
   if (key === 'failed') return 'Pipeline error (rate limit, timeout, etc.). Couldn\'t determine compliance — retry the run.';

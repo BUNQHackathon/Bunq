@@ -12,11 +12,8 @@ import {
 } from '../api/portal';
 import {
   IconBack,
-  IconStar,
-  IconChatBubble,
   IconDownload,
   IconChevron,
-  IconPlus,
 } from '../components/icons';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;

@@ -6,7 +6,7 @@ import type { Verdict } from '../api/launch';
 import VerdictPill from '../components/VerdictPill';
 import { IconPlus, IconClose } from '../components/icons';
 
-const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1 };
+const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1, UNKNOWN: -1 };
 
 function worstVerdict(rs: { verdict: Verdict }[]): Verdict | null {
   const valid = rs.filter(r => VERDICT_RANK[r.verdict] >= 0);
