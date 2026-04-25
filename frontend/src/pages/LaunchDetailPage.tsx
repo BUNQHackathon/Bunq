@@ -92,9 +92,10 @@ interface HeroProps {
   review: number;
   block: number;
   anyRunning: boolean;
+  animate?: boolean;
 }
 
-function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
+function Hero({ title, total, ok, review, block, anyRunning, animate }: HeroProps) {
   const headerHeight = 220;
   const bgColor = '#0b0a09';
   const titleFadeStart = 15;
@@ -105,7 +106,7 @@ function Hero({ title, total, ok, review, block, anyRunning }: HeroProps) {
       className="juris__hero"
       style={{ minHeight: `${headerHeight}px`, background: bgColor }}
     >
-      <HeroGradient />
+      <HeroGradient animate={animate} />
 
       <div
         style={{
@@ -192,6 +193,15 @@ export default function LaunchDetailPage() {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant'>('all');
+
+  // Hero reveal animation: play once per browser session (across mounts/navigations).
+  const [animateHero] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const KEY = 'launch-detail.hero-revealed';
+    if (sessionStorage.getItem(KEY)) return false;
+    sessionStorage.setItem(KEY, '1');
+    return true;
+  });
 
   // Keep a ref to detail so the interval closure can read current value
   const detailRef = useRef<LaunchDetail | null>(null);
@@ -489,6 +499,7 @@ export default function LaunchDetailPage() {
           review={counts.review}
           block={counts.block}
           anyRunning={anyRunning}
+          animate={animateHero}
         />
 
         <div className="fjp__body">
