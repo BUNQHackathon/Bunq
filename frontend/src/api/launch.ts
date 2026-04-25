@@ -156,6 +156,13 @@ export const JURISDICTION_CATALOG: Array<{ code: string; name: string; flag: str
   { code: 'US', name: 'United States', flag: '🇺🇸' },
 ];
 
+export async function deleteLaunch(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/launches/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`/launches/${id} failed: ${res.status}`);
+}
+
 export async function rerunFailedJurisdictions(launchId: string): Promise<JurisdictionRun[]> {
   const res = await postJson<JurisdictionRun[]>(`/launches/${encodeURIComponent(launchId)}/rerun-failed`);
   return (Array.isArray(res) ? res : []).map(normalizeRun);

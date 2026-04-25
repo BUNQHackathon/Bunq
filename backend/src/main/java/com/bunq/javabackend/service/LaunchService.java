@@ -282,6 +282,21 @@ public class LaunchService {
                 .toList();
     }
 
+    public void deleteLaunch(String id) {
+        Launch launch = launchRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Launch not found: " + id));
+        List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(id);
+        for (JurisdictionRun run : runs) {
+            jurisdictionRunRepository.delete(run);
+        }
+        List<Session> sessions = sessionRepository.findByLaunchId(id);
+        for (Session session : sessions) {
+            sessionRepository.deleteById(session.getId());
+        }
+        launchRepository.deleteById(launch.getId());
+        log.info("Deleted launch {} (runs={}, sessions={})", id, runs.size(), sessions.size());
+    }
+
     public LaunchSummaryDTO toSummaryWithCount(Launch launch) {
         List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(launch.getId());
         String aggregateVerdict = computeAggregateVerdict(runs);
