@@ -182,6 +182,11 @@ export default function WorldMapGlobe({
 
       globeRef.current = globe;
 
+      // Slight vertical squish so the sphere reads more like a planet seen
+      // through atmosphere than a perfect ball.
+      (globe as unknown as { scale: { set: (x: number, y: number, z: number) => void } })
+        .scale.set(1, 0.93, 1);
+
       // Auto-rotate until user interacts
       const controls = (globe as unknown as {
         controls?: () => { autoRotate: boolean; autoRotateSpeed: number };
