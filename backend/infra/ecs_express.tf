@@ -26,7 +26,7 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
 # Express Mode auto-provisions ALB, HTTPS listener, managed TLS cert, and a
 # *.ecs.<region>.on.aws endpoint. The endpoint is exposed via ingress_paths[0].endpoint.
 resource "aws_ecs_express_gateway_service" "backend" {
-  service_name            = "${local.name_prefix}-backend-v4"
+  service_name            = "${local.name_prefix}-backend-v5"
   cluster                 = "default"
   execution_role_arn      = data.aws_iam_role.ecs_task_execution.arn
   infrastructure_role_arn = data.aws_iam_role.ecs_infra_express.arn
@@ -79,6 +79,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
     environment {
       name  = "AWS_DYNAMODB_DOCUMENTS_TABLE"
       value = aws_dynamodb_table.documents.name
+    }
+    environment {
+      name  = "AWS_DYNAMODB_DOC_JURISDICTIONS_TABLE"
+      value = aws_dynamodb_table.doc_jurisdictions.name
     }
     environment {
       name  = "AWS_DYNAMODB_MAPPINGS_TABLE"

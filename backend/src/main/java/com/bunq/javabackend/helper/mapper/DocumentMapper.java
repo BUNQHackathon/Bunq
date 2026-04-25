@@ -14,6 +14,7 @@ public final class DocumentMapper {
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())
+                .jurisdictions(doc.getJurisdictions())
                 .firstSeenAt(doc.getFirstSeenAt())
                 .lastUsedAt(doc.getLastUsedAt())
                 .extractedText(doc.getExtractedText())

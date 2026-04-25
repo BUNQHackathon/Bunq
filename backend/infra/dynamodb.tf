@@ -166,3 +166,20 @@ resource "aws_dynamodb_table" "sessions" {
     projection_type = "ALL"
   }
 }
+
+resource "aws_dynamodb_table" "doc_jurisdictions" {
+  name         = "${local.name_prefix}-doc-jurisdictions"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "jurisdiction"
+  range_key    = "document_id"
+
+  attribute {
+    name = "jurisdiction"
+    type = "S"
+  }
+
+  attribute {
+    name = "document_id"
+    type = "S"
+  }
+}

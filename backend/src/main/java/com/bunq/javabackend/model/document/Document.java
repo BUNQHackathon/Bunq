@@ -12,6 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 
 import java.time.Instant;
+import java.util.Set;
 
 @DynamoDbBean
 @NoArgsConstructor
@@ -42,6 +43,9 @@ public class Document {
         @DynamoDbSecondaryPartitionKey(indexNames = "kind-last-used-at-index")
     })
     private String kind;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("jurisdictions"))
+    private Set<String> jurisdictions;
 
     @Getter(onMethod_ = @DynamoDbAttribute("first_seen_at"))
     private Instant firstSeenAt;
