@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { listJurisdictionsOverview, getJurisdictionTriage, type JurisdictionOverview, type JurisdictionLaunchRow, type JurisdictionTriage } from '../api/jurisdictions';
+import { listJurisdictionsOverview, getJurisdictionTriage, type JurisdictionOverview, type JurisdictionTriage } from '../api/jurisdictions';
 import { jurisdictionLabel } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
-import { IconSearch } from '../components/icons';
+import HeroGradient from '../components/HeroGradient';
+import { IconSearch, IconChevron } from '../components/icons';
 
 // ── ISO conversions ───────────────────────────────────────────────────────────
 
@@ -82,12 +83,13 @@ function JurisMapPanel({
                 onClick={() => onViewChange(v)}
                 className="chip chip--sm"
                 style={{
-                  background: view === v ? 'var(--orange)' : 'transparent',
-                  color: view === v ? '#fff' : 'var(--ink-2)',
-                  border: 'none',
+                  background: view === v ? 'var(--orange-wash)' : 'transparent',
+                  color: view === v ? 'var(--orange)' : 'var(--ink-2)',
+                  border: view === v ? '1px solid rgba(239,106,42,0.3)' : '1px solid transparent',
                   borderRadius: 999,
                   cursor: 'pointer',
                   padding: '4px 14px',
+                  fontWeight: view === v ? 600 : 400,
                 }}
               >
                 {v === 'map' ? '2D' : '3D'}
@@ -192,34 +194,9 @@ interface OverviewPanelProps {
   triage: JurisdictionTriage | null;
 }
 
-const GROUP_ACCENT: Record<'keep' | 'modify' | 'drop', string> = {
-  keep:   'var(--success)',
-  modify: 'var(--warning)',
-  drop:   'var(--danger)',
-};
 
-const GROUP_LABEL: Record<'keep' | 'modify' | 'drop', string> = {
-  keep:   'Compliant',
-  modify: 'Needs changes',
-  drop:   'Not compliant',
-};
-
-function TriageRow({ row, accent }: { row: JurisdictionLaunchRow; accent: string }) {
-  const subtitle = row.summary ?? row.status ?? '';
-  return (
-    <div
-      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid var(--line-1)' }}
-      onClick={() => { window.location.href = `/launches/${row.launchId}`; }}
-    >
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, flex: '0 0 auto' }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: 'var(--ink-0)', fontWeight: 500 }}>{row.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--ink-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</div>
-      </div>
-      <span style={{ color: 'var(--ink-3)', fontSize: 14, marginLeft: 'auto', flex: '0 0 auto' }}>›</span>
-    </div>
-  );
-}
+const STATUS_BY_KEY = { keep: 'compliant', modify: 'warning', drop: 'noncompliant' } as const;
+const LABEL_BY_KEY  = { keep: 'Compliant', modify: 'Needs changes', drop: 'Not compliant' } as const;
 
 function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
   const code  = overview.code;
@@ -241,25 +218,39 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
     <div className="juris__panel">
       <header
         className="juris__hero"
-        style={{ minHeight: 100, background: 'var(--bg-1)', justifyContent: 'flex-end', padding: '18px 28px 18px' }}
+        style={{ minHeight: 220, position: 'relative', overflow: 'hidden' }}
       >
-        <div className="juris__hero-eyebrow">
-          <span className="mono-label" style={{ color: 'var(--orange)' }}>JURISDICTION</span>
-          <span className="mono-label" style={{ color: 'var(--ink-3)' }}>
-            · {total} LAUNCH{total !== 1 ? 'ES' : ''}
-          </span>
-        </div>
-        <h1
-          className="juris__hero-title"
-          style={{ fontSize: 36, marginBottom: 0, color: 'var(--ink-0)' }}
+        <HeroGradient animate />
+
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            textAlign: 'left',
+            padding: '10px 32px 24px',
+          }}
         >
-          {label}
-        </h1>
+          <div className="juris__hero-eyebrow">
+            <span className="mono-label" style={{ color: '#D8AC78' }}>JURISDICTION</span>
+            <span className="mono-label" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              · {total} LAUNCH{total !== 1 ? 'ES' : ''}
+            </span>
+          </div>
+          <h1
+            className="juris__hero-title"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to bottom, black 15%, transparent 115%)',
+              maskImage: 'linear-gradient(to bottom, black 15%, transparent 115%)',
+            }}
+          >
+            {label}
+          </h1>
+        </div>
       </header>
 
       <div className="juris__panel-body" style={{ overflowY: 'auto' }}>
         <div className="juris__summary">
-          <button className="juris__stat">
+          <div className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--success)' }} />
               Compliant
@@ -270,9 +261,9 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
             <div className="juris__stat-bar">
               <div className="juris__stat-bar-fill" style={{ width: `${pct(keepCount)}%`, background: 'var(--success)' }} />
             </div>
-          </button>
+          </div>
 
-          <button className="juris__stat">
+          <div className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--warning)' }} />
               Needs changes
@@ -283,9 +274,9 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
             <div className="juris__stat-bar">
               <div className="juris__stat-bar-fill" style={{ width: `${pct(modifyCount)}%`, background: 'var(--warning)' }} />
             </div>
-          </button>
+          </div>
 
-          <button className="juris__stat">
+          <div className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--danger)' }} />
               Not compliant
@@ -296,30 +287,57 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
             <div className="juris__stat-bar">
               <div className="juris__stat-bar-fill" style={{ width: `${pct(dropCount)}%`, background: 'var(--danger)' }} />
             </div>
-          </button>
+          </div>
         </div>
 
-        {triage && (['keep', 'modify', 'drop'] as const).map((key) => {
-          const rows   = triage[key];
-          const accent = GROUP_ACCENT[key];
-          const isOpen = open[key];
-          return (
-            <div key={key}>
-              <div
-                style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid var(--line-1)' }}
-                onClick={() => setOpen(prev => ({ ...prev, [key]: !prev[key] }))}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, flex: '0 0 auto', marginRight: 10 }} />
-                <span style={{ fontSize: 12, color: 'var(--ink-1)', fontWeight: 500, flex: 1 }}>{GROUP_LABEL[key]}</span>
-                <span style={{ fontSize: 12, color: 'var(--ink-3)', marginRight: 8 }}>{rows.length}</span>
-                <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>{isOpen ? '∨' : '›'}</span>
-              </div>
-              {isOpen && rows.map((row) => (
-                <TriageRow key={row.launchId} row={row} accent={accent} />
-              ))}
-            </div>
-          );
-        })}
+        <div className="juris__list thin-scroll">
+          {(['keep', 'modify', 'drop'] as const)
+            .filter((key) => triage && triage[key].length > 0)
+            .map((key) => {
+              const rows   = triage![key];
+              const status = STATUS_BY_KEY[key];
+              const isOpen = open[key];
+              return (
+                <div className="juris__group" key={key}>
+                  <button
+                    className={`juris__group-row juris__group-row--${status}`}
+                    onClick={() => setOpen((p) => ({ ...p, [key]: !p[key] }))}
+                  >
+                    <span className={`juris__group-caret ${isOpen ? 'juris__group-caret--open' : ''}`}>
+                      <span style={{ display: 'inline-flex', transform: 'rotate(-90deg)' }}>
+                        <IconChevron size={12} />
+                      </span>
+                    </span>
+                    <span className={`juris__feat-status juris__feat-status--${status}`} />
+                    <span className="juris__group-name">{LABEL_BY_KEY[key]}</span>
+                    <span className="juris__group-count">{rows.length}</span>
+                  </button>
+
+                  {isOpen && (
+                    <div className="juris__group-features">
+                      {rows.map((row) => (
+                        <div
+                          key={row.launchId}
+                          className="juris__feature"
+                          onClick={() => { window.location.href = `/launches/${row.launchId}`; }}
+                        >
+                          <span className={`juris__feat-status juris__feat-status--${status}`} />
+                          <div className="juris__feat-body">
+                            <div className="juris__feat-name">{row.name}</div>
+                          </div>
+                          <span className="juris__feat-arrow">
+                            <span style={{ display: 'inline-flex', transform: 'rotate(-90deg)' }}>
+                              <IconChevron size={12} />
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
       </div>
     </div>
   );

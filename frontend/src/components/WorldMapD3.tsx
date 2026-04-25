@@ -354,17 +354,18 @@ export default function WorldMapD3({
           position: 'absolute',
           pointerEvents: 'none',
           zIndex: 50,
-          background: 'rgba(13,13,13,0.95)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8,
-          padding: '7px 12px',
+          background: '#1C1C1C',
+          borderRadius: 999,
+          padding: '5px 12px',
           fontSize: 12,
           color: '#fff',
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 500,
           opacity: 0,
           transition: 'opacity 100ms',
         }}
       >
-        <div className="tn" style={{ fontWeight: 600 }} />
+        <div className="tn" />
       </div>
     </div>
   );

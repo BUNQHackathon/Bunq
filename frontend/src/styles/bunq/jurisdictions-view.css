@@ -454,3 +454,14 @@
     padding: 12px 12px 0;
   }
 }
+
+/* ---------- Globe tooltip — strip float-tooltip's default wrapper bg ---------- */
+/* globe.gl renders polygonLabel HTML inside a .float-tooltip-kap div whose */
+/* default styles add a square dark background; zero them out so only the   */
+/* inner pill HTML shows. */
+.float-tooltip-kap {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+}
