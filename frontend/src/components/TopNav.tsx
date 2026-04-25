@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   IconAsk,
+  IconFolder,
   IconFolders,
-  IconSearch,
   IconClose,
 } from './icons';
 
@@ -12,6 +12,7 @@ const NAV_SHORTCUTS: { key: '1' | '2' | '3'; path: string }[] = [
   { key: '2', path: '/launches' },
   { key: '3', path: '/jurisdictions' },
 ];
+import HeaderSearch from './HeaderSearch';
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
 
 function IconGlobe({ size = 14 }: { size?: number }) {
@@ -126,7 +127,6 @@ export default function TopNav() {
     return () => window.removeEventListener('keydown', handler);
   }, [navigate]);
 
-  // Close drawer on Escape
   useEffect(() => {
     if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -149,18 +149,15 @@ export default function TopNav() {
 
         {/* Center nav */}
         <nav className="topnav__center">
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
-          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" shortcut="2" modKey={modKey} />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
         </nav>
 
         {/* Right */}
         <div className="topnav__right">
-          <button type="button" className="btn btn--ghost btn--sm">
-            <IconSearch size={14} />
-            {' '}Search
-          </button>
-          <div className="kbd">⌘K</div>
+          <HeaderSearch />
         </div>
 
         {/* Hamburger (mobile only) */}
@@ -199,14 +196,11 @@ export default function TopNav() {
         <nav className="drawer__nav" onClick={() => setDrawerOpen(false)}>
           <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
           <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
+          <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" />
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
         </nav>
         <div className="drawer__search">
-          <button type="button" className="btn btn--ghost btn--sm">
-            <IconSearch size={14} />
-            {' '}Search
-          </button>
-          <div className="kbd">⌘K</div>
+          <HeaderSearch />
         </div>
       </div>
     </>

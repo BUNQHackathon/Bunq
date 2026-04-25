@@ -7,6 +7,8 @@ import JurisdictionsPage from './pages/JurisdictionsPage';
 import LaunchNewPage from './pages/LaunchNewPage';
 import LaunchDetailPage from './pages/LaunchDetailPage';
 import JurisdictionDetailPage from './pages/JurisdictionDetailPage';
+import DataPage from './pages/DataPage';
+import DocPage from './pages/DocPage';
 import { useMode } from './components/ModeToggle';
 
 function ModeAwareRedirect() {
@@ -24,6 +26,8 @@ export default function App() {
         <Route path="/launches/new" element={<LaunchNewPage />} />
         <Route path="/launches/:id" element={<LaunchDetailPage />} />
         <Route path="/graph" element={<GraphPage />} />
+        <Route path="/data" element={<DataPage />} />
+        <Route path="/doc/:docId" element={<DocPage />} />
         <Route path="/jurisdictions" element={<JurisdictionsPage />} />
         <Route path="/jurisdictions/:code" element={<JurisdictionDetailPage />} />
         <Route path="/jurisdictions/:code/launches/:id" element={<GraphPage />} />
