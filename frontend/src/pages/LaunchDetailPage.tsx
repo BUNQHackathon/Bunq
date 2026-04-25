@@ -67,7 +67,7 @@ if (typeof document !== 'undefined' && !document.getElementById(PULSE_STYLE_ID))
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
-type StatusKey = 'compliant' | 'warning' | 'noncompliant';
+type StatusKey = 'compliant' | 'warning' | 'noncompliant' | 'failed';
 
 function verdictToStatus(v: Verdict): StatusKey {
   if (v === 'GREEN') return 'compliant';
@@ -77,6 +77,7 @@ function verdictToStatus(v: Verdict): StatusKey {
 
 function statusLabelForRun(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
   if (isRunning) return 'Running…';
+  if (key === 'failed') return 'Failed';
   if (run.verdict === 'UNKNOWN') return 'Unknown';
   if (key === 'compliant') return 'Compliant';
   if (key === 'warning') return 'Needs review';
@@ -84,16 +85,26 @@ function statusLabelForRun(run: JurisdictionRun, key: StatusKey, isRunning: bool
 }
 
 function runStatusKey(run: JurisdictionRun): StatusKey {
+  if (run.status === 'FAILED') return 'failed';
   if (run.status === 'RUNNING' || run.status === 'PENDING') return 'warning';
-  if (run.status === 'FAILED') return 'noncompliant';
   return verdictToStatus(run.verdict);
 }
 
 function statusLabel(key: StatusKey, isRunning: boolean): string {
   if (isRunning) return 'Running…';
+  if (key === 'failed') return 'Failed';
   if (key === 'compliant') return 'Compliant';
   if (key === 'warning') return 'Needs review';
   return 'Breach';
+}
+
+function statusTooltip(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
+  if (key === 'failed') return 'Pipeline error (rate limit, timeout, etc.). Couldn\'t determine compliance — retry the run.';
+  if (isRunning) return 'Analysis in progress.';
+  if (key === 'compliant') return 'Verdict: GREEN — can ship as-is.';
+  if (key === 'noncompliant') return 'Verdict: RED — regulatory blocker. Cannot ship in this jurisdiction.';
+  if (run.verdict === 'AMBER') return 'Verdict: AMBER — required changes before shipping.';
+  return 'Analysis in progress.';
 }
 
 // ── Hero component (inline) ───────────────────────────────────────────────────
@@ -103,11 +114,12 @@ interface HeroProps {
   ok: number;
   review: number;
   block: number;
+  failed: number;
   anyRunning: boolean;
   animate?: boolean;
 }
 
-function Hero({ title, total, ok, review, block, anyRunning, animate }: HeroProps) {
+function Hero({ title, total, ok, review, block, failed, anyRunning, animate }: HeroProps) {
   const headerHeight = 220;
   const bgColor = '#0b0a09';
   const titleFadeStart = 15;
@@ -135,7 +147,7 @@ function Hero({ title, total, ok, review, block, anyRunning, animate }: HeroProp
           <span className="mono-label" style={{ color: 'rgba(255,255,255,0.45)' }}>
             {anyRunning
               ? `· ${total} JURISDICTIONS · RUNNING`
-              : `· ${total} JURISDICTIONS · ${ok} OK · ${review} REVIEW · ${block} BLOCK`}
+              : `· ${total} JURISDICTIONS · ${ok} OK · ${review} REVIEW · ${block} BLOCK${failed > 0 ? ` · ${failed} FAILED` : ''}`}
           </span>
         </div>
         <h1
@@ -204,7 +216,7 @@ export default function LaunchDetailPage() {
   const [view, setView] = useState<'2d' | '3d'>('2d');
   const [selectedIso3, setSelectedIso3] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant'>('all');
+  const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant' | 'failed'>('all');
 
   // Keep a ref to detail so the interval closure can read current value
   const detailRef = useRef<LaunchDetail | null>(null);
@@ -311,6 +323,7 @@ export default function LaunchDetailPage() {
       ok: juris.filter((r) => verdictToStatus(r.verdict) === 'compliant' && r.status !== 'RUNNING' && r.status !== 'PENDING').length,
       review: juris.filter((r) => runStatusKey(r) === 'warning').length,
       block: juris.filter((r) => runStatusKey(r) === 'noncompliant').length,
+      failed: juris.filter((r) => runStatusKey(r) === 'failed').length,
     };
   }, [detail]);
 
@@ -326,7 +339,7 @@ export default function LaunchDetailPage() {
   // ── Stats line ───────────────────────────────────────────────────────────────
   const statsLine = anyRunning
     ? 'running…'
-    : `${counts.total} jurisdictions · ${counts.ok} ok · ${counts.review} review · ${counts.block} block`;
+    : `${counts.total} jurisdictions · ${counts.ok} ok · ${counts.review} review · ${counts.block} block${counts.failed > 0 ? ` · ${counts.failed} failed` : ''}`;
 
   const createdAtShort = launch?.createdAt
     ? new Date(launch.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -364,6 +377,10 @@ export default function LaunchDetailPage() {
                 <span className="juris__legend-item">
                   <span className="juris__legend-dot" style={{ background: verdictToHex('RED') }} />
                   RED
+                </span>
+                <span className="juris__legend-item">
+                  <span className="juris__legend-dot" style={{ background: '#6b6b6b' }} />
+                  FAILED
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -518,6 +535,7 @@ export default function LaunchDetailPage() {
           ok={counts.ok}
           review={counts.review}
           block={counts.block}
+          failed={counts.failed}
           anyRunning={anyRunning}
           animate
         />
@@ -585,6 +603,14 @@ export default function LaunchDetailPage() {
                   <span>Breaches</span>
                   <span className="fjp__chip-count">{counts.block}</span>
                 </button>
+                <button
+                  className={`fjp__chip${filter === 'failed' ? ' fjp__chip--active' : ''}`}
+                  onClick={() => setFilter('failed')}
+                >
+                  <span className="fjp__chip-dot" style={{ background: '#6b6b6b' }} />
+                  <span>Failed</span>
+                  <span className="fjp__chip-count">{counts.failed}</span>
+                </button>
               </div>
             </div>
           )}
@@ -631,7 +657,10 @@ export default function LaunchDetailPage() {
                     <div className="fjp__row-head fjp__row-head--static">
                       <span className="fjp__row-flag">{jurisdictionFlag(code)}</span>
                       <span className="fjp__row-name">{jurisdictionLabel(code)}</span>
-                      <span className={`fjp__row-status fjp__row-status--${key}`}>
+                      <span
+                        className={`fjp__row-status fjp__row-status--${key}`}
+                        title={statusTooltip(run, key, isRunning)}
+                      >
                         <span className="fjp__row-status-dot" />
                         {/* StripLiveLabel replaces static "Running…" with live SSE stage name */}
                         {isRunning
