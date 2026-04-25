@@ -6,7 +6,6 @@ import GraphPage from './pages/GraphPage';
 import JurisdictionsPage from './pages/JurisdictionsPage';
 import LaunchNewPage from './pages/LaunchNewPage';
 import LaunchDetailPage from './pages/LaunchDetailPage';
-import JurisdictionDetailPage from './pages/JurisdictionDetailPage';
 import DataPage from './pages/DataPage';
 import DocPage from './pages/DocPage';
 import LibraryDocPage from './pages/LibraryDocPage';
@@ -34,7 +33,6 @@ export default function App() {
         <Route path="/doc/:docId" element={<DocPage />} />
         <Route path="/library/:docId" element={<LibraryDocPage />} />
         <Route path="/jurisdictions" element={<JurisdictionsPage />} />
-        <Route path="/jurisdictions/:code" element={<JurisdictionDetailPage />} />
         <Route path="/jurisdictions/:code/launches/:id" element={<GraphPage />} />
         <Route path="/session/:id" element={<SessionDetailPage />} />
         <Route path="/obligation/:id" element={<ObligationDetailPage />} />

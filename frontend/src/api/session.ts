@@ -98,6 +98,7 @@ export interface LibraryDocument {
   obligationsExtracted: boolean;
   controlsExtracted: boolean;
   downloadUrl?: string | null;
+  jurisdictions?: string[] | null;
 }
 
 export interface DocumentFinalizeResponse {

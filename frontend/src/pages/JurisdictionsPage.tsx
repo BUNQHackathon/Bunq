@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { listJurisdictionsOverview, type JurisdictionOverview } from '../api/jurisdictions';
+import { listJurisdictionsOverview, getJurisdictionTriage, type JurisdictionOverview, type JurisdictionLaunchRow, type JurisdictionTriage } from '../api/jurisdictions';
 import { jurisdictionLabel } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import WorldMapD3 from '../components/WorldMapD3';
@@ -23,15 +22,6 @@ const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 function overviewToColor(verdict: Verdict): string {
   if (verdict === 'PENDING') return '#1E1E1E';
   return '#FF7819';
-}
-
-function verdictStatus(verdict: Verdict): 'compliant' | 'warning' | 'noncompliant' | 'pending' {
-  switch (verdict) {
-    case 'GREEN': return 'compliant';
-    case 'AMBER': return 'warning';
-    case 'RED':   return 'noncompliant';
-    default:      return 'pending';
-  }
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -198,24 +188,56 @@ function JurisEmptyPanel() {
 
 interface OverviewPanelProps {
   overview: JurisdictionOverview;
-  onClear: () => void;
-  onNavigate: () => void;
+  triage: JurisdictionTriage | null;
 }
 
-function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProps) {
+const GROUP_ACCENT: Record<'keep' | 'modify' | 'drop', string> = {
+  keep:   'var(--success)',
+  modify: 'var(--warning)',
+  drop:   'var(--danger)',
+};
+
+const GROUP_LABEL: Record<'keep' | 'modify' | 'drop', string> = {
+  keep:   'Compliant',
+  modify: 'Needs changes',
+  drop:   'Not compliant',
+};
+
+function TriageRow({ row, accent }: { row: JurisdictionLaunchRow; accent: string }) {
+  const subtitle = row.summary ?? row.status ?? '';
+  return (
+    <div
+      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid var(--line-1)' }}
+      onClick={() => { window.location.href = `/launches/${row.launchId}`; }}
+    >
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, flex: '0 0 auto' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, color: 'var(--ink-0)', fontWeight: 500 }}>{row.name}</div>
+        <div style={{ fontSize: 12, color: 'var(--ink-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</div>
+      </div>
+      <span style={{ color: 'var(--ink-3)', fontSize: 14, marginLeft: 'auto', flex: '0 0 auto' }}>›</span>
+    </div>
+  );
+}
+
+function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
   const code  = overview.code;
   const label = jurisdictionLabel(code);
 
-  const green  = overview.aggregateVerdict === 'GREEN'   ? 1 : 0;
-  const amber  = overview.aggregateVerdict === 'AMBER'   ? 1 : 0;
-  const red    = overview.aggregateVerdict === 'RED'     ? 1 : 0;
-  const total  = overview.launchCount;
+  const keepCount   = triage?.keep.length   ?? 0;
+  const modifyCount = triage?.modify.length ?? 0;
+  const dropCount   = triage?.drop.length   ?? 0;
+  const triageTotal = keepCount + modifyCount + dropCount;
+  const total       = triage ? triageTotal : overview.launchCount;
 
-  const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+  const pct = (n: number) => triageTotal > 0 ? Math.round((n / triageTotal) * 100) : 0;
+
+  const [open, setOpen] = useState<{ keep: boolean; modify: boolean; drop: boolean }>({
+    keep: false, modify: true, drop: true,
+  });
 
   return (
     <div className="juris__panel">
-      {/* Simplified hero — no gradient blobs, just eyebrow + name */}
       <header
         className="juris__hero"
         style={{ minHeight: 100, background: 'var(--bg-1)', justifyContent: 'flex-end', padding: '18px 28px 18px' }}
@@ -234,78 +256,69 @@ function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProp
         </h1>
       </header>
 
-      <div className="juris__panel-body">
-        {/* Summary stats */}
+      <div className="juris__panel-body" style={{ overflowY: 'auto' }}>
         <div className="juris__summary">
-          <button className={`juris__stat ${overview.aggregateVerdict === 'GREEN' ? 'juris__stat--active' : ''}`}>
+          <button className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--success)' }} />
               Compliant
             </div>
             <div className="juris__stat-num">
-              {green}<small>{pct(green)}%</small>
+              {keepCount}<small>{pct(keepCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(green)}%`, background: 'var(--success)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(keepCount)}%`, background: 'var(--success)' }} />
             </div>
           </button>
 
-          <button className={`juris__stat ${overview.aggregateVerdict === 'AMBER' ? 'juris__stat--active' : ''}`}>
+          <button className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--warning)' }} />
               Needs changes
             </div>
             <div className="juris__stat-num">
-              {amber}<small>{pct(amber)}%</small>
+              {modifyCount}<small>{pct(modifyCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(amber)}%`, background: 'var(--warning)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(modifyCount)}%`, background: 'var(--warning)' }} />
             </div>
           </button>
 
-          <button className={`juris__stat ${overview.aggregateVerdict === 'RED' ? 'juris__stat--active' : ''}`}>
+          <button className="juris__stat">
             <div className="juris__stat-head">
               <span className="juris__stat-dot" style={{ background: 'var(--danger)' }} />
               Not compliant
             </div>
             <div className="juris__stat-num">
-              {red}<small>{pct(red)}%</small>
+              {dropCount}<small>{pct(dropCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(red)}%`, background: 'var(--danger)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(dropCount)}%`, background: 'var(--danger)' }} />
             </div>
           </button>
         </div>
 
-        {/* Worst verdict note */}
-        {overview.worstVerdict && overview.worstVerdict !== 'PENDING' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              className={`juris__feat-status juris__feat-status--${verdictStatus(overview.worstVerdict)}`}
-            />
-            <span className="mono-label" style={{ color: 'var(--ink-2)' }}>
-              WORST: {overview.worstVerdict}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Back + open detail — always pinned at panel bottom */}
-      <div className="juris__panel-foot">
-        <button
-          className="btn btn--ghost btn--sm"
-          onClick={onClear}
-          style={{ color: 'var(--ink-2)', border: '1px solid var(--line-1)' }}
-        >
-          ← All countries
-        </button>
-        <button
-          className="btn btn--orange"
-          style={{ flex: 1 }}
-          onClick={onNavigate}
-        >
-          Open {label} detail →
-        </button>
+        {triage && (['keep', 'modify', 'drop'] as const).map((key) => {
+          const rows   = triage[key];
+          const accent = GROUP_ACCENT[key];
+          const isOpen = open[key];
+          return (
+            <div key={key}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', cursor: 'pointer', borderTop: '1px solid var(--line-1)' }}
+                onClick={() => setOpen(prev => ({ ...prev, [key]: !prev[key] }))}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, flex: '0 0 auto', marginRight: 10 }} />
+                <span style={{ fontSize: 12, color: 'var(--ink-1)', fontWeight: 500, flex: 1 }}>{GROUP_LABEL[key]}</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-3)', marginRight: 8 }}>{rows.length}</span>
+                <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>{isOpen ? '∨' : '›'}</span>
+              </div>
+              {isOpen && rows.map((row) => (
+                <TriageRow key={row.launchId} row={row} accent={accent} />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -314,13 +327,12 @@ function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProp
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function JurisdictionsPage() {
-  const navigate = useNavigate();
-
   const [view, setView] = useState<'map' | 'globe'>('globe');
   const [overview, setOverview] = useState<JurisdictionOverview[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null); // ISO-2
   const [searchQuery, setSearchQuery] = useState('');
+  const [triage, setTriage] = useState<JurisdictionTriage | null>(null);
 
   // ── Load overview ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -331,6 +343,17 @@ export default function JurisdictionsPage() {
         setOverview([]);
       });
   }, []);
+
+  // ── Load triage when selection changes ────────────────────────────────────
+  useEffect(() => {
+    setTriage(null);
+    if (!selectedCode) return;
+    let cancelled = false;
+    getJurisdictionTriage(selectedCode)
+      .then(d => { if (!cancelled) setTriage(d); })
+      .catch(() => { /* triage stays null; stat cards show 0s */ });
+    return () => { cancelled = true; };
+  }, [selectedCode]);
 
   // ── Build map data (ISO-3 → color) using semantic tokens ─────────────────
   const mapData = useMemo(() => {
@@ -437,8 +460,7 @@ export default function JurisdictionsPage() {
       {selectedOverview ? (
         <JurisOverviewPanel
           overview={selectedOverview}
-          onClear={() => setSelectedCode(null)}
-          onNavigate={() => navigate(`/jurisdictions/${selectedCode}`)}
+          triage={triage}
         />
       ) : (
         <JurisEmptyPanel />
