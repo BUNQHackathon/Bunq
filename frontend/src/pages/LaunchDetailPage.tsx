@@ -113,7 +113,7 @@ function Hero({ title, total, ok, review, block, anyRunning, animate }: HeroProp
           position: 'relative',
           zIndex: 2,
           textAlign: 'left',
-          padding: '10px 32px 1px',
+          padding: '10px 32px 24px',
         }}
       >
         <div className="juris__hero-eyebrow">
