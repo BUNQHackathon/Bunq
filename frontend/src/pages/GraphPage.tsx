@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
 import { getComplianceMap } from '../api/jurisdictions';
-import { getLaunch, jurisdictionFlag, jurisdictionLabel } from '../api/launch';
+import { getLaunch, jurisdictionFlag, jurisdictionLabel, runJurisdiction } from '../api/launch';
 
 // ─── Compliance-map node type → resolved hex (from CSS token comments) ────────
 // Using resolved hexes keeps D3 attr() calls clean; values mirror styles.css vars.
@@ -469,6 +469,8 @@ export default function GraphPage() {
   const [loading, setLoading] = useState(isLive);
   const [error, setError] = useState<string | null>(null);
   const [launchName, setLaunchName] = useState<string>(id ?? '');
+  const [rerunning, setRerunning] = useState(false);
+  const [rerunMsg, setRerunMsg] = useState<string | null>(null);
 
   // Inject compliance-type colors into CAT_COLOR at runtime (once)
   useEffect(() => {
@@ -479,6 +481,36 @@ export default function GraphPage() {
       CAT_COLOR['__compliance_evidence']   = COMPLIANCE_TYPE_COLOR.evidence;
     }
   }, [isLive]);
+
+  const fetchComplianceMap = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
+    getComplianceMap(id!, code!)
+      .then(payload => {
+        const mappedNodes: GraphNode[] = payload.nodes.map(n => ({
+          id: n.id,
+          label: n.label,
+          cat: buildCatKey(n.type),
+          doc: n.type === 'evidence' || n.type === 'control',
+          size: n.type === 'gap' ? 11 : n.type === 'obligation' ? 13 : 10,
+          nodeType: n.type,
+          severity: n.severity,
+          recommendedAction: n.recommendedAction,
+        }));
+        const mappedLinks: GraphLink[] = payload.edges.map(e => ({
+          source: e.source,
+          target: e.target,
+        }));
+        setNodes(mappedNodes);
+        setLinks(mappedLinks);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to load compliance graph');
+        setLoading(false);
+      });
+  }, [id, code]);
 
   // Live mode: fetch compliance map + launch name in parallel
   useEffect(() => {
@@ -512,34 +544,8 @@ export default function GraphPage() {
       .then(detail => setLaunchName(detail.launch.name))
       .catch(() => { /* keep id as fallback */ });
 
-    setLoading(true);
-    setError(null);
-
-    getComplianceMap(id!, code!)
-      .then(payload => {
-        const mappedNodes: GraphNode[] = payload.nodes.map(n => ({
-          id: n.id,
-          label: n.label,
-          cat: buildCatKey(n.type),
-          doc: n.type === 'evidence' || n.type === 'control',
-          size: n.type === 'gap' ? 11 : n.type === 'obligation' ? 13 : 10,
-          nodeType: n.type,
-          severity: n.severity,
-          recommendedAction: n.recommendedAction,
-        }));
-        const mappedLinks: GraphLink[] = payload.edges.map(e => ({
-          source: e.source,
-          target: e.target,
-        }));
-        setNodes(mappedNodes);
-        setLinks(mappedLinks);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err instanceof Error ? err.message : 'Failed to load compliance graph');
-        setLoading(false);
-      });
-  }, [code, id, isLive]);
+    fetchComplianceMap();
+  }, [code, id, isLive, fetchComplianceMap]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(prev => prev?.id === node.id ? null : node);
@@ -656,9 +662,34 @@ export default function GraphPage() {
             <span className="mono-label mono-label--ink" style={{ fontSize: 11 }}>
               This jurisdiction hasn't been analysed yet, or the analysis is still running.
             </span>
-            <button className="btn btn--sm" style={{ marginTop: 8 }} onClick={() => navigate(-1)}>
-              ← Back
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <button className="btn btn--sm" style={{ marginTop: 8 }} onClick={() => navigate(-1)}>
+                ← Back
+              </button>
+              <button
+                className="btn btn--orange-hollow btn--sm"
+                style={{ marginTop: 8, marginLeft: 8 }}
+                disabled={rerunning}
+                onClick={async () => {
+                  setRerunning(true);
+                  setRerunMsg(null);
+                  try {
+                    await runJurisdiction(id!, code!);
+                    setRerunMsg('Analysis started. This may take a minute — refreshing soon.');
+                    setTimeout(() => fetchComplianceMap(), 5000);
+                  } catch (err) {
+                    setRerunMsg('Failed to start: ' + (err as Error).message);
+                  } finally {
+                    setRerunning(false);
+                  }
+                }}
+              >
+                {rerunning ? 'Starting…' : 'Rerun analysis'}
+              </button>
+            </div>
+            {rerunMsg && (
+              <span className="mono-label" style={{ fontSize: 11, marginTop: 6 }}>{rerunMsg}</span>
+            )}
           </div>
         ) : (
           <>
