@@ -162,7 +162,7 @@ export default function WorldMapD3({
       const W = dims.w;
       const H = dims.h;
 
-      const proj = d3.geoNaturalEarth1().scale(W / 5.8).translate([W / 2, H / 2]);
+      const proj = d3.geoNaturalEarth1().scale(W / 5.8).translate([W / 2, H / 2]).center([5.3, 52.1]);
       const path = d3.geoPath().projection(proj);
       pathGenRef.current = path;
 

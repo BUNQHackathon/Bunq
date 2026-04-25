@@ -205,7 +205,7 @@ export default function LaunchDetailPage() {
   // Map canvas ref for ResizeObserver
   const canvasRef = useRef<HTMLDivElement>(null);
   const [mapHeight, setMapHeight] = useState<number>(
-    typeof window !== 'undefined' ? Math.max(420, window.innerHeight - 240) : 520,
+    typeof window !== 'undefined' ? Math.max(420, window.innerHeight - 48) : 520,
   );
 
   // Refs for row elements (for scroll-into-view on map select)
