@@ -1,11 +1,15 @@
 package com.bunq.javabackend.config;
 
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
@@ -56,6 +60,13 @@ public class AwsConfig {
     public BedrockRuntimeClient bedrockRuntimeClient() {
         return BedrockRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
+                .overrideConfiguration(ClientOverrideConfiguration.builder()
+                        .apiCallTimeout(Duration.ofSeconds(180))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(150))
+                        .build())
+                .httpClientBuilder(ApacheHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(10))
+                        .socketTimeout(Duration.ofSeconds(150)))
                 .build();
     }
 
@@ -63,6 +74,13 @@ public class AwsConfig {
     public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient() {
         return BedrockRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
+                .overrideConfiguration(ClientOverrideConfiguration.builder()
+                        .apiCallTimeout(Duration.ofSeconds(180))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(150))
+                        .build())
+                .httpClientBuilder(NettyNioAsyncHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(10))
+                        .readTimeout(Duration.ofSeconds(150)))
                 .build();
     }
 

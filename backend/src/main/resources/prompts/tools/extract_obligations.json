@@ -1,14 +1,27 @@
 {
   "name": "extract_obligations",
-  "description": "Extract legal obligations from a regulation text chunk. Each obligation must be a concrete, testable duty/prohibition/permission for a subject. Use DDL operators [O], [F], [P]. If you cannot ground the obligation in the chunk text, do not emit it.",
+  "description": "Extract legal obligations from a regulation text chunk. Each obligation must be a concrete, testable duty/prohibition/permission for a subject. Use DDL operators [O], [F], [P]. If you cannot ground the obligation in the chunk text, do not emit it. Call this tool exactly once with the structured list of obligations you extracted.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "regulation_text": {"type": "string"},
-      "regulation_id": {"type": "string"},
-      "article": {"type": "string"},
-      "paragraph_id": {"type": "string"}
+      "obligations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "deontic": {"type": "string", "enum": ["[O]", "[F]", "[P]"]},
+            "subject": {"type": "string"},
+            "action": {"type": "string"},
+            "conditions": {"type": "array", "items": {"type": "string"}},
+            "risk_category": {"type": "string"},
+            "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+            "source_text_snippet": {"type": "string", "description": "Quote from input that grounds this obligation"},
+            "extraction_confidence": {"type": "number"}
+          },
+          "required": ["deontic", "subject", "action", "source_text_snippet", "extraction_confidence"]
+        }
+      }
     },
-    "required": ["regulation_text", "regulation_id", "article", "paragraph_id"]
-  },
+    "required": ["obligations"]
+  }
 }

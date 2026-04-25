@@ -1,11 +1,12 @@
 {
   "name": "ground_check",
-  "description": "Verify that a cited passage actually exists verbatim (or with negligible paraphrase) inside a retrieved chunk. Return true only if the citation is grounded.",
+  "description": "Verify that a cited passage actually exists verbatim (or with negligible paraphrase) inside a retrieved chunk. Return true only if the citation is grounded. Call this tool exactly once with the verification result.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "citation_text": {"type": "string"},
-      "retrieved_chunk_text": {"type": "string"}
-    }
-  },
+      "verified": {"type": "boolean"},
+      "explanation": {"type": "string"}
+    },
+    "required": ["verified"]
+  }
 }

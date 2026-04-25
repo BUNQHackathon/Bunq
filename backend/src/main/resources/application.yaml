@@ -38,9 +38,9 @@ aws:
     claude-model-id: ${WARMUP_CLAUDE_MODEL_ID:eu.anthropic.claude-haiku-4-5-20251001-v1:0}
     kb-data-source-id: ${WARMUP_KB_DS_ID:1KZS2LLBRC}
     kb:
-      regulations-id: ${KB_REGULATIONS_ID:QAS7ITB4XR}
-      policies-id: ${KB_POLICIES_ID:GL7QYYBXIC}
-      controls-id: ${KB_CONTROLS_ID:2QTLWNPRBO}
+      regulations-id: ${KB_REGULATIONS_ID:YIBSPZAPVL}
+      policies-id: ${KB_POLICIES_ID:PJSPTYAB1N}
+      controls-id: ${KB_CONTROLS_ID:MVGWGRJRJW}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:https://*.amplifyapp.com,http://localhost:5173}
