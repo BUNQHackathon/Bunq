@@ -537,8 +537,26 @@ export default function DataPage() {
     'Upload';
   const uploadBusy = uploadState === 'hashing' || uploadState === 'uploading' || uploadState === 'finalizing';
 
+  const GRID_LINE_COLOR = 'rgba(214, 214, 214, 0.13)';
+  const gridOverlayStyle = {
+    position: 'absolute' as const,
+    inset: 0,
+    pointerEvents: 'none' as const,
+    zIndex: -1,
+    backgroundImage:
+      `linear-gradient(${GRID_LINE_COLOR} 1px, transparent 1px),` +
+      `linear-gradient(90deg, ${GRID_LINE_COLOR} 1px, transparent 1px)`,
+    backgroundSize: '44px 44px',
+    WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+    maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)]">
+    <div
+      className="flex flex-col h-[calc(100vh-56px)] relative"
+      style={{ isolation: 'isolate' }}
+    >
+      <div aria-hidden style={gridOverlayStyle} />
       <input
         type="file"
         ref={fileInputRef}
