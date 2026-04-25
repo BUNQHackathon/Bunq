@@ -178,6 +178,13 @@ export async function rerunFailedJurisdictions(launchId: string): Promise<Jurisd
   return (Array.isArray(res) ? res : []).map(normalizeRun);
 }
 
+export async function runJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
+  const res = await postJson<JurisdictionRun>(
+    `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`,
+  );
+  return normalizeRun(res);
+}
+
 export function jurisdictionLabel(code: string): string {
   return JURISDICTION_CATALOG.find((j) => j.code === code)?.name ?? code;
 }

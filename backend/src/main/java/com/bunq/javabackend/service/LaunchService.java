@@ -311,10 +311,27 @@ public class LaunchService {
         session.setDocumentIds(docIds);
         sessionRepository.save(session);
 
+        String regulationText = docs.stream()
+                .filter(d -> "regulation".equals(d.getKind()))
+                .map(Document::getExtractedText)
+                .filter(t -> t != null && !t.isBlank())
+                .findFirst()
+                .map(t -> t.substring(0, Math.min(500, t.length())))
+                .orElse(null);
+        String policyText = docs.stream()
+                .filter(d -> "policy".equals(d.getKind()))
+                .map(Document::getExtractedText)
+                .filter(t -> t != null && !t.isBlank())
+                .findFirst()
+                .map(t -> t.substring(0, Math.min(500, t.length())))
+                .orElse(null);
+
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
                 .counterparties(List.of())
                 .launchId(launchId)
                 .jurisdictionCode(code)
+                .regulation(regulationText)
+                .policy(policyText)
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 

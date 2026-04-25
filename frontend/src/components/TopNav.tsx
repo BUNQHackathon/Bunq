@@ -143,7 +143,7 @@ export default function TopNav() {
         {/* Left */}
         <div className="topnav__left">
           <Link to="/" className="wordmark">
-            <span className="wordmark__text">K.V.A.S</span>
+            <span className="wordmark__text">Prism</span>
             <span className="wordmark__dot">.</span>
           </Link>
         </div>
@@ -177,7 +177,7 @@ export default function TopNav() {
       >
         <div className="drawer__header">
           <Link to="/" className="wordmark" onClick={() => setDrawerOpen(false)}>
-            <span className="wordmark__text">K.V.A.S</span>
+            <span className="wordmark__text">Prism</span>
             <span className="wordmark__dot">.</span>
           </Link>
           <button
