@@ -150,36 +150,36 @@ export default function LibraryDocPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-prism-cream-2">
+        <div className="flex-1 overflow-y-auto bg-[#0D0D0D]">
           <div className="mx-auto max-w-[920px] px-8 py-[40px]">
-            <h1 className="font-serif text-[26px] font-normal leading-[1.3] tracking-tight text-[#1C1C1C]">
+            <h1 className="font-serif text-[26px] font-normal leading-[1.3] tracking-tight text-white/90">
               {title}
             </h1>
-            <p className="mt-2 text-[12px] text-[#999]">
+            <p className="mt-2 text-[12px] text-white/40">
               {doc.kind} · {formatBytes(doc.sizeBytes)} · Updated {formatDate(doc.lastUsedAt)}
             </p>
-            <div className="mb-6 mt-6 border-b border-[#E8E5E0]" />
+            <div className="mb-6 mt-6 border-b border-white/[0.05]" />
 
             {isPdf && doc.downloadUrl ? (
               <div className="mb-8">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-[12px] text-[#666]">
-                    <button type="button" disabled={pageNumber <= 1} onClick={() => setPageNumber((p) => Math.max(1, p - 1))} className="rounded-md border border-[#E8E5E0] px-2 py-1 disabled:opacity-40 hover:bg-[#F0EDE7]">‹</button>
+                  <div className="flex items-center gap-2 text-[12px] text-white/60">
+                    <button type="button" disabled={pageNumber <= 1} onClick={() => setPageNumber((p) => Math.max(1, p - 1))} className="rounded-md border border-white/[0.08] px-2 py-1 disabled:opacity-40 hover:bg-white/[0.08] text-white/70">‹</button>
                     <span className="font-mono">{pageNumber} / {numPages ?? '…'}</span>
-                    <button type="button" disabled={!numPages || pageNumber >= numPages} onClick={() => setPageNumber((p) => Math.min(numPages ?? p, p + 1))} className="rounded-md border border-[#E8E5E0] px-2 py-1 disabled:opacity-40 hover:bg-[#F0EDE7]">›</button>
+                    <button type="button" disabled={!numPages || pageNumber >= numPages} onClick={() => setPageNumber((p) => Math.min(numPages ?? p, p + 1))} className="rounded-md border border-white/[0.08] px-2 py-1 disabled:opacity-40 hover:bg-white/[0.08] text-white/70">›</button>
                   </div>
-                  <div className="flex items-center gap-2 text-[12px] text-[#666]">
-                    <button type="button" onClick={() => setScale((s) => Math.max(0.5, +(s - 0.1).toFixed(2)))} className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]">−</button>
+                  <div className="flex items-center gap-2 text-[12px] text-white/60">
+                    <button type="button" onClick={() => setScale((s) => Math.max(0.5, +(s - 0.1).toFixed(2)))} className="rounded-md border border-white/[0.08] px-2 py-1 hover:bg-white/[0.08] text-white/70">−</button>
                     <span className="font-mono w-[44px] text-center">{Math.round(scale * 100)}%</span>
-                    <button type="button" onClick={() => setScale((s) => Math.min(2.5, +(s + 0.1).toFixed(2)))} className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]">+</button>
-                    <button type="button" onClick={() => setScale(1)} className="rounded-md border border-[#E8E5E0] px-2 py-1 hover:bg-[#F0EDE7]">Fit</button>
+                    <button type="button" onClick={() => setScale((s) => Math.min(2.5, +(s + 0.1).toFixed(2)))} className="rounded-md border border-white/[0.08] px-2 py-1 hover:bg-white/[0.08] text-white/70">+</button>
+                    <button type="button" onClick={() => setScale(1)} className="rounded-md border border-white/[0.08] px-2 py-1 hover:bg-white/[0.08] text-white/70">Fit</button>
                   </div>
                 </div>
-                <div className="flex justify-center rounded-lg border border-[#E8E5E0] bg-white p-3 overflow-auto">
+                <div className="flex justify-center rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 overflow-auto">
                   <Document
                     file={doc.downloadUrl}
                     onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-                    loading={<div className="py-12 text-[12px] text-[#999]">Loading PDF…</div>}
+                    loading={<div className="py-12 text-[12px] text-white/40">Loading PDF…</div>}
                     error={<div className="py-12 text-[12px] text-red-500">Failed to load PDF</div>}
                   >
                     <Page pageNumber={pageNumber} scale={scale} renderAnnotationLayer={false} renderTextLayer={false} />
@@ -187,9 +187,9 @@ export default function LibraryDocPage() {
                 </div>
               </div>
             ) : doc.extractedText ? (
-              <pre className="whitespace-pre-wrap font-sans text-[14px] leading-[1.7] text-[#333]">{doc.extractedText}</pre>
+              <pre className="whitespace-pre-wrap font-sans text-[14px] leading-[1.7] text-white/80">{doc.extractedText}</pre>
             ) : (
-              <div className="py-12 text-center font-mono text-[12px] text-[#999]">
+              <div className="py-12 text-center font-mono text-[12px] text-white/40">
                 No preview available. {doc.downloadUrl && (<a href={doc.downloadUrl} target="_blank" rel="noreferrer" className="text-[#FF7819] underline">Download file</a>)}
               </div>
             )}
