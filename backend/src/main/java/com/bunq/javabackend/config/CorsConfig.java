@@ -1,6 +1,7 @@
 package com.bunq.javabackend.config;
 
 import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +35,8 @@ public class CorsConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(
+            @Qualifier("corsConfigurationSource") CorsConfigurationSource source) {
         FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
         bean.setDispatcherTypes(
                 DispatcherType.REQUEST,
