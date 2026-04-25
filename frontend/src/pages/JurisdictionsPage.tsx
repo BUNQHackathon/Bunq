@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listJurisdictionsOverview, type JurisdictionOverview } from '../api/jurisdictions';
-import { jurisdictionFlag, jurisdictionLabel } from '../api/launch';
+import { jurisdictionLabel } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
@@ -53,6 +53,23 @@ function JurisMapPanel({
   const active   = (overview ?? []).filter(o => o.aggregateVerdict !== 'PENDING').length;
   const inactive = (overview ?? []).filter(o => o.aggregateVerdict === 'PENDING').length;
   const total    = (overview ?? []).length;
+
+  const [searchFocused, setSearchFocused] = useState(false);
+  const suggestions = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return [];
+    return (overview ?? []).filter((o) => {
+      const lbl = jurisdictionLabel(o.code).toLowerCase();
+      return lbl.includes(q) || o.code.toLowerCase().includes(q);
+    }).slice(0, 8);
+  }, [overview, searchQuery]);
+
+  function pickSuggestion(code: string) {
+    const iso3 = ISO2_TO_ISO3[code] ?? code;
+    onSelect(iso3);
+    onSearch('');
+    setSearchFocused(false);
+  }
 
   return (
     <div className="juris__map">
@@ -124,12 +141,31 @@ function JurisMapPanel({
 
       {/* Foot */}
       <div className="juris__map-foot">
+        {searchFocused && suggestions.length > 0 && (
+          <div className="juris__autocomplete">
+            {suggestions.map((s) => (
+              <div
+                key={s.code}
+                className="juris__autocomplete-item"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pickSuggestion(s.code);
+                }}
+              >
+                <span className="juris__autocomplete-label">{jurisdictionLabel(s.code)}</span>
+                <span className="juris__autocomplete-code">{s.code}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <span style={{ color: 'var(--ink-3)', flexShrink: 0, display: 'inline-flex' }}>
           <IconSearch size={13} />
         </span>
         <input
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           placeholder="Jump to country, region, or regulation…"
           autoComplete="off"
         />
@@ -169,7 +205,6 @@ interface OverviewPanelProps {
 function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProps) {
   const code  = overview.code;
   const label = jurisdictionLabel(code);
-  const flag  = jurisdictionFlag(code);
 
   const green  = overview.aggregateVerdict === 'GREEN'   ? 1 : 0;
   const amber  = overview.aggregateVerdict === 'AMBER'   ? 1 : 0;
@@ -195,7 +230,7 @@ function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProp
           className="juris__hero-title"
           style={{ fontSize: 36, marginBottom: 0, color: 'var(--ink-0)' }}
         >
-          {flag} {label}
+          {label}
         </h1>
       </header>
 
@@ -253,24 +288,24 @@ function JurisOverviewPanel({ overview, onClear, onNavigate }: OverviewPanelProp
             </span>
           </div>
         )}
+      </div>
 
-        {/* Back + open detail */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingBottom: 24 }}>
-          <button
-            className="btn btn--ghost btn--sm"
-            onClick={onClear}
-            style={{ color: 'var(--ink-2)', border: '1px solid var(--line-1)' }}
-          >
-            ← All countries
-          </button>
-          <button
-            className="btn btn--orange"
-            style={{ flex: 1 }}
-            onClick={onNavigate}
-          >
-            Open {label} detail →
-          </button>
-        </div>
+      {/* Back + open detail — always pinned at panel bottom */}
+      <div className="juris__panel-foot">
+        <button
+          className="btn btn--ghost btn--sm"
+          onClick={onClear}
+          style={{ color: 'var(--ink-2)', border: '1px solid var(--line-1)' }}
+        >
+          ← All countries
+        </button>
+        <button
+          className="btn btn--orange"
+          style={{ flex: 1 }}
+          onClick={onNavigate}
+        >
+          Open {label} detail →
+        </button>
       </div>
     </div>
   );
@@ -335,11 +370,40 @@ export default function JurisdictionsPage() {
   }, [overview, searchQuery]);
   void _filteredOverview; // used indirectly via searchQuery passed to JurisMapPanel
 
+  // Enter in the search input: resolve query → select the country (opens the
+  // right panel, same as clicking it on the map).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      const t = e.target as HTMLElement | null;
+      if (!t || t.tagName !== 'INPUT') return;
+      if (!(t as HTMLInputElement).placeholder?.startsWith('Jump to country')) return;
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return;
+      const items = overview ?? [];
+      const exact = items.find((o) => {
+        const lbl = jurisdictionLabel(o.code).toLowerCase();
+        return lbl === q || o.code.toLowerCase() === q;
+      });
+      const match = exact ?? items.find((o) => {
+        const lbl = jurisdictionLabel(o.code).toLowerCase();
+        return lbl.includes(q) || o.code.toLowerCase().includes(q);
+      });
+      if (match) {
+        setSelectedCode(match.code);
+        setSearchQuery('');
+        (t as HTMLInputElement).blur();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [overview, searchQuery]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
       className="juris"
-      style={{ height: '100vh', minHeight: 0 }}
+      style={{ height: '100%', minHeight: 0 }}
     >
       {/* Error banner — lives outside the grid, overlaid at top */}
       {loadError && (

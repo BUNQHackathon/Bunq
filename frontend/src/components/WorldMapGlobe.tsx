@@ -80,6 +80,7 @@ function useResponsiveHeight(defaultHeight: number): number {
 
 export default function WorldMapGlobe({
   data,
+  selected,
   onSelect,
   onHover,
   height,
@@ -92,6 +93,7 @@ export default function WorldMapGlobe({
   const hoveredRef = useRef<GeoFeature | null>(null);
   const resizeObsRef = useRef<ResizeObserver | null>(null);
   const canvasListenersRef = useRef<{ canvas: HTMLCanvasElement; onLost: (e: Event) => void; onRestored: () => void } | null>(null);
+  const featuresRef = useRef<GeoFeature[]>([]);
 
   // Stable callback refs — no re-init needed when callbacks change
   const onSelectRef = useRef(onSelect);
@@ -217,6 +219,7 @@ export default function WorldMapGlobe({
 
     fetchFeatures().then((features) => {
       if (cancelled || !features.length) return;
+      featuresRef.current = features;
       initGlobe(features);
     });
 
@@ -239,6 +242,23 @@ export default function WorldMapGlobe({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Pan camera when `selected` changes externally (e.g. from the search input).
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe || !selected) return;
+    const feat = featuresRef.current.find((f) => readIso3(f.properties) === selected);
+    if (!feat || !feat.bbox) return;
+    const lat = (feat.bbox[1] + feat.bbox[3]) / 2;
+    const lng = (feat.bbox[0] + feat.bbox[2]) / 2;
+    (globe as unknown as {
+      pointOfView: (p: { lat: number; lng: number; altitude: number }, ms?: number) => void;
+    }).pointOfView({ lat, lng, altitude: 1.4 }, 700);
+    const controls = (globe as unknown as {
+      controls?: () => { autoRotate: boolean };
+    }).controls?.();
+    if (controls) controls.autoRotate = false;
+  }, [selected]);
 
   return (
     <div
