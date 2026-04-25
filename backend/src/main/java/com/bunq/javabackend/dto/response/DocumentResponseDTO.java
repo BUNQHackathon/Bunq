@@ -15,6 +15,7 @@ import java.util.Set;
 public class DocumentResponseDTO {
     private String id;
     private String filename;
+    private String displayName;
     private String contentType;
     private Long sizeBytes;
     private String kind;

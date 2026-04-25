@@ -11,6 +11,7 @@ public final class DocumentMapper {
         return DocumentResponseDTO.builder()
                 .id(doc.getId())
                 .filename(doc.getFilename())
+                .displayName(doc.getDisplayName())
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())
