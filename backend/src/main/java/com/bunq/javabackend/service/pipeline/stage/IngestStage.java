@@ -14,9 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -74,9 +77,18 @@ public class IngestStage implements Stage {
 
                 String extractedText;
 
-                if (doc.getExtractedText() != null) {
-                    // Cache hit — text already stored on Document row
-                    extractedText = doc.getExtractedText();
+                if (doc.getExtractedText() != null || doc.getExtractionS3Key() != null) {
+                    // Cache hit — text stored on Document row or in S3
+                    if (doc.getExtractedText() != null) {
+                        extractedText = doc.getExtractedText();
+                    } else {
+                        extractedText = s3Client.getObjectAsBytes(
+                                GetObjectRequest.builder()
+                                        .bucket(uploadsBucket)
+                                        .key(doc.getExtractionS3Key())
+                                        .build())
+                                .asUtf8String();
+                    }
                     log.info("Cache hit for document {} (kind={})", docId, doc.getKind());
 
                     Map<String, Object> payload = new LinkedHashMap<>();
@@ -91,7 +103,15 @@ public class IngestStage implements Stage {
                     extractedText = textractAsyncService.extractText(uploadsBucket, doc.getS3Key(), ctx);
 
                     Integer pageCount = estimatePageCount(extractedText);
-                    doc.setExtractedText(extractedText);
+                    String extractionKey = "extractions/" + docId + ".txt";
+                    s3Client.putObject(PutObjectRequest.builder()
+                                    .bucket(uploadsBucket)
+                                    .key(extractionKey)
+                                    .contentType("text/plain; charset=utf-8")
+                                    .build(),
+                            RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
+                    log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, extractionKey, extractedText.length());
+                    doc.setExtractionS3Key(extractionKey);
                     doc.setExtractedAt(now);
                     doc.setPageCount(pageCount);
                     documentRepository.save(doc);
@@ -113,7 +133,15 @@ public class IngestStage implements Stage {
                         extractedText = "";
                     }
 
-                    doc.setExtractedText(extractedText);
+                    String audioExtractionKey = "extractions/" + docId + ".txt";
+                    s3Client.putObject(PutObjectRequest.builder()
+                                    .bucket(uploadsBucket)
+                                    .key(audioExtractionKey)
+                                    .contentType("text/plain; charset=utf-8")
+                                    .build(),
+                            RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
+                    log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, audioExtractionKey, extractedText.length());
+                    doc.setExtractionS3Key(audioExtractionKey);
                     doc.setExtractedAt(now);
                     doc.setPageCount(null);
                     documentRepository.save(doc);
@@ -138,8 +166,16 @@ public class IngestStage implements Stage {
                                         .key(doc.getS3Key())
                                         .build())
                                 .asByteArray();
-                        extractedText = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-                        doc.setExtractedText(extractedText);
+                        extractedText = new String(bytes, StandardCharsets.UTF_8);
+                        String plainExtractionKey = "extractions/" + docId + ".txt";
+                        s3Client.putObject(PutObjectRequest.builder()
+                                        .bucket(uploadsBucket)
+                                        .key(plainExtractionKey)
+                                        .contentType("text/plain; charset=utf-8")
+                                        .build(),
+                                RequestBody.fromString(extractedText, StandardCharsets.UTF_8));
+                        log.info("Stored extracted text in S3 for document {}: key={} size={} chars", docId, plainExtractionKey, extractedText.length());
+                        doc.setExtractionS3Key(plainExtractionKey);
                         doc.setExtractedAt(now);
                         documentRepository.save(doc);
 

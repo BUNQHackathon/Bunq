@@ -60,6 +60,10 @@ public class Document {
     @Getter(onMethod_ = @DynamoDbAttribute("extracted_text"))
     private String extractedText;
 
+    /** S3 key for extracted text when text is offloaded to S3 (>400KB DDB limit) */
+    @Getter(onMethod_ = @DynamoDbAttribute("extraction_s3_key"))
+    private String extractionS3Key;
+
     @Getter(onMethod_ = @DynamoDbAttribute("extracted_at"))
     private Instant extractedAt;
 
