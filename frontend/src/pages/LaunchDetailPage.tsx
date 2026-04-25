@@ -485,7 +485,7 @@ export default function LaunchDetailPage() {
       <div className="fjp">
         <Hero
           key={id}
-          title={launch?.name ?? (id ?? '')}
+          title={launch?.name ?? ' '}
           total={counts.total}
           ok={counts.ok}
           review={counts.review}
