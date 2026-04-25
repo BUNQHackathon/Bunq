@@ -86,6 +86,7 @@ export interface DocumentFinalizeRequest {
 export interface LibraryDocument {
   id: string;
   filename: string;
+  displayName?: string | null;
   contentType: string;
   sizeBytes: number;
   kind: string;

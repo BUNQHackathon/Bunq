@@ -22,4 +22,5 @@ public class DocumentFinalizeRequest {
     @NotBlank(message = "kind is required")
     private String kind;
     private Set<String> jurisdictions;
+    private String displayName;
 }

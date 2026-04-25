@@ -119,6 +119,7 @@ public class DocumentService {
                 .jurisdictions(jurisdictions)
                 .firstSeenAt(now)
                 .lastUsedAt(now)
+                .displayName(req.getDisplayName())
                 .obligationsExtracted(false)
                 .controlsExtracted(false)
                 .build();
@@ -167,6 +168,7 @@ public class DocumentService {
         return DocumentResponseDTO.builder()
                 .id(doc.getId())
                 .filename(doc.getFilename())
+                .displayName(doc.getDisplayName())
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())
@@ -185,6 +187,7 @@ public class DocumentService {
         return DocumentSummaryDTO.builder()
                 .id(doc.getId())
                 .filename(doc.getFilename())
+                .displayName(doc.getDisplayName())
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())

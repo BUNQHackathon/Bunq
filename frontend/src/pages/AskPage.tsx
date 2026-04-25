@@ -442,7 +442,7 @@ export default function AskPage() {
                           {c.kbType}
                         </span>
                         <span className="text-[12px] text-white/70 font-medium truncate">
-                          {citationFileName(c.s3Uri)}
+                          {c.displayName ?? citationFileName(c.s3Uri)}
                         </span>
                       </div>
                       <p

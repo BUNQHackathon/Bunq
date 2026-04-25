@@ -16,6 +16,7 @@ export interface Citation {
   score: number;
   s3Uri: string;
   sourceText: string;
+  displayName?: string | null;
 }
 
 export interface TokenUsage {

@@ -28,6 +28,10 @@ public class Document {
     @Getter(onMethod_ = @DynamoDbAttribute("filename"))
     private String filename;
 
+    /** Nullable — curated human-readable title; falls back to filename in the UI */
+    @Getter(onMethod_ = @DynamoDbAttribute("display_name"))
+    private String displayName;
+
     @Getter(onMethod_ = @DynamoDbAttribute("content_type"))
     private String contentType;
 
