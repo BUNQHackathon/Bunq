@@ -97,6 +97,7 @@ export interface LibraryDocument {
   pageCount: number | null;
   obligationsExtracted: boolean;
   controlsExtracted: boolean;
+  downloadUrl?: string | null;
 }
 
 export interface DocumentFinalizeResponse {

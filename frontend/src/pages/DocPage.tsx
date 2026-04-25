@@ -364,12 +364,6 @@ export default function DocPage() {
               <span className="font-mono text-[11px] uppercase tracking-wide text-white/30">
                 Workspace
               </span>
-              <button
-                type="button"
-                className="rounded-md p-1 text-white/30 hover:text-white/60 transition-colors"
-              >
-                <IconPlus size={12} />
-              </button>
             </div>
 
             {/* Tree */}

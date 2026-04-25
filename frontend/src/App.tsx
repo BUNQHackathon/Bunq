@@ -9,6 +9,7 @@ import LaunchDetailPage from './pages/LaunchDetailPage';
 import JurisdictionDetailPage from './pages/JurisdictionDetailPage';
 import DataPage from './pages/DataPage';
 import DocPage from './pages/DocPage';
+import LibraryDocPage from './pages/LibraryDocPage';
 import SessionDetailPage from './pages/SessionDetailPage';
 import ObligationDetailPage from './pages/ObligationDetailPage';
 import ControlDetailPage from './pages/ControlDetailPage';
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/graph" element={<GraphPage />} />
         <Route path="/data" element={<DataPage />} />
         <Route path="/doc/:docId" element={<DocPage />} />
+        <Route path="/library/:docId" element={<LibraryDocPage />} />
         <Route path="/jurisdictions" element={<JurisdictionsPage />} />
         <Route path="/jurisdictions/:code" element={<JurisdictionDetailPage />} />
         <Route path="/jurisdictions/:code/launches/:id" element={<GraphPage />} />

@@ -27,4 +27,5 @@ public class DocumentResponseDTO {
     private Integer pageCount;
     private boolean obligationsExtracted;
     private boolean controlsExtracted;
+    private String downloadUrl;
 }

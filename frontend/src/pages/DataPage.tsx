@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listDocuments, type DocumentSummary } from '../api/portal';
-import { listLibraryDocuments, createSession, attachDocument, type LibraryDocument, presignDocument, putToPresignedUrl, finalizeDocument, computeSha256Base64, type DocumentKind } from '../api/session';
+import { type DocumentSummary } from '../api/portal';
+import { listLibraryDocuments, type LibraryDocument, presignDocument, putToPresignedUrl, finalizeDocument, computeSha256Base64, type DocumentKind } from '../api/session';
 import { chats, type Chat } from '../data/portal';
 import {
   IconFilter,
@@ -85,38 +85,6 @@ interface FolderNode {
   children: FolderNode[];
 }
 
-function buildKbTree(docs: DocumentSummary[]): FolderNode[] {
-  const byJuris = new Map<string, DocumentSummary[]>();
-  for (const d of docs) {
-    const j = d.jurisdiction || 'Other';
-    if (!byJuris.has(j)) byJuris.set(j, []);
-    byJuris.get(j)!.push(d);
-  }
-  const jurisEmoji: Record<string, string> = {
-    EU: '🇪🇺', NL: '🇳🇱', DE: '🇩🇪', FR: '🇫🇷', UK: '🇬🇧', Other: '🌍',
-  };
-  return [...byJuris.entries()].map(([juris, jurDocs]) => {
-    const byCat = new Map<string, DocumentSummary[]>();
-    for (const d of jurDocs) {
-      if (!byCat.has(d.category)) byCat.set(d.category, []);
-      byCat.get(d.category)!.push(d);
-    }
-    return {
-      id: `jur-${juris}`,
-      name: juris === 'EU' ? 'EU-wide' : juris,
-      emoji: jurisEmoji[juris] ?? '🌍',
-      docIds: jurDocs.map((d) => d.id),
-      level: 'jurisdiction' as const,
-      children: [...byCat.entries()].map(([cat, catDocs]) => ({
-        id: `cat-${juris}-${cat}`,
-        name: cat,
-        docIds: catDocs.map((d) => d.id),
-        level: 'category' as const,
-        children: [],
-      })),
-    };
-  });
-}
 
 function buildLibraryTree(docs: LibraryDocument[]): FolderNode[] {
   const byKind = new Map<string, LibraryDocument[]>();
@@ -135,11 +103,8 @@ function buildLibraryTree(docs: LibraryDocument[]): FolderNode[] {
   }));
 }
 
-function buildTree(docs: UnifiedDoc[], source: 'kb' | 'library'): FolderNode[] {
-  if (source === 'library') {
-    return buildLibraryTree(docs.filter(isLibrary));
-  }
-  return buildKbTree(docs.filter((d): d is DocumentSummary => !isLibrary(d)));
+function buildTree(docs: UnifiedDoc[]): FolderNode[] {
+  return buildLibraryTree(docs.filter(isLibrary));
 }
 
 function collectDocIds(node: FolderNode): string[] {
@@ -242,12 +207,9 @@ function TreeNode({ node, level, selectedId, expandedIds, onSelect, onToggle }: 
 
 interface DocCardProps {
   doc: UnifiedDoc;
-  onUseInAnalysis?: (doc: LibraryDocument) => Promise<void>;
-  usingId?: string | null;
-  useError?: string | null;
 }
 
-function DocCard({ doc, onUseInAnalysis, usingId, useError = null }: DocCardProps) {
+function DocCard({ doc }: DocCardProps) {
   const navigate = useNavigate();
   const category = docCategory(doc);
   const dotColor = CATEGORY_DOT[category] ?? 'bg-white/20';
@@ -299,30 +261,12 @@ function DocCard({ doc, onUseInAnalysis, usingId, useError = null }: DocCardProp
   );
 
   if (isLibrary(doc)) {
-    const isInFlight = usingId === doc.id;
     return (
       <div
         className="rounded-xl border border-white/[0.06] hover:border-white/[0.14] p-4 bg-prism-panel select-none cursor-pointer transition-all"
         onClick={() => navigate(`/library/${doc.id}`)}
       >
         {cardBody}
-        <div className="mt-3 pt-2 border-t border-white/[0.04] flex flex-col gap-1">
-          <button
-            disabled={isInFlight}
-            onClick={(e) => { e.stopPropagation(); onUseInAnalysis?.(doc); }}
-            className={`w-full font-mono text-[11px] px-3 py-1.5 rounded-full transition-colors ${isInFlight
-              ? 'bg-[#FF7819]/40 text-white/50 cursor-not-allowed'
-              : 'bg-[#FF7819] text-white hover:bg-[#e86a10]'
-              }`}
-          >
-            {isInFlight ? 'Starting…' : 'Use in new analysis'}
-          </button>
-          {useError && (
-            <span className="font-mono text-[10px] text-[#E05050] leading-snug">
-              {useError}
-            </span>
-          )}
-        </div>
       </div>
     );
   }
@@ -375,20 +319,19 @@ function inferKindAndType(filename: string): { kind: DocumentKind; contentType: 
 export default function DataPage() {
   const navigate = useNavigate();
 
-  const [source] = useState<'kb' | 'library'>('kb');
+  const source: 'library' = 'library';
   const [docs, setDocs] = useState<UnifiedDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
-  const [usingDocId, setUsingDocId] = useState<string | null>(null);
-  const [docErrors, setDocErrors] = useState<Map<string, string>>(new Map<string, string>());
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<'recent' | 'oldest' | 'name' | 'size'>('recent');
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<'idle' | 'hashing' | 'uploading' | 'finalizing' | 'done' | 'error'>('idle');
+  const [refreshToken, setRefreshToken] = useState(0);
   const [uploadFileName, setUploadFileName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -412,6 +355,7 @@ export default function DataPage() {
       setUploadState('finalizing');
       await finalizeDocument({ incomingKey, filename: file.name, contentType, kind });
       setUploadState('done');
+      setRefreshToken((n) => n + 1);
     } catch (err) {
       setUploadState('error');
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -424,10 +368,7 @@ export default function DataPage() {
     setDocs([]);
     setSelectedFolderId(null);
 
-    const loader: Promise<UnifiedDoc[]> =
-      source === 'kb'
-        ? listDocuments()
-        : listLibraryDocuments(kindFilter, 200).then((r) => r.documents);
+    const loader: Promise<UnifiedDoc[]> = listLibraryDocuments(kindFilter, 200).then((r) => r.documents);
 
     loader
       .then((data) => { if (!cancelled) { setDocs(data); setError(null); } })
@@ -436,28 +377,9 @@ export default function DataPage() {
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, kindFilter]);
+  }, [source, kindFilter, refreshToken]);
 
-  async function handleUseInAnalysis(doc: LibraryDocument): Promise<void> {
-    setUsingDocId(doc.id);
-    setDocErrors((prev) => {
-      const next = new Map(prev);
-      next.delete(doc.id);
-      return next;
-    });
-    try {
-      const session = await createSession({});
-      await attachDocument(session.id, doc.id);
-      navigate(`/session/${session.id}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start session';
-      setDocErrors((prev) => new Map(prev).set(doc.id, msg));
-    } finally {
-      setUsingDocId(null);
-    }
-  }
-
-  const tree = useMemo(() => buildTree(docs, source), [docs, source]);
+const tree = useMemo(() => buildTree(docs), [docs]);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set<string>());
@@ -510,9 +432,9 @@ export default function DataPage() {
     return sorted;
   }, [filteredDocs, typeFilter, sortKey]);
 
-  const breadcrumbName = selectedNode ? selectedNode.name : (source === 'kb' ? 'All documents' : 'All kinds');
+  const breadcrumbName = selectedNode ? selectedNode.name : 'All kinds';
   const breadcrumbCount = displayDocs.length;
-  const breadcrumbPrefix = source === 'kb' ? 'Workspace' : 'Library';
+  const breadcrumbPrefix = 'Library';
 
   useEffect(() => {
     if (!typeMenuOpen && !sortMenuOpen) return;
@@ -532,13 +454,31 @@ export default function DataPage() {
 
   const uploadLabel =
     uploadState === 'hashing' ? 'Hashing…' :
-    uploadState === 'uploading' ? 'Uploading…' :
-    uploadState === 'finalizing' ? 'Finalizing…' :
-    'Upload';
+      uploadState === 'uploading' ? 'Uploading…' :
+        uploadState === 'finalizing' ? 'Finalizing…' :
+          'Upload';
   const uploadBusy = uploadState === 'hashing' || uploadState === 'uploading' || uploadState === 'finalizing';
 
+  const GRID_LINE_COLOR = 'rgba(214, 214, 214, 0.13)';
+  const gridOverlayStyle = {
+    position: 'absolute' as const,
+    inset: 0,
+    pointerEvents: 'none' as const,
+    zIndex: -1,
+    backgroundImage:
+      `linear-gradient(${GRID_LINE_COLOR} 1px, transparent 1px),` +
+      `linear-gradient(90deg, ${GRID_LINE_COLOR} 1px, transparent 1px)`,
+    backgroundSize: '44px 44px',
+    WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+    maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 95%)',
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)]">
+    <div
+      className="flex flex-col h-[calc(100vh-56px)] relative"
+      style={{ isolation: 'isolate' }}
+    >
+      <div aria-hidden style={gridOverlayStyle} />
       <input
         type="file"
         ref={fileInputRef}
@@ -637,11 +577,8 @@ export default function DataPage() {
         <div className="shrink-0 w-[260px] bg-prism-panel border-r border-white/[0.05] overflow-y-auto flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
             <span className="font-mono uppercase text-[11px] text-white/30 tracking-widest">
-              {source === 'kb' ? 'Workspace' : 'Library'}
+              Library
             </span>
-            <button className="flex items-center justify-center w-5 h-5 rounded text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-colors">
-              <IconPlus size={11} />
-            </button>
           </div>
 
           <div className="py-1">
@@ -671,22 +608,20 @@ export default function DataPage() {
             Documents
           </div>
 
-          {source === 'library' && (
-            <div className="flex flex-wrap items-center gap-1.5 mb-4">
-              {([undefined, 'regulation', 'policy', 'brief', 'evidence', 'audio', 'other'] as Array<string | undefined>).map((k) => (
-                <button
-                  key={k ?? 'all'}
-                  onClick={() => setKindFilter(k)}
-                  className={`font-mono text-[10px] px-2.5 py-1 rounded-full transition-colors ${kindFilter === k
-                    ? 'bg-[#FF7819] text-white'
-                    : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
-                    }`}
-                >
-                  {k === undefined ? 'All' : k.charAt(0).toUpperCase() + k.slice(1)}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-1.5 mb-4">
+            {([undefined, 'regulation', 'policy', 'brief', 'evidence', 'audio', 'other'] as Array<string | undefined>).map((k) => (
+              <button
+                key={k ?? 'all'}
+                onClick={() => setKindFilter(k)}
+                className={`font-mono text-[10px] px-2.5 py-1 rounded-full transition-colors ${kindFilter === k
+                  ? 'bg-[#FF7819] text-white'
+                  : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
+                  }`}
+              >
+                {k === undefined ? 'All' : k.charAt(0).toUpperCase() + k.slice(1)}
+              </button>
+            ))}
+          </div>
 
           {loading && docs.length === 0 ? (
             <div className="flex items-center justify-center py-16 font-mono text-[13px] text-white/40">
@@ -705,13 +640,7 @@ export default function DataPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {displayDocs.map((doc) => (
-                <DocCard
-                  key={docId(doc)}
-                  doc={doc}
-                  onUseInAnalysis={isLibrary(doc) ? handleUseInAnalysis : undefined}
-                  usingId={usingDocId}
-                  useError={isLibrary(doc) ? (docErrors.get(doc.id) ?? null) : null}
-                />
+                <DocCard key={docId(doc)} doc={doc} />
               ))}
             </div>
           )}
