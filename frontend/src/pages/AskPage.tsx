@@ -296,18 +296,25 @@ export default function AskPage() {
 
         {showHero && (
           <>
-            <h1
-              className="font-serif font-normal text-white leading-[0.95] tracking-tight"
-              style={{ fontSize: 'clamp(40px, 9vw, 124px)' }}
+            <div
+              style={{
+                WebkitMaskImage: 'linear-gradient(to bottom, black 5%, transparent 95%)',
+                maskImage: 'linear-gradient(to bottom, black 5%, transparent 95%)',
+              }}
             >
-              Split every policy
-            </h1>
-            <h1
-              className="font-serif font-normal italic text-white leading-[0.95] tracking-tight mt-1"
-              style={{ fontSize: 'clamp(40px, 9vw, 124px)' }}
-            >
-              into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
-            </h1>
+              <h1
+                className="font-serif font-normal text-white leading-[0.95] tracking-tight"
+                style={{ fontSize: 'clamp(40px, 9vw, 124px)' }}
+              >
+                Split every policy
+              </h1>
+              <h1
+                className="font-serif font-normal italic text-white leading-[0.95] tracking-tight mt-1"
+                style={{ fontSize: 'clamp(40px, 9vw, 124px)' }}
+              >
+                into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
+              </h1>
+            </div>
             <p className="text-white/55 text-[15px] mt-6">
               One prompt. Cross-jurisdictional answers, always backed by source.
             </p>
