@@ -7,9 +7,11 @@ public record JurisdictionTriageDTO(
         String code,
         List<KeepCard> keep,
         List<ModifyCard> modify,
-        List<DropCard> drop
+        List<DropCard> drop,
+        List<PendingCard> pending
 ) {
     public record KeepCard(String launchId, String name, LaunchKind kind) {}
     public record ModifyCard(String launchId, String name, LaunchKind kind, List<String> changes) {}
     public record DropCard(String launchId, String name, LaunchKind kind, String reason) {}
+    public record PendingCard(String launchId, String name, LaunchKind kind, String status) {}
 }

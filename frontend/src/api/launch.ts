@@ -6,6 +6,12 @@ export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING' | 'UNKNOWN';
 export type JurisdictionStatus = 'RUNNING' | 'COMPLETE' | 'FAILED' | 'PENDING';
 export type LaunchKind = 'PRODUCT' | 'POLICY' | 'PROCESS';
 
+export interface LaunchJurisdictionSummary {
+  code: string;
+  verdict: Verdict;
+  status: string;
+}
+
 export interface Launch {
   id: string;
   name: string;
@@ -19,6 +25,7 @@ export interface Launch {
   createdAt: string;
   updatedAt: string;
   markets?: string[];
+  jurisdictions?: LaunchJurisdictionSummary[];
 }
 
 export interface JurisdictionRun {
@@ -169,6 +176,13 @@ export async function deleteLaunch(id: string): Promise<void> {
 export async function rerunFailedJurisdictions(launchId: string): Promise<JurisdictionRun[]> {
   const res = await postJson<JurisdictionRun[]>(`/launches/${encodeURIComponent(launchId)}/rerun-failed`);
   return (Array.isArray(res) ? res : []).map(normalizeRun);
+}
+
+export async function runJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
+  const res = await postJson<JurisdictionRun>(
+    `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`,
+  );
+  return normalizeRun(res);
 }
 
 export function jurisdictionLabel(code: string): string {

@@ -3,6 +3,7 @@ package com.bunq.javabackend.helper.mapper;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
+import com.bunq.javabackend.dto.response.LaunchSummaryDTO.JurisdictionSummary;
 import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.launch.Launch;
 
@@ -10,7 +11,8 @@ import java.util.List;
 
 public class LaunchMapper {
 
-    public static LaunchSummaryDTO toSummary(Launch l, int jurisdictionCount, String aggregateVerdict) {
+    public static LaunchSummaryDTO toSummary(Launch l, int jurisdictionCount, String aggregateVerdict,
+            List<JurisdictionSummary> jurisdictions) {
         return LaunchSummaryDTO.builder()
                 .id(l.getId())
                 .name(l.getName())
@@ -22,6 +24,7 @@ public class LaunchMapper {
                 .aggregateVerdict(aggregateVerdict)
                 .createdAt(l.getCreatedAt())
                 .updatedAt(l.getUpdatedAt())
+                .jurisdictions(jurisdictions)
                 .build();
     }
 

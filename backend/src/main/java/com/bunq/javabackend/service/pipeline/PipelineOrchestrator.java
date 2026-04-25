@@ -30,6 +30,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -74,22 +75,22 @@ public class PipelineOrchestrator {
             sessionService.updateState(sessionId, SessionState.UPLOADING);
 
             // Stage 1: Ingest
-            runStage(ctx, ingestStage);
+            runStageWithCheckpoint(ctx, ingestStage);
 
             // UPLOADING → EXTRACTING
             sessionService.updateState(sessionId, SessionState.EXTRACTING);
 
             // Stages 2+3 in parallel
-            CompletableFuture<Void> oblFuture = runStageAsync(ctx, extractObligationsStage);
-            CompletableFuture<Void> ctrlFuture = runStageAsync(ctx, extractControlsStage);
+            CompletableFuture<Void> oblFuture = runStageAsyncWithCheckpoint(ctx, extractObligationsStage);
+            CompletableFuture<Void> ctrlFuture = runStageAsyncWithCheckpoint(ctx, extractControlsStage);
             CompletableFuture.allOf(oblFuture, ctrlFuture).join();
 
             // EXTRACTING → MAPPING
             sessionService.updateState(sessionId, SessionState.MAPPING);
 
             // Stages 4+5 in parallel
-            CompletableFuture<Void> sanctionsFuture = runStageAsync(ctx, sanctionsScreenStage);
-            CompletableFuture<Void> mapFuture = runStageAsync(ctx, mapObligationsControlsStage);
+            CompletableFuture<Void> sanctionsFuture = runStageAsyncWithCheckpoint(ctx, sanctionsScreenStage);
+            CompletableFuture<Void> mapFuture = runStageAsyncWithCheckpoint(ctx, mapObligationsControlsStage);
             CompletableFuture.allOf(sanctionsFuture, mapFuture).join();
 
             // MAPPING → SCORING → SANCTIONS
@@ -97,13 +98,13 @@ public class PipelineOrchestrator {
             sessionService.updateState(sessionId, SessionState.SANCTIONS);
 
             // Stage 6: Gap analyze
-            runStage(ctx, gapAnalyzeStage);
+            runStageWithCheckpoint(ctx, gapAnalyzeStage);
 
             // Stage 7: Ground check
-            runStage(ctx, groundCheckStage);
+            runStageWithCheckpoint(ctx, groundCheckStage);
 
             // Stage 8: Narrate
-            runStage(ctx, narrateStage);
+            runStageWithCheckpoint(ctx, narrateStage);
 
             // SANCTIONS → COMPLETE
             sessionService.updateState(sessionId, SessionState.COMPLETE);
@@ -143,7 +144,13 @@ public class PipelineOrchestrator {
 
         } catch (Exception e) {
             log.error("Pipeline failed for session {}: {}", sessionId, e.getMessage(), e);
-            PipelineStage failedStage = e instanceof PipelineStageException pse
+            Throwable root = e;
+            while ((root instanceof java.util.concurrent.CompletionException
+                    || root instanceof java.util.concurrent.ExecutionException)
+                    && root.getCause() != null) {
+                root = root.getCause();
+            }
+            PipelineStage failedStage = root instanceof PipelineStageException pse
                     ? pse.getStage()
                     : PipelineStage.INGEST;
             sseEmitterService.send(sessionId, StageFailedEvent.builder()
@@ -175,6 +182,43 @@ public class PipelineOrchestrator {
             try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ignored) {}
             sseEmitterService.complete(sessionId);
         }
+    }
+
+    private boolean isCheckpointed(String sessionId, PipelineStage stage) {
+        return sessionRepository.findById(sessionId)
+                .map(s -> s.getCompletedStages() != null && s.getCompletedStages().contains(stage.name()))
+                .orElse(false);
+    }
+
+    private void markCheckpointed(String sessionId, PipelineStage stage) {
+        sessionRepository.findById(sessionId).ifPresent(s -> {
+            List<String> completed = s.getCompletedStages() != null
+                    ? new ArrayList<>(s.getCompletedStages())
+                    : new ArrayList<>();
+            if (!completed.contains(stage.name())) {
+                completed.add(stage.name());
+            }
+            s.setCompletedStages(completed);
+            sessionRepository.save(s);
+        });
+    }
+
+    private void runStageWithCheckpoint(PipelineContext ctx, Stage stage) {
+        if (isCheckpointed(ctx.getSessionId(), stage.stage())) {
+            log.info("Skipping checkpointed stage {} for session {}", stage.stage(), ctx.getSessionId());
+            return;
+        }
+        runStage(ctx, stage);
+        markCheckpointed(ctx.getSessionId(), stage.stage());
+    }
+
+    private CompletableFuture<Void> runStageAsyncWithCheckpoint(PipelineContext ctx, Stage stage) {
+        if (isCheckpointed(ctx.getSessionId(), stage.stage())) {
+            log.info("Skipping checkpointed stage {} for session {}", stage.stage(), ctx.getSessionId());
+            return CompletableFuture.completedFuture(null);
+        }
+        return runStageAsync(ctx, stage)
+                .thenRun(() -> markCheckpointed(ctx.getSessionId(), stage.stage()));
     }
 
     private void runStage(PipelineContext ctx, Stage stage) {

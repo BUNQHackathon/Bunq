@@ -64,7 +64,10 @@ public class Control {
     @Getter(onMethod_ = @DynamoDbAttribute("source_doc_ref"))
     private ControlSourceRef sourceDocRef;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("session_id"))
+    @Getter(onMethod_ = {
+        @DynamoDbAttribute("session_id"),
+        @DynamoDbSecondaryPartitionKey(indexNames = "session-id-index")
+    })
     private String sessionId;
 
     @Getter(onMethod_ = @DynamoDbAttribute("bank_id"))

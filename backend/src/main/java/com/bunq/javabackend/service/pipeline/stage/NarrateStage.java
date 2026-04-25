@@ -8,6 +8,7 @@ import com.bunq.javabackend.repository.GapRepository;
 import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.repository.ControlRepository;
+import com.bunq.javabackend.repository.SessionRepository;
 import com.bunq.javabackend.service.BedrockService;
 import com.bunq.javabackend.service.ReportService;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
@@ -39,6 +40,7 @@ public class NarrateStage implements Stage {
     private final ControlRepository controlRepository;
     private final ObjectMapper objectMapper;
     private final ReportService reportService;
+    private final SessionRepository sessionRepository;
 
     @Override
     public PipelineStage stage() {
@@ -68,6 +70,11 @@ public class NarrateStage implements Stage {
             String overallSeverity = determineOverall(gaps);
             List<String> topRisks = extractTopRisks(gaps);
             String narrative = generateNarrative(gaps, mappings, overallSeverity);
+
+            sessionRepository.findById(ctx.getSessionId()).ifPresent(session -> {
+                session.setExecutiveSummary(narrative);
+                sessionRepository.save(session);
+            });
 
             ExecutiveSummaryDTO summary = ExecutiveSummaryDTO.builder()
                     .overall(overallSeverity)
@@ -135,7 +142,7 @@ public class NarrateStage implements Stage {
                     ))
             ));
 
-            JsonNode response = bedrockService.invokeModel(BedrockModel.OPUS.getModelId(), requestJson);
+            JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
             JsonNode content = response.path("content");
             if (content.isArray() && !content.isEmpty()) {
                 return content.get(0).path("text").asText("");

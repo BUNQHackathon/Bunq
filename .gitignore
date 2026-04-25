@@ -3,3 +3,5 @@
 .env
 .worktrees/
 /backend/scripts
+/backend/test
+*.info

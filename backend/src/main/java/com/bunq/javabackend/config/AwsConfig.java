@@ -11,6 +11,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.retries.AdaptiveRetryStrategy;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -61,6 +62,7 @@ public class AwsConfig {
         return BedrockRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
+                        .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
                         .apiCallTimeout(Duration.ofSeconds(600))
                         .apiCallAttemptTimeout(Duration.ofSeconds(540))
                         .build())
@@ -75,6 +77,7 @@ public class AwsConfig {
         return BedrockRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
+                        .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
                         .apiCallTimeout(Duration.ofSeconds(600))
                         .apiCallAttemptTimeout(Duration.ofSeconds(540))
                         .build())

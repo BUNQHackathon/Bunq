@@ -30,9 +30,20 @@ resource "aws_dynamodb_table" "obligations" {
     type = "S"
   }
 
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
   global_secondary_index {
     name            = "document-id-index"
     hash_key        = "document_id"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
     projection_type = "ALL"
   }
 }
@@ -52,9 +63,20 @@ resource "aws_dynamodb_table" "controls" {
     type = "S"
   }
 
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
   global_secondary_index {
     name            = "document-id-index"
     hash_key        = "document_id"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
     projection_type = "ALL"
   }
 }

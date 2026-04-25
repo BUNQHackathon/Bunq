@@ -6,6 +6,7 @@ import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
+import com.bunq.javabackend.dto.response.LaunchSummaryDTO.JurisdictionSummary;
 import com.bunq.javabackend.exception.EntityAlreadyExistsException;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.model.document.Document;
@@ -157,10 +158,12 @@ public class LaunchService {
         for (JurisdictionRun run : runs) {
             boolean proofPackAvailable = run.getProofPackS3Key() != null;
 
-            Integer regulationsCovered = run.getCurrentSessionId() != null
-                    ? sessionRepository.findById(run.getCurrentSessionId())
-                            .map(s -> s.getDocumentIds() == null ? 0 : s.getDocumentIds().size())
-                            .orElse(0)
+            Session session = run.getCurrentSessionId() != null
+                    ? sessionRepository.findById(run.getCurrentSessionId()).orElse(null)
+                    : null;
+
+            Integer regulationsCovered = session != null
+                    ? (session.getDocumentIds() == null ? 0 : session.getDocumentIds().size())
                     : 0;
 
             Integer obligationsCount = run.getCurrentSessionId() != null
@@ -182,12 +185,14 @@ public class LaunchService {
                 blockers = List.of();
             } else {
                 verdict = run.getVerdict();
+                String persistedSummary = session != null && session.getExecutiveSummary() != null
+                        && !session.getExecutiveSummary().isBlank() ? session.getExecutiveSummary() : null;
                 if ("GREEN".equals(verdict)) {
-                    summary = "Can ship as-is";
+                    summary = persistedSummary != null ? persistedSummary : "Can ship as-is";
                     requiredChanges = List.of();
                     blockers = List.of();
                 } else if ("AMBER".equals(verdict)) {
-                    summary = "Requires changes";
+                    summary = persistedSummary != null ? persistedSummary : "Requires changes";
                     List<Gap> gaps = run.getCurrentSessionId() != null
                             ? gapRepository.findBySessionId(run.getCurrentSessionId())
                             : List.of();
@@ -196,12 +201,13 @@ public class LaunchService {
                                     : g.getRecommendedActions().stream())
                             .map(RecommendedAction::getAction)
                             .filter(a -> a != null && !a.isBlank())
+                            .map(a -> trimToHeadline(a))
                             .distinct()
                             .limit(10)
                             .toList();
                     blockers = List.of();
                 } else if ("RED".equals(verdict)) {
-                    summary = "Blocked";
+                    summary = persistedSummary != null ? persistedSummary : "Blocked";
                     List<Gap> gaps = run.getCurrentSessionId() != null
                             ? gapRepository.findBySessionId(run.getCurrentSessionId())
                             : List.of();
@@ -211,6 +217,7 @@ public class LaunchService {
                             .limit(3)
                             .map(Gap::getNarrative)
                             .filter(n -> n != null)
+                            .map(n -> trimToHeadline(n))
                             .toList();
                     requiredChanges = List.of();
                 } else {
@@ -224,6 +231,14 @@ public class LaunchService {
                     regulationsCovered, obligationsCount, controlsCount));
         }
         return result;
+    }
+
+    private String trimToHeadline(String text) {
+        if (text == null) return null;
+        int dot = text.indexOf(". ");
+        String firstSentence = dot >= 0 ? text.substring(0, dot + 1) : text;
+        if (firstSentence.length() <= 140) return firstSentence;
+        return text.substring(0, 140) + "…";
     }
 
     private String displayedVerdict(JurisdictionRun run) {
@@ -296,10 +311,27 @@ public class LaunchService {
         session.setDocumentIds(docIds);
         sessionRepository.save(session);
 
+        String regulationText = docs.stream()
+                .filter(d -> "regulation".equals(d.getKind()))
+                .map(Document::getExtractedText)
+                .filter(t -> t != null && !t.isBlank())
+                .findFirst()
+                .map(t -> t.substring(0, Math.min(500, t.length())))
+                .orElse(null);
+        String policyText = docs.stream()
+                .filter(d -> "policy".equals(d.getKind()))
+                .map(Document::getExtractedText)
+                .filter(t -> t != null && !t.isBlank())
+                .findFirst()
+                .map(t -> t.substring(0, Math.min(500, t.length())))
+                .orElse(null);
+
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
                 .counterparties(List.of())
                 .launchId(launchId)
                 .jurisdictionCode(code)
+                .regulation(regulationText)
+                .policy(policyText)
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 
@@ -348,7 +380,10 @@ public class LaunchService {
     public LaunchSummaryDTO toSummaryWithCount(Launch launch) {
         List<JurisdictionRun> runs = jurisdictionRunRepository.findByLaunchId(launch.getId());
         String aggregateVerdict = computeAggregateVerdict(runs);
-        return toSummary(launch, runs.size(), aggregateVerdict);
+        List<JurisdictionSummary> jurisdictions = runs.stream()
+                .map(r -> new JurisdictionSummary(r.getJurisdictionCode(), displayedVerdict(r), r.getStatus()))
+                .toList();
+        return toSummary(launch, runs.size(), aggregateVerdict, jurisdictions);
     }
 
     private String computeAggregateVerdict(List<JurisdictionRun> runs) {

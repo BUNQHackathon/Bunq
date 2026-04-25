@@ -2,45 +2,93 @@ package com.bunq.javabackend.service;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ThrottlingException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class BedrockService {
+
+    // Fallback chain: if a model is throttled, retry on the next model in the list.
+    // Order is cheapest→most-capable so we only escalate under pressure.
+    private static final Map<String, List<String>> FALLBACK_CHAIN = Map.of(
+            "eu.anthropic.claude-haiku-4-5-20251001-v1:0", List.of(
+                    "eu.anthropic.claude-sonnet-4-6",
+                    "eu.anthropic.claude-opus-4-7"),
+            "eu.anthropic.claude-sonnet-4-6", List.of(
+                    "eu.anthropic.claude-opus-4-7"),
+            "eu.anthropic.claude-opus-4-7", List.of()
+    );
 
     private final BedrockRuntimeClient bedrockRuntimeClient;
     private final ObjectMapper objectMapper;
+    private final Semaphore bedrockPermits;
+
+    public BedrockService(BedrockRuntimeClient bedrockRuntimeClient,
+                          ObjectMapper objectMapper,
+                          @Value("${bedrock.max-concurrent:30}") int maxConcurrent) {
+        this.bedrockRuntimeClient = bedrockRuntimeClient;
+        this.objectMapper = objectMapper;
+        this.bedrockPermits = new Semaphore(maxConcurrent);
+    }
 
     public JsonNode invokeModel(String modelId, String requestJson) {
-        InvokeModelRequest request = InvokeModelRequest.builder()
-                .modelId(modelId)
-                .contentType("application/json")
-                .accept("application/json")
-                .body(SdkBytes.fromUtf8String(requestJson))
-                .build();
+        List<String> candidates = new java.util.ArrayList<>();
+        candidates.add(modelId);
+        candidates.addAll(FALLBACK_CHAIN.getOrDefault(modelId, List.of()));
 
-        InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
-        try {
-            JsonNode root = objectMapper.readTree(response.body().asUtf8String());
-            JsonNode usage = root.path("usage");
-            if (!usage.isMissingNode()) {
-                log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
-                        usage.path("cache_creation_input_tokens").asInt(),
-                        usage.path("cache_read_input_tokens").asInt(),
-                        usage.path("input_tokens").asInt(),
-                        usage.path("output_tokens").asInt());
+        ThrottlingException lastThrottle = null;
+        for (int i = 0; i < candidates.size(); i++) {
+            String currentModel = candidates.get(i);
+            try {
+                bedrockPermits.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
             }
-            return root;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Bedrock response", e);
+            try {
+                InvokeModelRequest request = InvokeModelRequest.builder()
+                        .modelId(currentModel)
+                        .contentType("application/json")
+                        .accept("application/json")
+                        .body(SdkBytes.fromUtf8String(requestJson))
+                        .build();
+
+                InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
+                try {
+                    JsonNode root = objectMapper.readTree(response.body().asUtf8String());
+                    JsonNode usage = root.path("usage");
+                    if (!usage.isMissingNode()) {
+                        log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
+                                usage.path("cache_creation_input_tokens").asInt(),
+                                usage.path("cache_read_input_tokens").asInt(),
+                                usage.path("input_tokens").asInt(),
+                                usage.path("output_tokens").asInt());
+                    }
+                    return root;
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to parse Bedrock response", e);
+                }
+            } catch (ThrottlingException e) {
+                lastThrottle = e;
+                if (i + 1 < candidates.size()) {
+                    log.warn("Model {} throttled after retries, falling back to {}", currentModel, candidates.get(i + 1));
+                }
+            } finally {
+                bedrockPermits.release();
+            }
         }
+        throw lastThrottle;
     }
 
     /**

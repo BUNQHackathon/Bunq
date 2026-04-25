@@ -16,7 +16,10 @@
             "risk_category": {"type": "string"},
             "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
             "source_text_snippet": {"type": "string", "description": "Quote from input that grounds this obligation"},
-            "extraction_confidence": {"type": "number"}
+            "extraction_confidence": {"type": "number"},
+            "article": {"type": "string", "description": "Article number from the regulation text, e.g. 'Article 4' or '4(2)'. Empty string if not identifiable."},
+            "section": {"type": "string", "description": "Section heading or chapter name if visible, else empty string."},
+            "paragraph": {"type": "integer", "description": "Paragraph number within the article if identifiable, else 0."}
           },
           "required": ["deontic", "subject", "action", "source_text_snippet", "extraction_confidence"]
         }

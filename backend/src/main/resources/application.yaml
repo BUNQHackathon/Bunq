@@ -56,6 +56,10 @@ management:
       probes:
         enabled: true
 
+app:
+  admin:
+    token: ${ADMIN_TOKEN:}
+
 sidecar:
   base-url: ${SIDECAR_BASE_URL:http://localhost:8001}
   token: ${SIDECAR_TOKEN:dev}
