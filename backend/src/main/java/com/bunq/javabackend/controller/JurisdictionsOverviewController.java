@@ -63,8 +63,10 @@ public class JurisdictionsOverviewController {
     }
 
     @GetMapping("/{code}/triage")
-    public ResponseEntity<JurisdictionTriageDTO> triage(@PathVariable String code) {
-        return ResponseEntity.ok(service.triage(code));
+    public ResponseEntity<JurisdictionTriageDTO> triage(
+            @PathVariable String code,
+            @RequestParam(name = "readOnly", defaultValue = "false") boolean readOnly) {
+        return ResponseEntity.ok(service.triage(code, readOnly));
     }
 
     @GetMapping("/catalog")

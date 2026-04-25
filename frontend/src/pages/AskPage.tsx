@@ -8,6 +8,8 @@ import GraphRefChips from '../components/GraphRefChips';
 import { matchGraphRefsFromPrompt } from '../api/mock';
 import { USE_MOCK } from '../api/launch';
 import { useChatNav } from '../lib/chatNav';
+import { useAuth } from '../auth/useAuth';
+import useJudgesGate from '../auth/useJudgesGate';
 
 // ─── Local data ───────────────────────────────────────────────────────────────
 
@@ -179,6 +181,12 @@ export default function AskPage() {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   const { activeChatId, resetToken } = useChatNav();
+  const { isAuthenticated } = useAuth();
+  const { showGate, modal: judgesModal } = useJudgesGate();
+  const CHAT_GATE = {
+    title: 'Bunq judges only',
+    message: 'Chat is available to Bunq judges. Please sign in with your access token to continue.',
+  };
 
   // Auto-scroll only when a brand-new message is appended (user submit / new assistant bubble).
   // No scrolling during streaming, citations, or graphRefs updates — let the user read at their own pace.
@@ -243,6 +251,10 @@ export default function AskPage() {
     e.preventDefault();
     const trimmed = query.trim();
     if (!trimmed || loading) return;
+    if (!isAuthenticated) {
+      showGate(CHAT_GATE);
+      return;
+    }
 
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -358,6 +370,17 @@ export default function AskPage() {
             />
           </div>
 
+          {showHero && !isAuthenticated && (
+            <div className="mt-6 flex justify-center">
+              <button
+                className="btn btn--orange"
+                onClick={() => showGate(CHAT_GATE)}
+              >
+                Sign in to chat
+              </button>
+            </div>
+          )}
+
           {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
 
           {loading && (
@@ -383,6 +406,7 @@ export default function AskPage() {
             </div>
           )}
         </div>
+        {judgesModal}
       </div>
     );
   }
@@ -453,6 +477,7 @@ export default function AskPage() {
           placeholder="Ask a follow-up…"
         />
       </div>
+      {judgesModal}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import useJudgesGate from '../auth/useJudgesGate';
 import { listLaunches, deleteLaunch, type Launch, type LaunchKind, type LaunchJurisdictionSummary } from '../api/launch';
 import type { Verdict } from '../api/launch';
 import VerdictPill from '../components/VerdictPill';
@@ -31,12 +32,14 @@ function kindDotClass(kind: LaunchKind | undefined): string {
 const placeholderKeys = [0, 1, 2] as const;
 
 export default function LaunchesPage() {
+  const navigate = useNavigate();
+  const { requireJudge, modal } = useJudgesGate();
   const [rows, setRows] = useState<LaunchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function handleDelete(e: React.MouseEvent, launch: Launch) {
+  async function doDelete(e: React.MouseEvent, launch: Launch) {
     e.preventDefault();
     e.stopPropagation();
     if (!window.confirm(`Delete launch '${launch.name}'? This cannot be undone.`)) return;
@@ -50,6 +53,9 @@ export default function LaunchesPage() {
       setDeletingId(null);
     }
   }
+
+  const handleDelete = (e: React.MouseEvent, launch: Launch) =>
+    requireJudge(() => doDelete(e, launch))();
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +94,7 @@ export default function LaunchesPage() {
 
   return (
     <div className="folders" style={{ display: 'block', position: 'relative', minHeight: '100%' }}>
+      {modal}
       <div className="folders__main" style={{ padding: '40px 60px 80px', minHeight: '100%', boxSizing: 'border-box', position: 'relative' }}>
         <div aria-hidden style={gridOverlayStyle} />
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -101,9 +108,9 @@ export default function LaunchesPage() {
               Product launches<span style={{ color: 'var(--orange)' }}>.</span>
             </h1>
           </div>
-          <Link to="/launches/new" className="btn btn--orange-hollow">
+          <button className="btn btn--orange-hollow" onClick={requireJudge(() => navigate('/launches/new'))}>
             <IconPlus size={14} /> New launch
-          </Link>
+          </button>
         </div>
 
         {/* Error state */}
@@ -145,9 +152,9 @@ export default function LaunchesPage() {
               <div className="doccard__title" style={{ color: 'var(--ink-2)', marginBottom: 16 }}>
                 No launches yet.
               </div>
-              <Link to="/launches/new" className="btn btn--orange-hollow btn--sm">
+              <button className="btn btn--orange-hollow btn--sm" onClick={requireJudge(() => navigate('/launches/new'))}>
                 <IconPlus size={12} /> Create your first launch
-              </Link>
+              </button>
             </div>
           )}
 

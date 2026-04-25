@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import useJudgesGate from '../auth/useJudgesGate';
 import { createLaunch, JURISDICTION_CATALOG, type LaunchKind } from '../api/launch';
 import KindBadge from '../components/KindBadge';
 
@@ -44,6 +45,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function LaunchNewPage() {
   const navigate = useNavigate();
+  const { requireJudge, modal } = useJudgesGate();
   const [state, setState] = useState<WizardState>(INITIAL);
 
   const set = (partial: Partial<WizardState>) =>
@@ -92,7 +94,7 @@ export default function LaunchNewPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px', fontFamily: 'var(--ui)' }}>
-
+      {modal}
       {/* Header */}
       <Link to="/launches" className="mono-label" style={{ textDecoration: 'none' }}>
         ← Back to launches
@@ -315,7 +317,7 @@ export default function LaunchNewPage() {
 
               <button
                 className="btn btn--orange-hollow"
-                onClick={handleSubmit}
+                onClick={requireJudge(handleSubmit)}
                 disabled={!marketsValid || state.submitting}
                 style={{
                   opacity: marketsValid && !state.submitting ? 1 : 0.4,

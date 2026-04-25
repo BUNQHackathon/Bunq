@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
 import {
   IconAsk,
   IconFolder,
@@ -97,6 +98,7 @@ function IconHamburger() {
 export default function TopNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
   const isMac = useMemo(
     () =>
       typeof navigator !== 'undefined' &&
@@ -155,6 +157,27 @@ export default function TopNav() {
           <ViewTab to="/data" icon={<IconFolder size={14} />} label="Data" shortcut="D" modKey={modKey} />
           <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="J" modKey={modKey} />
         </nav>
+
+        {/* Right */}
+        <div className="topnav__right">
+          {isAuthenticated ? (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => { logout(); navigate('/login'); }}
+            >
+              Sign out
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => navigate('/login')}
+            >
+              Sign in
+            </button>
+          )}
+        </div>
 
         {/* Hamburger (mobile only) */}
         <button

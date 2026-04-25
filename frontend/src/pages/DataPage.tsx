@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useJudgesGate from '../auth/useJudgesGate';
 import { type DocumentSummary } from '../api/portal';
 import { listLibraryDocuments, type LibraryDocument, presignDocument, putToPresignedUrl, finalizeDocument, computeSha256Base64, type DocumentKind } from '../api/session';
 import { getAllDocJurisdictions, setDocJurisdiction } from '../data/docJurisdiction';
@@ -334,6 +335,7 @@ function inferKindAndType(filename: string): { kind: DocumentKind; contentType: 
 
 export default function DataPage() {
   const navigate = useNavigate();
+  const { requireJudge, modal } = useJudgesGate();
 
   const source: 'library' = 'library';
   const [docs, setDocs] = useState<UnifiedDoc[]>([]);
@@ -502,6 +504,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
       className="flex flex-col h-[calc(100vh-56px)] relative"
       style={{ isolation: 'isolate' }}
     >
+      {modal}
       <div aria-hidden style={gridOverlayStyle} />
       <input
         type="file"
@@ -525,7 +528,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         <div className="flex items-center gap-2">
           <button
             disabled={uploadBusy}
-            onClick={() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); }}
+            onClick={requireJudge(() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); })}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${uploadBusy ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
           >
             <IconPlus size={11} />

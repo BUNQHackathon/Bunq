@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import useJudgesGate from '../auth/useJudgesGate';
 import {
   getLaunch,
   downloadProofPack,
@@ -210,6 +211,7 @@ function JurisdictionLiveIndicator({
 export default function LaunchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { requireJudge, modal } = useJudgesGate();
 
   const [detail, setDetail] = useState<LaunchDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -350,7 +352,7 @@ export default function LaunchDetailPage() {
 
   return (
     <div className="juris">
-
+      {modal}
       {/* ── Left column ─────────────────────────────────────────────────────── */}
       <div className="fjp__map-wrap">
         <div className="juris__map">
@@ -389,7 +391,7 @@ export default function LaunchDetailPage() {
                   <button
                     className="btn btn--sm"
                     disabled={retrying}
-                    onClick={handleRerunFailed}
+                    onClick={requireJudge(handleRerunFailed)}
                   >
                     {retrying ? 'Retrying…' : 'Retry failed'}
                   </button>
