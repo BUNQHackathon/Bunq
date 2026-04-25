@@ -142,7 +142,7 @@ public class NarrateStage implements Stage {
                     ))
             ));
 
-            JsonNode response = bedrockService.invokeModel(BedrockModel.SONNET.getModelId(), requestJson);
+            JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
             JsonNode content = response.path("content");
             if (content.isArray() && !content.isEmpty()) {
                 return content.get(0).path("text").asText("");

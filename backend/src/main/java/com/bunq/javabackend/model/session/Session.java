@@ -67,4 +67,7 @@ public class Session {
 
     @Getter(onMethod_ = @DynamoDbAttribute("executive_summary"))
     private String executiveSummary;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("completed_stages"))
+    private List<String> completedStages;
 }

@@ -73,13 +73,6 @@ public class ExtractControlsStage implements Stage {
     @Override
     public CompletableFuture<Void> execute(PipelineContext ctx) {
         return CompletableFuture.runAsync(() -> {
-            if (ctx.getIngestedChunks().isEmpty()) {
-                ctx.getSseEmitterService().send(ctx.getSessionId(), "stage.skipped",
-                        Map.of("stage", PipelineStage.EXTRACT_CONTROLS, "reason", "no policy ingested; skipping"));
-                log.info("ExtractControlsStage: no policy ingested for session {}, skipping", ctx.getSessionId());
-                return;
-            }
-
             String policyText = ctx.getPolicy();
             if (policyText == null || policyText.isBlank()) {
                 ctx.getSseEmitterService().send(ctx.getSessionId(), "stage.skipped",
@@ -168,7 +161,7 @@ public class ExtractControlsStage implements Stage {
         Map<String, String> userInput = Map.of("policy_text", text, "policy_id", "POL-" + ctx.getSessionId());
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
-                BedrockModel.SONNET.getModelId(),
+                BedrockModel.HAIKU.getModelId(),
                 SystemPrompts.EXTRACT_CONTROLS,
                 userInput,
                 ToolDefinitions.EXTRACT_CONTROLS_TOOL

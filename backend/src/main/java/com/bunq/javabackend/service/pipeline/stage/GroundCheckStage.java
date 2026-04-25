@@ -139,7 +139,7 @@ public class GroundCheckStage implements Stage {
             userInput.put("source_text", sourceText);
 
             JsonNode toolInput = bedrockService.invokeModelWithTool(
-                    BedrockModel.SONNET.getModelId(),
+                    BedrockModel.HAIKU.getModelId(),
                     SystemPrompts.GROUND_CHECK,
                     userInput,
                     ToolDefinitions.GROUND_CHECK_TOOL
