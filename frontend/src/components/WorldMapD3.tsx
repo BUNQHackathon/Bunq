@@ -289,7 +289,7 @@ export default function WorldMapD3({
   }, [dims]);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: 'clamp(280px, 50vh, 520px)' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
       <svg
         ref={svgRef}
         id="wmd3-svg"

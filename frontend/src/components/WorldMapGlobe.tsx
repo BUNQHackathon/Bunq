@@ -236,7 +236,15 @@ export default function WorldMapGlobe({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: effectiveHeight, background: '#080808' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: effectiveHeight,
+        background: '#080808',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     />
   );
 }

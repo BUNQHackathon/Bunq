@@ -108,23 +108,17 @@ function JurisMapPanel({
             Loading jurisdictions…
           </span>
         ) : view === 'globe' ? (
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <WorldMapGlobe
-              data={mapData}
-              selected={selectedIso3}
-              onSelect={onSelect}
-              height={640}
-            />
-          </div>
+          <WorldMapGlobe
+            data={mapData}
+            selected={selectedIso3}
+            onSelect={onSelect}
+          />
         ) : (
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <WorldMapD3
-              data={mapData}
-              selected={selectedIso3}
-              onSelect={onSelect}
-              height={640}
-            />
-          </div>
+          <WorldMapD3
+            data={mapData}
+            selected={selectedIso3}
+            onSelect={onSelect}
+          />
         )}
       </div>
 
