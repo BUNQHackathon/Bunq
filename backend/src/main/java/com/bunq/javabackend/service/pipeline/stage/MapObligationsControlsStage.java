@@ -53,7 +53,7 @@ public class MapObligationsControlsStage implements Stage {
     public MapObligationsControlsStage(ObligationControlMatcher matcher, MappingRepository mappingRepository,
                                        ObligationRepository obligationRepository, ControlRepository controlRepository,
                                        AuditLogService auditLogService, EvidenceRepository evidenceRepository,
-                                       @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+                                       @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.matcher = matcher;
         this.mappingRepository = mappingRepository;
         this.obligationRepository = obligationRepository;

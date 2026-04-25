@@ -55,7 +55,7 @@ public class ExtractControlsStage implements Stage {
                                 SessionRepository sessionRepository,
                                 ObjectMapper objectMapper,
                                 S3Client s3Client,
-                                @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+                                @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.bedrockService = bedrockService;
         this.controlRepository = controlRepository;
         this.documentRepository = documentRepository;

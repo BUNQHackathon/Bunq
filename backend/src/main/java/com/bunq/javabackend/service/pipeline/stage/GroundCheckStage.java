@@ -49,7 +49,7 @@ public class GroundCheckStage implements Stage {
                             ObjectMapper objectMapper,
                             AuditLogService auditLogService,
                             EvidenceRepository evidenceRepository,
-                            @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+                            @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.bedrockService = bedrockService;
         this.mappingRepository = mappingRepository;
         this.obligationRepository = obligationRepository;
@@ -139,7 +139,7 @@ public class GroundCheckStage implements Stage {
             userInput.put("source_text", sourceText);
 
             JsonNode toolInput = bedrockService.invokeModelWithTool(
-                    BedrockModel.HAIKU.getModelId(),
+                    BedrockModel.NOVA_LITE.getModelId(),
                     SystemPrompts.GROUND_CHECK,
                     userInput,
                     ToolDefinitions.GROUND_CHECK_TOOL
