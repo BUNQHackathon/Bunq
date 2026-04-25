@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,4 +21,5 @@ public class DocumentFinalizeRequest {
     private String contentType;
     @NotBlank(message = "kind is required")
     private String kind;
+    private Set<String> jurisdictions;
 }

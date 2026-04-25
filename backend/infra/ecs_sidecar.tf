@@ -158,13 +158,13 @@ resource "null_resource" "sidecar_image_build" {
 
   provisioner "local-exec" {
     interpreter = ["powershell", "-NoProfile", "-Command"]
-    working_dir = "${path.module}/../.."
+    working_dir = "${path.module}/.."
     command     = <<-EOT
       $ErrorActionPreference = 'Stop'
       $ecrImage = '${aws_ecr_repository.sidecar.repository_url}:latest'
       $registry = $ecrImage.Split('/')[0]
-      $pw = aws ecr get-login-password --region ${var.region} --profile ${var.aws_profile}
-      $pw | docker login --username AWS --password-stdin $registry
+      $pw = (aws ecr get-login-password --region ${var.region} --profile ${var.aws_profile}).Trim()
+      docker login --username AWS --password $pw $registry
       docker buildx build --platform linux/amd64 -t "$ecrImage" --push python-backend/
     EOT
   }
@@ -174,7 +174,7 @@ resource "null_resource" "sidecar_image_build" {
 
 # ── ECS Express Gateway Service ───────────────────────────────────────────────
 resource "aws_ecs_express_gateway_service" "sidecar" {
-  service_name            = "${local.name_prefix}-sidecar-v3"
+  service_name            = "${local.name_prefix}-sidecar-v4"
   cluster                 = "default"
   execution_role_arn      = data.aws_iam_role.ecs_task_execution.arn
   infrastructure_role_arn = data.aws_iam_role.ecs_infra_express.arn

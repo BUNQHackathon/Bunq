@@ -24,6 +24,7 @@ aws:
     sanctions-entities-table: launchlens-sanctions-entities
     audit-log-table: launchlens-audit-log
     documents-table: ${AWS_DYNAMODB_DOCUMENTS_TABLE:launchlens-documents}
+    doc-jurisdictions-table: ${AWS_DYNAMODB_DOC_JURISDICTIONS_TABLE:launchlens-doc-jurisdictions}
     launches-table: ${AWS_DYNAMODB_LAUNCHES_TABLE:launchlens-launches}
     jurisdiction-runs-table: ${AWS_DYNAMODB_JURISDICTION_RUNS_TABLE:launchlens-jurisdiction-runs}
   s3:

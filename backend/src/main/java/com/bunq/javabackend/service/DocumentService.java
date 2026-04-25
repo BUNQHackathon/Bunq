@@ -10,6 +10,7 @@ import com.bunq.javabackend.dto.response.DocumentSummaryDTO;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.helper.S3PresignHelper;
 import com.bunq.javabackend.model.document.Document;
+import com.bunq.javabackend.repository.DocJurisdictionRepository;
 import com.bunq.javabackend.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ import java.util.Optional;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
+    private final DocJurisdictionRepository docJurisdictionRepository;
     private final S3PresignHelper s3PresignHelper;
     private final S3Client s3Client;
 
@@ -112,6 +114,7 @@ public class DocumentService {
                 .sizeBytes(sizeBytes)
                 .s3Key(destKey)
                 .kind(req.getKind())
+                .jurisdictions(req.getJurisdictions())
                 .firstSeenAt(now)
                 .lastUsedAt(now)
                 .obligationsExtracted(false)
@@ -128,6 +131,8 @@ public class DocumentService {
                     .deduped(true)
                     .build();
         }
+
+        docJurisdictionRepository.putAll(hash, doc.getJurisdictions(), doc);
 
         return DocumentFinalizeResponse.builder()
                 .document(toResponseDTO(doc))
@@ -163,6 +168,7 @@ public class DocumentService {
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())
+                .jurisdictions(doc.getJurisdictions())
                 .firstSeenAt(doc.getFirstSeenAt())
                 .lastUsedAt(doc.getLastUsedAt())
                 .extractedText(doc.getExtractedText())
@@ -180,6 +186,7 @@ public class DocumentService {
                 .contentType(doc.getContentType())
                 .sizeBytes(doc.getSizeBytes())
                 .kind(doc.getKind())
+                .jurisdictions(doc.getJurisdictions())
                 .firstSeenAt(doc.getFirstSeenAt())
                 .lastUsedAt(doc.getLastUsedAt())
                 .extractedAt(doc.getExtractedAt())

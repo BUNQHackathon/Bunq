@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Set;
 
 @Data
 @Builder
@@ -17,6 +18,7 @@ public class DocumentResponseDTO {
     private String contentType;
     private Long sizeBytes;
     private String kind;
+    private Set<String> jurisdictions;
     private Instant firstSeenAt;
     private Instant lastUsedAt;
     private String extractedText;

@@ -188,7 +188,13 @@ public class LaunchService {
                 blockers = List.of();
             }
 
-            result.add(toDto(run, summary, requiredChanges, blockers, proofPackAvailable));
+            Integer regulationsCovered = run.getCurrentSessionId() != null
+                    ? sessionRepository.findById(run.getCurrentSessionId())
+                            .map(s -> s.getDocumentIds() == null ? 0 : s.getDocumentIds().size())
+                            .orElse(0)
+                    : 0;
+
+            result.add(toDto(run, summary, requiredChanges, blockers, proofPackAvailable, regulationsCovered));
         }
         return result;
     }
@@ -218,7 +224,7 @@ public class LaunchService {
 
         // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
         List<Document> docs = autoDocService.forJurisdiction(code);
-        List<String> docIds = docs.stream().limit(10).map(Document::getId).toList();
+        List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
         sessionRepository.save(session);
 
@@ -244,7 +250,7 @@ public class LaunchService {
 
         // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline async
         List<Document> docs = autoDocService.forJurisdiction(code);
-        List<String> docIds = docs.stream().limit(10).map(Document::getId).toList();
+        List<String> docIds = docs.stream().map(Document::getId).toList();
         session.setDocumentIds(docIds);
         sessionRepository.save(session);
 

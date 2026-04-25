@@ -12,9 +12,12 @@ resource "null_resource" "s3_vectors_bucket" {
 
   provisioner "local-exec" {
     interpreter = ["powershell", "-NoProfile", "-Command"]
-    # TODO verify: aws s3vectors create-vector-bucket --help
     command = <<-EOT
-      aws s3vectors create-vector-bucket --vector-bucket-name ${local.name_prefix}-vectors --region ${var.region} --profile ${var.aws_profile}
+      aws s3vectors create-vector-bucket --vector-bucket-name ${local.name_prefix}-vectors --region ${var.region} --profile ${var.aws_profile} 2>&1 | Out-Null
+      if ($LASTEXITCODE -ne 0) {
+        $existing = aws s3vectors get-vector-bucket --vector-bucket-name ${local.name_prefix}-vectors --region ${var.region} --profile ${var.aws_profile} 2>&1
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+      }
     EOT
   }
 
@@ -52,8 +55,12 @@ resource "null_resource" "s3_vectors_indexes" {
     command = <<-EOT
       $tmp = New-TemporaryFile
       Set-Content -Path $tmp.FullName -Value '{"nonFilterableMetadataKeys":["AMAZON_BEDROCK_TEXT_CHUNK","AMAZON_BEDROCK_METADATA"]}' -Encoding ascii
-      aws s3vectors create-index --vector-bucket-name ${local.name_prefix}-vectors --index-name ${each.value}-idx --data-type float32 --dimension 1024 --distance-metric cosine --metadata-configuration "file://$($tmp.FullName)" --region ${var.region} --profile ${var.aws_profile}
+      aws s3vectors create-index --vector-bucket-name ${local.name_prefix}-vectors --index-name ${each.value}-idx --data-type float32 --dimension 1024 --distance-metric cosine --metadata-configuration "file://$($tmp.FullName)" --region ${var.region} --profile ${var.aws_profile} 2>&1 | Out-Null
       Remove-Item $tmp.FullName
+      if ($LASTEXITCODE -ne 0) {
+        $existing = aws s3vectors get-index --vector-bucket-name ${local.name_prefix}-vectors --index-name ${each.value}-idx --region ${var.region} --profile ${var.aws_profile} 2>&1
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+      }
     EOT
   }
 
