@@ -52,6 +52,7 @@
 .topnav__ctx-country:hover { background: var(--bg-2); }
 
 .viewtab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -71,6 +72,57 @@
   color: var(--orange);
   background: var(--orange-wash);
   border-color: rgba(239, 106, 42, 0.25);
+}
+
+/* Keyboard-shortcut tooltip — pill, dark, mono */
+.viewtab__tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-1);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease;
+  z-index: 20;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.6);
+}
+.viewtab__tip-label {
+  font-family: var(--ui);
+  letter-spacing: 0;
+}
+.viewtab__tip-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: var(--bg-1);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-pill);
+  padding: 2px 7px;
+}
+.viewtab__tip-key {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+.viewtab:hover .viewtab__tip,
+.viewtab:focus-visible .viewtab__tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: .15s;
 }
 
 .kbd {

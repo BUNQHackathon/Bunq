@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   IconAsk,
   IconFolders,
   IconSearch,
   IconClose,
 } from './icons';
+
+const NAV_SHORTCUTS: { key: '1' | '2' | '3'; path: string }[] = [
+  { key: '1', path: '/ask' },
+  { key: '2', path: '/launches' },
+  { key: '3', path: '/jurisdictions' },
+];
 // ─── Globe SVG (inline, no dedicated icon exists) ────────────────────────────
 
 function IconGlobe({ size = 14 }: { size?: number }) {
@@ -46,18 +52,28 @@ interface ViewTabProps {
   to: string;
   icon: React.ReactNode;
   label: string;
+  shortcut?: string;
+  modKey?: string;
 }
 
-function ViewTab({ to, icon, label }: ViewTabProps) {
+function ViewTab({ to, icon, label, shortcut, modKey }: ViewTabProps) {
+  const showTip = shortcut && modKey;
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         'viewtab' + (isActive ? ' viewtab--active' : '')
       }
+      aria-keyshortcuts={showTip ? `${modKey === '⌘' ? 'Meta' : 'Control'}+${shortcut}` : undefined}
     >
       <span className="viewtab__icon">{icon}</span>
       <span>{label}</span>
+      {showTip && (
+        <span className="viewtab__tip" role="tooltip" aria-hidden="true">
+          <span className="viewtab__tip-label">Open</span>
+          <span className="viewtab__tip-keys">{modKey}<span className="viewtab__tip-key">{shortcut}</span></span>
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -78,6 +94,37 @@ function IconHamburger() {
 
 export default function TopNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
+  const isMac = useMemo(
+    () =>
+      typeof navigator !== 'undefined' &&
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform),
+    [],
+  );
+  const modKey = isMac ? '⌘' : 'Ctrl';
+
+  // Cmd/Ctrl + 1/2/3 → switch top-nav view
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const match = NAV_SHORTCUTS.find((s) => s.key === e.key);
+      if (!match) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      navigate(match.path);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate]);
 
   // Close drawer on Escape
   useEffect(() => {
@@ -102,9 +149,9 @@ export default function TopNav() {
 
         {/* Center nav */}
         <nav className="topnav__center">
-          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" />
-          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" />
-          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" />
+          <ViewTab to="/ask" icon={<IconAsk size={14} />} label="Ask" shortcut="1" modKey={modKey} />
+          <ViewTab to="/launches" icon={<IconFolders size={14} />} label="Launches" shortcut="2" modKey={modKey} />
+          <ViewTab to="/jurisdictions" icon={<IconGlobe size={14} />} label="Jurisdictions" shortcut="3" modKey={modKey} />
         </nav>
 
         {/* Right */}
