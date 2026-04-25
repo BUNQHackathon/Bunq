@@ -204,7 +204,7 @@ export default function AskPage() {
       if (cancelled) return;
       const first = history.messages.find((m) => m.role === 'USER');
       if (first) setQuery(first.content);
-    }).catch(() => {});
+    }).catch(() => { });
     return () => { cancelled = true; };
   }, [activeChatId]);
 
@@ -298,8 +298,8 @@ export default function AskPage() {
           <>
             <div
               style={{
-                WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 110%)',
-                maskImage: 'linear-gradient(to bottom, black 40%, transparent 110%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 110%)',
+                maskImage: 'linear-gradient(to bottom, black 60%, transparent 110%)',
               }}
             >
               <h1
