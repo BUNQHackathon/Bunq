@@ -30,7 +30,7 @@ const ORB_ANIMATIONS: [string, string, string] = [
 
 export default function HeroGradient({
   colors = ['#eb2700', '#C86334', '#d9a67d'],
-  sinks = [65, 85, 92],
+  sinks = [70, 90, 95],
   spread = 113,
   blur = 25,
   grainOpacity = 0.25,
