@@ -8,26 +8,22 @@ import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import HeroGradient from '../components/HeroGradient';
 import { IconSearch, IconChevron } from '../components/icons';
+import { ISO2_TO_ISO3, ISO3_TO_ISO2, MOCK_COUNTRY_COLOR, MOCK_COUNTRY_LABEL, BUNQ_GRADIENT_COLOR } from '../api/mockCountries';
 
 const VALID_CODES = new Set(JURISDICTION_CATALOG.map(j => j.code));
 
-// ── ISO conversions ───────────────────────────────────────────────────────────
-
-const ISO2_TO_ISO3: Record<string, string> = {
-  NL: 'NLD', DE: 'DEU', FR: 'FRA', GB: 'GBR', UK: 'GBR',
-  US: 'USA', IE: 'IRL', AT: 'AUT', ES: 'ESP', IT: 'ITA', BE: 'BEL',
-};
-
-const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
-  Object.entries(ISO2_TO_ISO3).map(([a, b]) => [b, a]),
-);
-
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
+const VERDICT_COLOR: Record<Verdict, string> = {
+  GREEN:   '#61B650',
+  AMBER:   '#F5C836',
+  RED:     '#E22F30',
+  PENDING: '#1E1E1E',
+  UNKNOWN: '#3a3a3a',
+};
+
 function overviewToColor(verdict: Verdict): string {
-  if (verdict === 'PENDING') return '#1E1E1E';
-  if (verdict === 'UNKNOWN') return '#3a3a3a';
-  return '#FF7819';
+  return VERDICT_COLOR[verdict] ?? '#1E1E1E';
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -104,8 +100,16 @@ function JurisMapPanel({
           {/* Legend */}
           <div className="juris__legend">
             <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: '#FF7819' }} />
-              Active
+              <span className="juris__legend-dot" style={{ background: '#61B650' }} />
+              Compliant
+            </span>
+            <span className="juris__legend-item">
+              <span className="juris__legend-dot" style={{ background: '#F5C836' }} />
+              Needs changes
+            </span>
+            <span className="juris__legend-item">
+              <span className="juris__legend-dot" style={{ background: '#E22F30' }} />
+              Not compliant
             </span>
             <span className="juris__legend-item">
               <span className="juris__legend-dot" style={{ background: 'rgba(160,150,140,0.5)' }} />
@@ -388,6 +392,7 @@ export default function JurisdictionsPage() {
   // ── Build map data (ISO-3 → color) using semantic tokens ─────────────────
   const mapData = useMemo(() => {
     const m = new Map<string, { color: string; label?: string }>();
+    // 1. Real backend data
     (overview ?? []).forEach((o) => {
       const iso3 = ISO2_TO_ISO3[o.code] ?? o.code;
       m.set(iso3, {
@@ -395,6 +400,22 @@ export default function JurisdictionsPage() {
         label: jurisdictionLabel(o.code),
       });
     });
+    // 2. Demo overlay — colors the rest of the world
+    for (const [iso3, color] of Object.entries(MOCK_COUNTRY_COLOR)) {
+      const existing = m.get(iso3);
+      m.set(iso3, {
+        color,
+        label: existing?.label ?? MOCK_COUNTRY_LABEL[iso3] ?? iso3,
+      });
+    }
+    // 3. BUNQ gradient — markets where BUNQ operates always win, in brand colors
+    for (const [iso3, color] of Object.entries(BUNQ_GRADIENT_COLOR)) {
+      const existing = m.get(iso3);
+      m.set(iso3, {
+        color,
+        label: existing?.label ?? MOCK_COUNTRY_LABEL[iso3] ?? iso3,
+      });
+    }
     return m;
   }, [overview]);
 

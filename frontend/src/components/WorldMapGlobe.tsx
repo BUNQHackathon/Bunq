@@ -143,7 +143,7 @@ export default function WorldMapGlobe({
           return dataRef.current.get(iso)?.color ?? INACTIVE_FILL;
         }) as never)
         .polygonSideColor((() => 'rgba(0,0,0,0.3)') as never)
-        .polygonStrokeColor((() => 'rgba(255,255,255,0.15)') as never)
+        .polygonStrokeColor((() => 'rgba(255,255,255,0.55)') as never)
         .polygonAltitude(((feat: object) =>
           feat === hoveredRef.current ? 0.025 : 0.008
         ) as never)

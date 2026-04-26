@@ -98,7 +98,7 @@ export default function WorldMapD3({
     if (!mapSelRef.current) return;
     mapSelRef.current
       .attr('stroke', (d: GeoFeature) =>
-        readIso3(d.properties) === selected ? '#FF7819' : 'rgba(255,255,255,0.1)',
+        readIso3(d.properties) === selected ? '#FF7819' : 'rgba(255,255,255,0.55)',
       )
       .attr('stroke-width', (d: GeoFeature) =>
         readIso3(d.properties) === selected ? 1.5 : 0.4,
@@ -215,7 +215,7 @@ export default function WorldMapD3({
         .attr('d', (d) => path(d) ?? '')
         .attr('fill', (d) => dataRef.current.get(readIso3(d.properties))?.color ?? INACTIVE_FILL)
         .attr('stroke', (d) =>
-          readIso3(d.properties) === selectedRef.current ? '#FF7819' : 'rgba(255,255,255,0.1)',
+          readIso3(d.properties) === selectedRef.current ? '#FF7819' : 'rgba(255,255,255,0.55)',
         )
         .attr('stroke-width', (d) =>
           readIso3(d.properties) === selectedRef.current ? 1.5 : 0.4,
@@ -248,7 +248,7 @@ export default function WorldMapD3({
           const iso = readIso3(d.properties);
           const isSelected = iso === selectedRef.current;
           d3.select(this)
-            .attr('stroke', isSelected ? '#FF7819' : 'rgba(255,255,255,0.1)')
+            .attr('stroke', isSelected ? '#FF7819' : 'rgba(255,255,255,0.55)')
             .attr('stroke-width', isSelected ? 1.5 : 0.4)
             .attr('fill', dataRef.current.get(iso)?.color ?? INACTIVE_FILL);
           const tip = tooltipRef.current;
@@ -268,7 +268,7 @@ export default function WorldMapD3({
           if (downIso !== iso) return;
           onSelectRef.current?.(iso);
           mapSelRef.current
-            ?.attr('stroke', 'rgba(255,255,255,0.1)')
+            ?.attr('stroke', 'rgba(255,255,255,0.55)')
             .attr('stroke-width', 0.4);
           d3.select(this).attr('stroke', '#FF7819').attr('stroke-width', 1.5);
         });
