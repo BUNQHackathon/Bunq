@@ -14,6 +14,10 @@ const AMBER_HEX = '#b87538';
 const STRIPE_GOLD = '#cfb275';
 const STRIPE_RED = '#a83820';
 
+const UNKNOWN_HEX = '#444444';
+const UNKNOWN_STRIPE_DARK = '#6b6b6b';
+const UNKNOWN_STRIPE_LIGHT = '#9a9a9a';
+
 // Stripe band width in screen-space pixels. 6px on each band → 12px cycle,
 // large enough to read on small countries when zoomed out, small enough not
 // to dominate big countries when zoomed in.
@@ -63,6 +67,42 @@ function getAmberMaterial(): MeshLambertMaterial {
   return _amberMaterial;
 }
 
+function buildUnknownStripeMaterial(): MeshLambertMaterial {
+  const mat = new MeshLambertMaterial({ color: 0xffffff });
+  mat.onBeforeCompile = (shader: Shader) => {
+    shader.uniforms.stripeColorA = { value: new Color(UNKNOWN_STRIPE_DARK) };
+    shader.uniforms.stripeColorB = { value: new Color(UNKNOWN_STRIPE_LIGHT) };
+    shader.uniforms.stripeBandPx = { value: STRIPE_BAND_PX };
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'void main() {',
+      `
+      uniform vec3 stripeColorA;
+      uniform vec3 stripeColorB;
+      uniform float stripeBandPx;
+      void main() {
+      `,
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'vec4 diffuseColor = vec4( diffuse, opacity );',
+      `
+      float stripeCoord = gl_FragCoord.x + gl_FragCoord.y;
+      float stripeBand = mod(floor(stripeCoord / stripeBandPx), 2.0);
+      vec3 stripeRgb = stripeBand < 0.5 ? stripeColorA : stripeColorB;
+      vec4 diffuseColor = vec4( stripeRgb, opacity );
+      `,
+    );
+  };
+  mat.customProgramCacheKey = () => 'unknown-stripes-v1';
+  return mat;
+}
+
+let _unknownMaterial: MeshLambertMaterial | null = null;
+function getUnknownMaterial(): MeshLambertMaterial {
+  if (_unknownMaterial) return _unknownMaterial;
+  _unknownMaterial = buildUnknownStripeMaterial();
+  return _unknownMaterial;
+}
+
 const _solidMaterials = new Map<string, MeshLambertMaterial>();
 function getSolidMaterial(color: string): MeshLambertMaterial {
   const cached = _solidMaterials.get(color);
@@ -75,6 +115,7 @@ function getSolidMaterial(color: string): MeshLambertMaterial {
 function resolveCapMaterial(color: string | undefined): MeshLambertMaterial {
   if (!color) return getSolidMaterial(INACTIVE_FILL);
   if (color === AMBER_HEX) return getAmberMaterial();
+  if (color === UNKNOWN_HEX) return getUnknownMaterial();
   return getSolidMaterial(color);
 }
 

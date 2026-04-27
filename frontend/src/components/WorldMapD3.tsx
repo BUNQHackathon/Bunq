@@ -10,9 +10,13 @@ const GEO_URL_FALLBACK =
 const INACTIVE_FILL = '#1E1E1E';
 const AMBER_HEX = '#b87538';
 const AMBER_PATTERN_URL = 'url(#wmd3-amber-stripes)';
+const UNKNOWN_HEX = '#444444';
+const UNKNOWN_PATTERN_URL = 'url(#wmd3-unknown-stripes)';
 function resolveFill(color: string | undefined): string {
   if (!color) return INACTIVE_FILL;
-  return color === AMBER_HEX ? AMBER_PATTERN_URL : color;
+  if (color === AMBER_HEX) return AMBER_PATTERN_URL;
+  if (color === UNKNOWN_HEX) return UNKNOWN_PATTERN_URL;
+  return color;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -350,6 +354,10 @@ export default function WorldMapD3({
           <pattern id="wmd3-amber-stripes" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
             <rect width="3" height="6" fill="#cfb275" />
             <rect x="3" width="3" height="6" fill="#a83820" />
+          </pattern>
+          <pattern id="wmd3-unknown-stripes" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+            <rect width="3" height="6" fill="#6b6b6b" />
+            <rect x="3" width="3" height="6" fill="#9a9a9a" />
           </pattern>
         </defs>
         <rect id="wmd3-ocean-bg" width="100%" height="100%" fill="url(#wmd3-ocean-grad)" />

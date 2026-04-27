@@ -17,7 +17,7 @@ import {
 import { useJurisdictionStream } from '../hooks/useJurisdictionStream';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
-import VerdictPill, { verdictToHex } from '../components/VerdictPill';
+import VerdictPill, { verdictToHex, FAILED_COLOR } from '../components/VerdictPill';
 import HeroGradient from '../components/HeroGradient';
 import { ISO2_TO_ISO3, ISO3_TO_ISO2, MOCK_COUNTRY_COLOR, MOCK_COUNTRY_LABEL } from '../api/mockCountries';
 
@@ -62,17 +62,20 @@ if (typeof document !== 'undefined' && !document.getElementById(PULSE_STYLE_ID))
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
-type StatusKey = 'compliant' | 'warning' | 'noncompliant' | 'failed';
+type StatusKey = 'compliant' | 'warning' | 'noncompliant' | 'failed' | 'inprogress' | 'unknown';
 
 function verdictToStatus(v: Verdict): StatusKey {
   if (v === 'GREEN') return 'compliant';
   if (v === 'RED') return 'noncompliant';
+  if (v === 'UNKNOWN') return 'unknown';
   return 'warning';
 }
 
 function statusLabelForRun(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
-  if (isRunning) return 'Running…';
+  if (isRunning) return 'In progress';
   if (key === 'failed') return 'Failed';
+  if (key === 'inprogress') return 'In progress';
+  if (key === 'unknown') return 'Unknown';
   if (run.verdict === 'UNKNOWN') return 'Unknown';
   if (key === 'compliant') return 'Compliant';
   if (key === 'warning') return 'Needs review';
@@ -81,14 +84,15 @@ function statusLabelForRun(run: JurisdictionRun, key: StatusKey, isRunning: bool
 
 function runStatusKey(run: JurisdictionRun): StatusKey {
   if (run.status === 'FAILED') return 'failed';
-  if (run.status === 'RUNNING' || run.status === 'PENDING') return 'warning';
+  if (run.status === 'RUNNING' || run.status === 'PENDING') return 'inprogress';
   return verdictToStatus(run.verdict);
 }
 
 
 function statusTooltip(run: JurisdictionRun, key: StatusKey, isRunning: boolean): string {
   if (key === 'failed') return 'Pipeline error (rate limit, timeout, etc.). Couldn\'t determine compliance — retry the run.';
-  if (isRunning) return 'Analysis in progress.';
+  if (key === 'inprogress' || isRunning) return 'Analysis in progress.';
+  if (key === 'unknown') return 'Verdict: UNKNOWN — analysis returned an indeterminate result.';
   if (key === 'compliant') return 'Verdict: GREEN — can ship as-is.';
   if (key === 'noncompliant') return 'Verdict: RED — regulatory blocker. Cannot ship in this jurisdiction.';
   if (run.verdict === 'AMBER') return 'Verdict: AMBER — required changes before shipping.';
@@ -205,7 +209,7 @@ export default function LaunchDetailPage() {
   const [view, setView] = useState<'2d' | '3d'>('2d');
   const [selectedIso3, setSelectedIso3] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant' | 'failed'>('all');
+  const [filter, setFilter] = useState<'all' | 'compliant' | 'warning' | 'noncompliant' | 'unknown' | 'inprogress'>('all');
 
   // Keep a ref to detail so the interval closure can read current value
   const detailRef = useRef<LaunchDetail | null>(null);
@@ -276,7 +280,17 @@ export default function LaunchDetailPage() {
     // 2. Real launch verdicts overwrite the overlay where present.
     detail?.jurisdictions.forEach((r) => {
       const iso3 = ISO2_TO_ISO3[r.jurisdictionCode] ?? r.jurisdictionCode;
-      const color = r.status === 'RUNNING' ? '#444444' : verdictToHex(r.verdict);
+      // Grey-state routing:
+      // - RUNNING/PENDING (status) → solid grey (FAILED_COLOR) — labeled "In progress" in the legend
+      // - UNKNOWN verdict          → '#444444' sentinel (stripe pattern)  — labeled "Unknown" in the legend
+      // - FAILED status falls through to verdictToHex(r.verdict); if its verdict is UNKNOWN it gets stripes,
+      //   otherwise it shows the verdict color it landed on before the failure.
+      const isInProgress = r.status === 'RUNNING' || r.status === 'PENDING';
+      const color = isInProgress
+        ? FAILED_COLOR
+        : r.verdict === 'UNKNOWN'
+          ? '#444444'
+          : verdictToHex(r.verdict);
       m.set(iso3, { color, label: jurisdictionLabel(r.jurisdictionCode) });
     });
     return m;
@@ -318,7 +332,8 @@ export default function LaunchDetailPage() {
       ok: juris.filter((r) => verdictToStatus(r.verdict) === 'compliant' && r.status !== 'RUNNING' && r.status !== 'PENDING').length,
       review: juris.filter((r) => runStatusKey(r) === 'warning').length,
       block: juris.filter((r) => runStatusKey(r) === 'noncompliant').length,
-      failed: juris.filter((r) => runStatusKey(r) === 'failed').length,
+      unknown: juris.filter((r) => runStatusKey(r) === 'unknown').length,
+      inprogress: juris.filter((r) => runStatusKey(r) === 'inprogress').length,
     };
   }, [detail]);
 
@@ -334,7 +349,7 @@ export default function LaunchDetailPage() {
   // ── Stats line ───────────────────────────────────────────────────────────────
   const statsLine = anyRunning
     ? 'running…'
-    : `${counts.total} jurisdictions · ${counts.ok} ok · ${counts.review} review · ${counts.block} block${counts.failed > 0 ? ` · ${counts.failed} failed` : ''}`;
+    : `${counts.total} jurisdictions · ${counts.ok} ok · ${counts.review} review · ${counts.block} block`;
 
   const createdAtShort = launch?.createdAt
     ? new Date(launch.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -363,19 +378,23 @@ export default function LaunchDetailPage() {
               <div className="juris__legend">
                 <span className="juris__legend-item">
                   <span className="juris__legend-dot" style={{ background: verdictToHex('GREEN') }} />
-                  GREEN
+                  Compliant
                 </span>
                 <span className="juris__legend-item">
-                  <span className="juris__legend-dot" style={{ background: verdictToHex('AMBER') }} />
-                  AMBER
+                  <span className="juris__legend-dot" style={{ background: 'repeating-linear-gradient(45deg, #cfb275 0 2px, #a83820 2px 4px)' }} />
+                  Needs review
                 </span>
                 <span className="juris__legend-item">
                   <span className="juris__legend-dot" style={{ background: verdictToHex('RED') }} />
-                  RED
+                  Breaches
                 </span>
                 <span className="juris__legend-item">
-                  <span className="juris__legend-dot" style={{ background: '#6b6b6b' }} />
-                  FAILED
+                  <span className="juris__legend-dot" style={{ background: 'repeating-linear-gradient(45deg, #6b6b6b 0 2px, #9a9a9a 2px 4px)' }} />
+                  Unknown
+                </span>
+                <span className="juris__legend-item">
+                  <span className="juris__legend-dot" style={{ background: FAILED_COLOR }} />
+                  In progress
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -530,7 +549,7 @@ export default function LaunchDetailPage() {
           ok={counts.ok}
           review={counts.review}
           block={counts.block}
-          failed={counts.failed}
+          failed={(detail?.jurisdictions ?? []).filter((r) => runStatusKey(r) === 'failed').length}
           anyRunning={anyRunning}
           animate
         />
@@ -578,7 +597,7 @@ export default function LaunchDetailPage() {
                   className={`fjp__chip${filter === 'compliant' ? ' fjp__chip--active' : ''}`}
                   onClick={() => setFilter('compliant')}
                 >
-                  <span className="fjp__chip-dot" style={{ background: 'var(--success)' }} />
+                  <span className="fjp__chip-dot" style={{ background: '#cfb275' }} />
                   <span>Compliant</span>
                   <span className="fjp__chip-count">{counts.ok}</span>
                 </button>
@@ -586,7 +605,7 @@ export default function LaunchDetailPage() {
                   className={`fjp__chip${filter === 'warning' ? ' fjp__chip--active' : ''}`}
                   onClick={() => setFilter('warning')}
                 >
-                  <span className="fjp__chip-dot" style={{ background: 'var(--warning)' }} />
+                  <span className="fjp__chip-dot" style={{ background: 'repeating-linear-gradient(45deg, #cfb275 0 2px, #a83820 2px 4px)' }} />
                   <span>Needs review</span>
                   <span className="fjp__chip-count">{counts.review}</span>
                 </button>
@@ -594,17 +613,25 @@ export default function LaunchDetailPage() {
                   className={`fjp__chip${filter === 'noncompliant' ? ' fjp__chip--active' : ''}`}
                   onClick={() => setFilter('noncompliant')}
                 >
-                  <span className="fjp__chip-dot" style={{ background: 'var(--danger)' }} />
+                  <span className="fjp__chip-dot" style={{ background: '#a83820' }} />
                   <span>Breaches</span>
                   <span className="fjp__chip-count">{counts.block}</span>
                 </button>
                 <button
-                  className={`fjp__chip${filter === 'failed' ? ' fjp__chip--active' : ''}`}
-                  onClick={() => setFilter('failed')}
+                  className={`fjp__chip${filter === 'unknown' ? ' fjp__chip--active' : ''}`}
+                  onClick={() => setFilter('unknown')}
                 >
-                  <span className="fjp__chip-dot" style={{ background: '#6b6b6b' }} />
-                  <span>Failed</span>
-                  <span className="fjp__chip-count">{counts.failed}</span>
+                  <span className="fjp__chip-dot" style={{ background: 'repeating-linear-gradient(45deg, #6b6b6b 0 2px, #9a9a9a 2px 4px)' }} />
+                  <span>Unknown</span>
+                  <span className="fjp__chip-count">{counts.unknown}</span>
+                </button>
+                <button
+                  className={`fjp__chip${filter === 'inprogress' ? ' fjp__chip--active' : ''}`}
+                  onClick={() => setFilter('inprogress')}
+                >
+                  <span className="fjp__chip-dot" style={{ background: FAILED_COLOR }} />
+                  <span>In progress</span>
+                  <span className="fjp__chip-count">{counts.inprogress}</span>
                 </button>
               </div>
             </div>
@@ -657,7 +684,7 @@ export default function LaunchDetailPage() {
                         title={statusTooltip(run, key, isRunning)}
                       >
                         <span className="fjp__row-status-dot" />
-                        {/* StripLiveLabel replaces static "Running…" with live SSE stage name */}
+                        {/* StripLiveLabel replaces static "In progress" with live SSE stage name */}
                         {isRunning
                           ? <StripLiveLabel launchId={id!} code={code} onDone={refetch} />
                           : statusLabelForRun(run, key, false)}
@@ -783,14 +810,14 @@ export default function LaunchDetailPage() {
   );
 }
 
-// ── Strip chip live label (shows current stage or "Running…" fallback) ────────
+// ── Strip chip live label (shows current stage or "In progress" fallback) ────────
 function StripLiveLabel({ launchId, code, onDone }: { launchId: string; code: string; onDone: () => void }) {
   const { currentStage, lastEvent } = useJurisdictionStream(launchId, code, { onDone });
   const ordinal = lastEvent?.type === 'stage.started' ? lastEvent.ordinal : undefined;
   const total = lastEvent?.type === 'stage.started' ? lastEvent.totalStages : undefined;
   const label = currentStage
     ? `${currentStage}${ordinal != null && total != null ? ` ${ordinal}/${total}` : ''}`
-    : 'Running…';
+    : 'In progress';
   return (
     <span className="mono-label" style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}>
       {label}
