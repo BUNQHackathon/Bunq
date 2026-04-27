@@ -389,7 +389,7 @@ export default function LaunchDetailPage() {
                     {retrying ? 'Retrying…' : 'Retry failed'}
                   </button>
                 )}
-                <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 999, padding: 3 }}>
+                <div style={{ display: 'flex', gap: 2, background: 'rgba(20, 17, 16, 0.78)', backdropFilter: 'blur(8px)', border: '1px solid var(--line-0)', borderRadius: 999, padding: 3 }}>
                   <button
                     className="chip chip--sm"
                     onClick={() => setView('2d')}

@@ -76,7 +76,7 @@ function JurisMapPanel({
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
           {/* 2D / 3D toggle — minimal chip row */}
-          <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 999, padding: 3 }}>
+          <div style={{ display: 'flex', gap: 2, background: 'rgba(20, 17, 16, 0.78)', backdropFilter: 'blur(8px)', border: '1px solid var(--line-0)', borderRadius: 999, padding: 3 }}>
             {(['globe', 'map'] as const).map((v) => (
               <button
                 key={v}
