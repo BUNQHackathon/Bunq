@@ -17,22 +17,22 @@ export const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 );
 
 export const MOCK_COUNTRY_COLOR: Record<string, string> = {
-  // Compliant — C2 warm gold
-  GBR: '#e8c97a', NLD: '#e8c97a', FRA: '#e8c97a', DEU: '#e8c97a',
-  IRL: '#e8c97a', ESP: '#e8c97a', ITA: '#e8c97a', BEL: '#e8c97a',
-  AUT: '#e8c97a', PRT: '#e8c97a', POL: '#e8c97a', SWE: '#e8c97a',
-  NOR: '#e8c97a', FIN: '#e8c97a', DNK: '#e8c97a', CHE: '#e8c97a',
-  ISL: '#e8c97a', JPN: '#e8c97a', AUS: '#e8c97a', NZL: '#e8c97a',
-  CAN: '#e8c97a', SGP: '#e8c97a', KOR: '#e8c97a',
-  // Needs changes — warm orange (C palette fallback; SVG can't render stripes)
-  USA: '#e89a4f', MEX: '#e89a4f', BRA: '#e89a4f', IND: '#e89a4f',
-  CHN: '#e89a4f', ARE: '#e89a4f', SAU: '#e89a4f', TUR: '#e89a4f',
-  ZAF: '#e89a4f', ARG: '#e89a4f', EGY: '#e89a4f', HKG: '#e89a4f',
-  GRC: '#e89a4f', CZE: '#e89a4f', HUN: '#e89a4f', ROU: '#e89a4f',
-  BGR: '#e89a4f',
-  // Not compliant — warm red-orange
-  RUS: '#d94a2e', BLR: '#d94a2e', IRN: '#d94a2e', PRK: '#d94a2e',
-  SYR: '#d94a2e', UKR: '#d94a2e', NGA: '#d94a2e',
+  // Compliant — muted gold
+  GBR: '#cfb275', NLD: '#cfb275', FRA: '#cfb275', DEU: '#cfb275',
+  IRL: '#cfb275', ESP: '#cfb275', ITA: '#cfb275', BEL: '#cfb275',
+  AUT: '#cfb275', PRT: '#cfb275', POL: '#cfb275', SWE: '#cfb275',
+  NOR: '#cfb275', FIN: '#cfb275', DNK: '#cfb275', CHE: '#cfb275',
+  ISL: '#cfb275', JPN: '#cfb275', AUS: '#cfb275', NZL: '#cfb275',
+  CAN: '#cfb275', SGP: '#cfb275', KOR: '#cfb275',
+  // Needs changes — muted amber (C palette fallback; SVG can't render stripes)
+  USA: '#b87538', MEX: '#b87538', BRA: '#b87538', IND: '#b87538',
+  CHN: '#b87538', ARE: '#b87538', SAU: '#b87538', TUR: '#b87538',
+  ZAF: '#b87538', ARG: '#b87538', EGY: '#b87538', HKG: '#b87538',
+  GRC: '#b87538', CZE: '#b87538', HUN: '#b87538', ROU: '#b87538',
+  BGR: '#b87538',
+  // Not compliant — muted red
+  RUS: '#a83820', BLR: '#a83820', IRN: '#a83820', PRK: '#a83820',
+  SYR: '#a83820', UKR: '#a83820', NGA: '#a83820',
 };
 
 export const MOCK_COUNTRY_LABEL: Record<string, string> = {

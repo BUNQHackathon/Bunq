@@ -10,9 +10,9 @@ const GEO_URL_FALLBACK =
 
 const INACTIVE_FILL = '#1E1E1E';
 
-const AMBER_HEX = '#e89a4f';
-const STRIPE_GOLD = '#e8c97a';
-const STRIPE_RED = '#d94a2e';
+const AMBER_HEX = '#b87538';
+const STRIPE_GOLD = '#cfb275';
+const STRIPE_RED = '#a83820';
 
 // Stripe band width in screen-space pixels. 6px on each band → 12px cycle,
 // large enough to read on small countries when zoomed out, small enough not
