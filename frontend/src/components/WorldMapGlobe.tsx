@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Globe from 'globe.gl';
-import { MeshPhongMaterial } from 'three';
+import { MeshLambertMaterial, Color, type Shader } from 'three';
 
 // ── GeoJSON source URLs (same as JurisdictionsPage) ──────────────────────────
 const GEO_URL_PRIMARY =
@@ -9,6 +9,74 @@ const GEO_URL_FALLBACK =
   'https://cdn.jsdelivr.net/gh/vasturiano/globe.gl@master/example/datasets/ne_110m_admin_0_countries.geojson';
 
 const INACTIVE_FILL = '#1E1E1E';
+
+const AMBER_HEX = '#b87538';
+const STRIPE_GOLD = '#cfb275';
+const STRIPE_RED = '#a83820';
+
+// Stripe band width in screen-space pixels. 6px on each band → 12px cycle,
+// large enough to read on small countries when zoomed out, small enough not
+// to dominate big countries when zoomed in.
+const STRIPE_BAND_PX = 6.0;
+
+// Patch a MeshLambertMaterial so its fragment shader paints diagonal stripes
+// based on screen coordinates (gl_FragCoord). This makes stripe width uniform
+// across all polygons regardless of size, and the chosen RGB stays true to
+// the design (Lambert lighting only modulates intensity, not hue).
+function buildAmberStripeMaterial(): MeshLambertMaterial {
+  const mat = new MeshLambertMaterial({ color: 0xffffff });
+  mat.onBeforeCompile = (shader: Shader) => {
+    shader.uniforms.stripeColorA = { value: new Color(STRIPE_GOLD) };
+    shader.uniforms.stripeColorB = { value: new Color(STRIPE_RED) };
+    shader.uniforms.stripeBandPx = { value: STRIPE_BAND_PX };
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'void main() {',
+      `
+      uniform vec3 stripeColorA;
+      uniform vec3 stripeColorB;
+      uniform float stripeBandPx;
+      void main() {
+      `,
+    );
+    // Override the diffuse color right after it's initialized from the
+    // material's `diffuse` uniform but before lighting is applied.
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'vec4 diffuseColor = vec4( diffuse, opacity );',
+      `
+      float stripeCoord = gl_FragCoord.x + gl_FragCoord.y;
+      float stripeBand = mod(floor(stripeCoord / stripeBandPx), 2.0);
+      vec3 stripeRgb = stripeBand < 0.5 ? stripeColorA : stripeColorB;
+      vec4 diffuseColor = vec4( stripeRgb, opacity );
+      `,
+    );
+  };
+  // Distinct customProgramCacheKey so three.js doesn't dedupe this with the
+  // unpatched Lambert program used by solid-color materials.
+  mat.customProgramCacheKey = () => 'amber-stripes-v1';
+  return mat;
+}
+
+let _amberMaterial: MeshLambertMaterial | null = null;
+function getAmberMaterial(): MeshLambertMaterial {
+  if (_amberMaterial) return _amberMaterial;
+  _amberMaterial = buildAmberStripeMaterial();
+  return _amberMaterial;
+}
+
+const _solidMaterials = new Map<string, MeshLambertMaterial>();
+function getSolidMaterial(color: string): MeshLambertMaterial {
+  const cached = _solidMaterials.get(color);
+  if (cached) return cached;
+  const mat = new MeshLambertMaterial({ color: new Color(color) });
+  _solidMaterials.set(color, mat);
+  return mat;
+}
+
+function resolveCapMaterial(color: string | undefined): MeshLambertMaterial {
+  if (!color) return getSolidMaterial(INACTIVE_FILL);
+  if (color === AMBER_HEX) return getAmberMaterial();
+  return getSolidMaterial(color);
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -136,11 +204,11 @@ export default function WorldMapGlobe({
         .atmosphereColor('#FF7819')
         .atmosphereAltitude(0.14)
         .showGlobe(true)
-        .globeMaterial(new MeshPhongMaterial({ color: 0x0a0a14 }) as never)
+        .globeMaterial(new MeshLambertMaterial({ color: 0x0a0a14 }) as never)
         .polygonsData(features as unknown as object[])
-        .polygonCapColor(((feat: object) => {
+        .polygonCapMaterial(((feat: object) => {
           const iso = readIso3((feat as GeoFeature).properties);
-          return dataRef.current.get(iso)?.color ?? INACTIVE_FILL;
+          return resolveCapMaterial(dataRef.current.get(iso)?.color);
         }) as never)
         .polygonSideColor((() => 'rgba(0,0,0,0.3)') as never)
         .polygonStrokeColor((() => 'rgba(255,255,255,0.55)') as never)
