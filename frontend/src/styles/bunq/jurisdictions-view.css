@@ -88,6 +88,28 @@
   justify-content: center;
   overflow: hidden;
 }
+/* Soft blur fade at the top so the map content slides under the
+   header/legend pills instead of butting up against them. */
+.juris__map-canvas::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 220px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 10, 9, 1)    0%,
+    rgba(11, 10, 9, 0.97) 12%,
+    rgba(11, 10, 9, 0.88) 25%,
+    rgba(11, 10, 9, 0.7)  40%,
+    rgba(11, 10, 9, 0.45) 55%,
+    rgba(11, 10, 9, 0.22) 70%,
+    rgba(11, 10, 9, 0.08) 82%,
+    rgba(11, 10, 9, 0.02) 92%,
+    rgba(11, 10, 9, 0)    100%
+  );
+}
 .juris__map-img {
   width: 100%;
   height: 100%;
