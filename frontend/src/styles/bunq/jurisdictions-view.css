@@ -8,6 +8,10 @@
   height: 100%;
   background: var(--bg-0);
   min-height: 0;
+  --c2-compliant: #e8c97a;
+  --c2-noncompliant: #d94a2e;
+  --c2-inactive: #3a3631;
+  --c2-needs-stripe: repeating-linear-gradient(45deg, #e8c97a 0 2px, #d94a2e 2px 4px);
 }
 
 /* ---------- LEFT: Map panel ---------- */
@@ -361,9 +365,9 @@
   flex: none;
   margin-left: 4px;
 }
-.juris__feat-status--compliant    { background: var(--success); box-shadow: 0 0 0 3px rgba(94,184,106,0.12); }
-.juris__feat-status--warning      { background: var(--warning); box-shadow: 0 0 0 3px rgba(217,176,61,0.12); }
-.juris__feat-status--noncompliant { background: var(--danger);  box-shadow: 0 0 0 3px rgba(217,74,74,0.12); }
+.juris__feat-status--compliant    { background: var(--c2-compliant);    box-shadow: 0 0 0 3px rgba(232,201,122,0.14); }
+.juris__feat-status--warning      { background: var(--c2-needs-stripe); box-shadow: 0 0 0 3px rgba(216,134,82,0.14); }
+.juris__feat-status--noncompliant { background: var(--c2-noncompliant); box-shadow: 0 0 0 3px rgba(217,74,46,0.14); }
 
 .juris__feat-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .juris__feat-name {

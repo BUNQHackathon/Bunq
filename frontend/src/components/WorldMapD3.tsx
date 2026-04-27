@@ -8,6 +8,12 @@ const GEO_URL_FALLBACK =
   'https://cdn.jsdelivr.net/gh/vasturiano/globe.gl@master/example/datasets/ne_110m_admin_0_countries.geojson';
 
 const INACTIVE_FILL = '#1E1E1E';
+const AMBER_HEX = '#e89a4f';
+const AMBER_PATTERN_URL = 'url(#wmd3-amber-stripes)';
+function resolveFill(color: string | undefined): string {
+  if (!color) return INACTIVE_FILL;
+  return color === AMBER_HEX ? AMBER_PATTERN_URL : color;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -110,7 +116,7 @@ export default function WorldMapD3({
   useEffect(() => {
     if (!mapSelRef.current) return;
     mapSelRef.current.attr('fill', (d: GeoFeature) =>
-      data.get(readIso3(d.properties))?.color ?? INACTIVE_FILL,
+      resolveFill(data.get(readIso3(d.properties))?.color),
     );
   }, [data]);
 
@@ -213,7 +219,7 @@ export default function WorldMapD3({
         .data(features)
         .join('path')
         .attr('d', (d) => path(d) ?? '')
-        .attr('fill', (d) => dataRef.current.get(readIso3(d.properties))?.color ?? INACTIVE_FILL)
+        .attr('fill', (d) => resolveFill(dataRef.current.get(readIso3(d.properties))?.color))
         .attr('stroke', (d) =>
           readIso3(d.properties) === selectedRef.current ? '#FF7819' : 'rgba(255,255,255,0.55)',
         )
@@ -250,7 +256,7 @@ export default function WorldMapD3({
           d3.select(this)
             .attr('stroke', isSelected ? '#FF7819' : 'rgba(255,255,255,0.55)')
             .attr('stroke-width', isSelected ? 1.5 : 0.4)
-            .attr('fill', dataRef.current.get(iso)?.color ?? INACTIVE_FILL);
+            .attr('fill', resolveFill(dataRef.current.get(iso)?.color));
           const tip = tooltipRef.current;
           if (tip) tip.style.opacity = '0';
           onHoverRef.current?.(null);
@@ -341,6 +347,10 @@ export default function WorldMapD3({
             <stop offset="0%" stopColor="#0A0A14" />
             <stop offset="100%" stopColor="#050508" />
           </radialGradient>
+          <pattern id="wmd3-amber-stripes" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+            <rect width="3" height="6" fill="#e8c97a" />
+            <rect x="3" width="3" height="6" fill="#d94a2e" />
+          </pattern>
         </defs>
         <rect id="wmd3-ocean-bg" width="100%" height="100%" fill="url(#wmd3-ocean-grad)" />
         <g id="wmd3-graticule-g" />

@@ -15,9 +15,9 @@ const VALID_CODES = new Set(JURISDICTION_CATALOG.map(j => j.code));
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
 const VERDICT_COLOR: Record<Verdict, string> = {
-  GREEN:   '#61B650',
-  AMBER:   '#F5C836',
-  RED:     '#E22F30',
+  GREEN:   '#e8c97a',
+  AMBER:   '#e89a4f',
+  RED:     '#d94a2e',
   PENDING: '#1E1E1E',
   UNKNOWN: '#3a3a3a',
 };
@@ -100,15 +100,15 @@ function JurisMapPanel({
           {/* Legend */}
           <div className="juris__legend">
             <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: '#61B650' }} />
+              <span className="juris__legend-dot" style={{ background: '#e8c97a' }} />
               Compliant
             </span>
             <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: '#F5C836' }} />
+              <span className="juris__legend-dot" style={{ background: 'repeating-linear-gradient(45deg, #e8c97a 0 2px, #d94a2e 2px 4px)' }} />
               Needs changes
             </span>
             <span className="juris__legend-item">
-              <span className="juris__legend-dot" style={{ background: '#E22F30' }} />
+              <span className="juris__legend-dot" style={{ background: '#d94a2e' }} />
               Not compliant
             </span>
             <span className="juris__legend-item">
@@ -260,40 +260,40 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
         <div className="juris__summary">
           <div className="juris__stat">
             <div className="juris__stat-head">
-              <span className="juris__stat-dot" style={{ background: 'var(--success)' }} />
+              <span className="juris__stat-dot" style={{ background: '#e8c97a' }} />
               Compliant
             </div>
             <div className="juris__stat-num">
               {keepCount}<small>{pct(keepCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(keepCount)}%`, background: 'var(--success)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(keepCount)}%`, background: '#e8c97a' }} />
             </div>
           </div>
 
           <div className="juris__stat">
             <div className="juris__stat-head">
-              <span className="juris__stat-dot" style={{ background: 'var(--warning)' }} />
+              <span className="juris__stat-dot" style={{ background: 'repeating-linear-gradient(45deg, #e8c97a 0 2px, #d94a2e 2px 4px)' }} />
               Needs changes
             </div>
             <div className="juris__stat-num">
               {modifyCount}<small>{pct(modifyCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(modifyCount)}%`, background: 'var(--warning)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(modifyCount)}%`, background: 'repeating-linear-gradient(45deg, #e8c97a 0 2px, #d94a2e 2px 4px)' }} />
             </div>
           </div>
 
           <div className="juris__stat">
             <div className="juris__stat-head">
-              <span className="juris__stat-dot" style={{ background: 'var(--danger)' }} />
+              <span className="juris__stat-dot" style={{ background: '#d94a2e' }} />
               Not compliant
             </div>
             <div className="juris__stat-num">
               {dropCount}<small>{pct(dropCount)}%</small>
             </div>
             <div className="juris__stat-bar">
-              <div className="juris__stat-bar-fill" style={{ width: `${pct(dropCount)}%`, background: 'var(--danger)' }} />
+              <div className="juris__stat-bar-fill" style={{ width: `${pct(dropCount)}%`, background: '#d94a2e' }} />
             </div>
           </div>
         </div>

@@ -17,22 +17,22 @@ export const ISO3_TO_ISO2: Record<string, string> = Object.fromEntries(
 );
 
 export const MOCK_COUNTRY_COLOR: Record<string, string> = {
-  // Green — compliant
-  GBR: '#61B650', NLD: '#61B650', FRA: '#61B650', DEU: '#61B650',
-  IRL: '#61B650', ESP: '#61B650', ITA: '#61B650', BEL: '#61B650',
-  AUT: '#61B650', PRT: '#61B650', POL: '#61B650', SWE: '#61B650',
-  NOR: '#61B650', FIN: '#61B650', DNK: '#61B650', CHE: '#61B650',
-  ISL: '#61B650', JPN: '#61B650', AUS: '#61B650', NZL: '#61B650',
-  CAN: '#61B650', SGP: '#61B650', KOR: '#61B650',
-  // Amber — needs changes
-  USA: '#F5C836', MEX: '#F5C836', BRA: '#F5C836', IND: '#F5C836',
-  CHN: '#F5C836', ARE: '#F5C836', SAU: '#F5C836', TUR: '#F5C836',
-  ZAF: '#F5C836', ARG: '#F5C836', EGY: '#F5C836', HKG: '#F5C836',
-  GRC: '#F5C836', CZE: '#F5C836', HUN: '#F5C836', ROU: '#F5C836',
-  BGR: '#F5C836',
-  // Red — non-compliant / sanctioned
-  RUS: '#E22F30', BLR: '#E22F30', IRN: '#E22F30', PRK: '#E22F30',
-  SYR: '#E22F30', UKR: '#E22F30', NGA: '#E22F30',
+  // Compliant — C2 warm gold
+  GBR: '#e8c97a', NLD: '#e8c97a', FRA: '#e8c97a', DEU: '#e8c97a',
+  IRL: '#e8c97a', ESP: '#e8c97a', ITA: '#e8c97a', BEL: '#e8c97a',
+  AUT: '#e8c97a', PRT: '#e8c97a', POL: '#e8c97a', SWE: '#e8c97a',
+  NOR: '#e8c97a', FIN: '#e8c97a', DNK: '#e8c97a', CHE: '#e8c97a',
+  ISL: '#e8c97a', JPN: '#e8c97a', AUS: '#e8c97a', NZL: '#e8c97a',
+  CAN: '#e8c97a', SGP: '#e8c97a', KOR: '#e8c97a',
+  // Needs changes — warm orange (C palette fallback; SVG can't render stripes)
+  USA: '#e89a4f', MEX: '#e89a4f', BRA: '#e89a4f', IND: '#e89a4f',
+  CHN: '#e89a4f', ARE: '#e89a4f', SAU: '#e89a4f', TUR: '#e89a4f',
+  ZAF: '#e89a4f', ARG: '#e89a4f', EGY: '#e89a4f', HKG: '#e89a4f',
+  GRC: '#e89a4f', CZE: '#e89a4f', HUN: '#e89a4f', ROU: '#e89a4f',
+  BGR: '#e89a4f',
+  // Not compliant — warm red-orange
+  RUS: '#d94a2e', BLR: '#d94a2e', IRN: '#d94a2e', PRK: '#d94a2e',
+  SYR: '#d94a2e', UKR: '#d94a2e', NGA: '#d94a2e',
 };
 
 export const MOCK_COUNTRY_LABEL: Record<string, string> = {
@@ -50,7 +50,6 @@ export const MOCK_COUNTRY_LABEL: Record<string, string> = {
 };
 
 // BUNQ-operating countries that get a brand-color overlay on the
-// jurisdictions map. Currently NL only — easter egg for the home market.
-export const BUNQ_GRADIENT_COLOR: Record<string, string> = {
-  NLD: '#ef6a2a',
-};
+// jurisdictions map. Currently empty — NL inherits the standard
+// compliant color from MOCK_COUNTRY_COLOR.
+export const BUNQ_GRADIENT_COLOR: Record<string, string> = {};
