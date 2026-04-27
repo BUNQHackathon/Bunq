@@ -226,7 +226,7 @@ function JurisOverviewPanel({ overview, triage }: OverviewPanelProps) {
     <div className="juris__panel">
       <header
         className="juris__hero"
-        style={{ minHeight: 220, position: 'relative', overflow: 'hidden' }}
+        style={{ minHeight: '160px', background: '#0b0a09' }}
       >
         <HeroGradient animate />
 
