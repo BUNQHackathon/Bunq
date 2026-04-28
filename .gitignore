@@ -6,3 +6,4 @@
 /backend/test
 *.info
 docs/superpowers/
+/backend/target

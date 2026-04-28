@@ -1,6 +1,8 @@
 spring:
   application:
     name: java-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   config:
     import: optional:file:.env[.properties]
   threads:
@@ -12,41 +14,30 @@ server:
     context-path: /api/v1
 
 aws:
-  region: eu-central-1
-  account-id: ${AWS_ACCOUNT_ID:914115115148}
+  region: ${AWS_REGION:eu-central-1}
   dynamodb:
-    sessions-table: launchlens-sessions
-    chat-messages-table: launchlens-chat-messages
-    obligations-table: launchlens-obligations
-    controls-table: launchlens-controls
-    mappings-table: launchlens-mappings
-    gaps-table: launchlens-gaps
-    sanctions-hits-table: launchlens-sanctions-hits
-    evidence-table: launchlens-evidence
-    sanctions-entities-table: launchlens-sanctions-entities
-    audit-log-table: launchlens-audit-log
+    sessions-table: ${AWS_DYNAMODB_SESSIONS_TABLE:launchlens-sessions}
+    chat-messages-table: ${AWS_DYNAMODB_CHAT_MESSAGES_TABLE:launchlens-chat-messages}
+    obligations-table: ${AWS_DYNAMODB_OBLIGATIONS_TABLE:launchlens-obligations}
+    controls-table: ${AWS_DYNAMODB_CONTROLS_TABLE:launchlens-controls}
+    mappings-table: ${AWS_DYNAMODB_MAPPINGS_TABLE:launchlens-mappings}
+    gaps-table: ${AWS_DYNAMODB_GAPS_TABLE:launchlens-gaps}
+    sanctions-hits-table: ${AWS_DYNAMODB_SANCTIONS_HITS_TABLE:launchlens-sanctions-hits}
+    evidence-table: ${AWS_DYNAMODB_EVIDENCE_TABLE:launchlens-evidence}
+    sanctions-entities-table: ${AWS_DYNAMODB_SANCTIONS_ENTITIES_TABLE:launchlens-sanctions-entities}
+    audit-log-table: ${AWS_DYNAMODB_AUDIT_LOG_TABLE:launchlens-audit-log}
     documents-table: ${AWS_DYNAMODB_DOCUMENTS_TABLE:launchlens-documents}
     doc-jurisdictions-table: ${AWS_DYNAMODB_DOC_JURISDICTIONS_TABLE:launchlens-doc-jurisdictions}
     launches-table: ${AWS_DYNAMODB_LAUNCHES_TABLE:launchlens-launches}
     jurisdiction-runs-table: ${AWS_DYNAMODB_JURISDICTION_RUNS_TABLE:launchlens-jurisdiction-runs}
-  s3:
-    uploads-bucket: ${UPLOADS_BUCKET:launchlens-uploads-914115115148}
   bedrock:
-    region: eu-central-1
+    region: ${AWS_BEDROCK_REGION:eu-central-1}
     max-concurrent: ${BEDROCK_MAX_CONCURRENT:15}
     model-ids:
       opus:   ${AWS_BEDROCK_MODEL_IDS_OPUS:eu.anthropic.claude-opus-4-7}
       sonnet: ${AWS_BEDROCK_MODEL_IDS_SONNET:eu.anthropic.claude-sonnet-4-6}
       haiku:  ${AWS_BEDROCK_MODEL_IDS_HAIKU:eu.anthropic.claude-haiku-4-5-20251001-v1:0}
     claude-model-id: ${WARMUP_CLAUDE_MODEL_ID:eu.anthropic.claude-haiku-4-5-20251001-v1:0}
-    kb-data-source-id: ${WARMUP_KB_DS_ID:1KZS2LLBRC}
-    kb:
-      regulations-id: ${KB_REGULATIONS_ID:YIBSPZAPVL}
-      policies-id: ${KB_POLICIES_ID:PJSPTYAB1N}
-      controls-id: ${KB_CONTROLS_ID:MVGWGRJRJW}
-
-cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://*.amplifyapp.com,http://localhost:5173}
 
 management:
   endpoints:
@@ -59,18 +50,14 @@ management:
       probes:
         enabled: true
 
-app:
-  admin:
-    token: ${ADMIN_TOKEN:}
-
-sidecar:
-  base-url: ${SIDECAR_BASE_URL:http://localhost:8001}
-  token: ${SIDECAR_TOKEN:dev}
-
 chat:
   top-k-per-kb: 5
   top-n-merged: 10
   history-limit: 50
+
+search:
+  scan-cap: 500
+  per-type-limit-max: 20
 
 springdoc:
   api-docs:

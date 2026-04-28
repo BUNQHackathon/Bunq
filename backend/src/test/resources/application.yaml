@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: java-backend
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  servlet:
+    context-path: /api/v1
+
+aws:
+  region: eu-central-1
+  account-id: test-account
+  dynamodb:
+    sessions-table: launchlens-sessions
+    chat-messages-table: launchlens-chat-messages
+    obligations-table: launchlens-obligations
+    controls-table: launchlens-controls
+    mappings-table: launchlens-mappings
+    gaps-table: launchlens-gaps
+    sanctions-hits-table: launchlens-sanctions-hits
+    evidence-table: launchlens-evidence
+    sanctions-entities-table: launchlens-sanctions-entities
+    audit-log-table: launchlens-audit-log
+    documents-table: launchlens-documents
+    doc-jurisdictions-table: launchlens-doc-jurisdictions
+    launches-table: launchlens-launches
+    jurisdiction-runs-table: launchlens-jurisdiction-runs
+  s3:
+    uploads-bucket: test-bucket
+  bedrock:
+    region: eu-central-1
+    max-concurrent: 15
+    model-ids:
+      opus: eu.anthropic.claude-opus-4-7
+      sonnet: eu.anthropic.claude-sonnet-4-6
+      haiku: eu.anthropic.claude-haiku-4-5-20251001-v1:0
+    claude-model-id: eu.anthropic.claude-haiku-4-5-20251001-v1:0
+    kb-data-source-id: test-ds-id
+    kb:
+      regulations-id: test-reg-id
+      policies-id: test-pol-id
+      controls-id: test-ctrl-id
+
+cors:
+  allowed-origins: http://localhost:5173
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+app:
+  admin:
+    token: test-token
+
+sidecar:
+  base-url: http://localhost:8001
+  token: test
+
+chat:
+  top-k-per-kb: 5
+  top-n-merged: 10
+  history-limit: 50
+
+search:
+  scan-cap: 500
+  per-type-limit-max: 20
+
+springdoc:
+  api-docs:
+    path: /openapi
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

@@ -4,6 +4,7 @@ import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO.JurisdictionSummary;
+import com.bunq.javabackend.model.enums.RunStatus;
 import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.launch.Launch;
 
@@ -18,7 +19,7 @@ public class LaunchMapper {
                 .name(l.getName())
                 .license(l.getLicense())
                 .kind(l.getKind())
-                .status(l.getStatus())
+                .status(l.getStatus() != null ? l.getStatus().name() : null)
                 .counterpartiesCount(l.getCounterparties() == null ? 0 : l.getCounterparties().size())
                 .jurisdictionCount(jurisdictionCount)
                 .aggregateVerdict(aggregateVerdict)
@@ -36,7 +37,7 @@ public class LaunchMapper {
                 .license(l.getLicense())
                 .kind(l.getKind())
                 .counterparties(l.getCounterparties())
-                .status(l.getStatus())
+                .status(l.getStatus() != null ? l.getStatus().name() : null)
                 .createdAt(l.getCreatedAt())
                 .updatedAt(l.getUpdatedAt())
                 .jurisdictions(jurisdictions)
@@ -53,7 +54,7 @@ public class LaunchMapper {
                 .sanctionsHits(r.getSanctionsHits())
                 .proofPackS3Key(r.getProofPackS3Key())
                 .lastRunAt(r.getLastRunAt())
-                .status(r.getStatus())
+                .status(r.getStatus() != null ? r.getStatus().name() : null)
                 .failedStage(r.getFailedStage())
                 .lastError(r.getLastError())
                 .proofPackAvailable(r.getProofPackS3Key() != null)
@@ -72,7 +73,7 @@ public class LaunchMapper {
                 .sanctionsHits(r.getSanctionsHits())
                 .proofPackS3Key(r.getProofPackS3Key())
                 .lastRunAt(r.getLastRunAt())
-                .status(r.getStatus())
+                .status(r.getStatus() != null ? r.getStatus().name() : null)
                 .failedStage(r.getFailedStage())
                 .lastError(r.getLastError())
                 .summary(summary)

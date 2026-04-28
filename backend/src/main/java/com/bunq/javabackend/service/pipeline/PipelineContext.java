@@ -6,7 +6,7 @@ import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.mapping.Mapping;
 import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.model.sanction.SanctionHit;
-import com.bunq.javabackend.service.sse.SseEmitterService;
+import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.Data;
 
 import java.util.ArrayList;

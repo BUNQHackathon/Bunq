@@ -1,0 +1,21 @@
+aws:
+  account-id: ${AWS_ACCOUNT_ID}
+  s3:
+    uploads-bucket: ${UPLOADS_BUCKET}
+  bedrock:
+    kb-data-source-id: ${WARMUP_KB_DS_ID}
+    kb:
+      regulations-id: ${KB_REGULATIONS_ID}
+      policies-id: ${KB_POLICIES_ID}
+      controls-id: ${KB_CONTROLS_ID}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+app:
+  admin:
+    token: ${ADMIN_TOKEN}
+
+sidecar:
+  base-url: ${SIDECAR_BASE_URL}
+  token: ${SIDECAR_TOKEN}

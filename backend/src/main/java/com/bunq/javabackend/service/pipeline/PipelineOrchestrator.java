@@ -7,6 +7,7 @@ import com.bunq.javabackend.dto.response.events.StageCompletedEvent;
 import com.bunq.javabackend.dto.response.events.StageFailedEvent;
 import com.bunq.javabackend.dto.response.events.StageStartedEvent;
 import com.bunq.javabackend.exception.PipelineStageException;
+import com.bunq.javabackend.model.enums.RunStatus;
 import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.sanction.Counterparty;
 import com.bunq.javabackend.model.enums.CounterpartyType;
@@ -14,7 +15,7 @@ import com.bunq.javabackend.model.session.Session;
 import com.bunq.javabackend.model.enums.SessionState;
 import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import com.bunq.javabackend.repository.SessionRepository;
-import com.bunq.javabackend.service.SessionService;
+import com.bunq.javabackend.service.session.SessionService;
 import com.bunq.javabackend.service.pipeline.stage.ExtractControlsStage;
 import com.bunq.javabackend.service.pipeline.stage.ExtractObligationsStage;
 import com.bunq.javabackend.service.pipeline.stage.GapAnalyzeStage;
@@ -23,7 +24,7 @@ import com.bunq.javabackend.service.pipeline.stage.IngestStage;
 import com.bunq.javabackend.service.pipeline.stage.MapObligationsControlsStage;
 import com.bunq.javabackend.service.pipeline.stage.NarrateStage;
 import com.bunq.javabackend.service.pipeline.stage.SanctionsScreenStage;
-import com.bunq.javabackend.service.sse.SseEmitterService;
+import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -113,7 +114,7 @@ public class PipelineOrchestrator {
                 try {
                     jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
                             .ifPresent(run -> {
-                                run.setStatus("COMPLETE");
+                                run.setStatus(RunStatus.COMPLETE);
                                 run.setLastRunAt(Instant.now().toString());
                                 if (ctx.getSummary() != null) {
                                     String overall = ctx.getSummary().getOverall();
@@ -168,7 +169,7 @@ public class PipelineOrchestrator {
                     String truncatedError = errorMsg.length() > 1000 ? errorMsg.substring(0, 1000) : errorMsg;
                     jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
                             .ifPresent(run -> {
-                                run.setStatus("FAILED");
+                                run.setStatus(RunStatus.FAILED);
                                 run.setLastRunAt(Instant.now().toString());
                                 run.setFailedStage(stageName);
                                 run.setLastError(truncatedError);
@@ -179,7 +180,7 @@ public class PipelineOrchestrator {
                             launchId, jurisdictionCode, ex);
                 }
             }
-            try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ignored) {}
+            try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ex) { log.error("Failed to mark run as FAILED", ex); }
             sseEmitterService.complete(sessionId);
         }
     }

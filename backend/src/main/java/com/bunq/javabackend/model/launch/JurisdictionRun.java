@@ -5,8 +5,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.bunq.javabackend.model.enums.RunStatus;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
@@ -43,8 +45,8 @@ public class JurisdictionRun {
     @Getter(onMethod_ = @DynamoDbAttribute("last_run_at"))
     private String lastRunAt;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("status"))
-    private String status;
+    @Getter(onMethod_ = {@DynamoDbAttribute("status"), @DynamoDbConvertedBy(RunStatusConverter.class)})
+    private RunStatus status;
 
     @Getter(onMethod_ = @DynamoDbAttribute("failed_stage"))
     private String failedStage;

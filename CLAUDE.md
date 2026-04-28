@@ -53,4 +53,4 @@ Review test: "Would a senior engineer call this overcomplicated or out of scope?
 
 ## Additional info
 - Always ask clarifying questions before planning if anything is unclear.
-- For specific details read .md files in this directory (e.g. BACKEND.md, API.md, CODE_PATTERNS.md, DYNAMODB.md, etc.)
+- For specific details read .md files in `backend/docs/` (e.g. `docs/architecture/BACKEND.md`, `docs/api/API.md`, `docs/architecture/CODE_PATTERNS.md`, `docs/infra/DYNAMODB.md`).

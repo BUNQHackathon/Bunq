@@ -10,8 +10,8 @@ import com.bunq.javabackend.model.session.Session;
 import com.bunq.javabackend.repository.ControlRepository;
 import com.bunq.javabackend.repository.DocumentRepository;
 import com.bunq.javabackend.repository.SessionRepository;
-import com.bunq.javabackend.service.BedrockService;
-import com.bunq.javabackend.service.bedrock.ToolDefinitions;
+import com.bunq.javabackend.service.ai.bedrock.BedrockService;
+import com.bunq.javabackend.service.ai.bedrock.ToolDefinitions;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
@@ -225,11 +225,11 @@ public class ExtractControlsStage implements Stage {
 
                 String typeStr = node.path("control_type").asText(null);
                 if (typeStr != null) {
-                    try { ctrl.setControlType(ControlType.valueOf(typeStr.toUpperCase())); } catch (Exception ignored) {}
+                    try { ctrl.setControlType(ControlType.valueOf(typeStr.toUpperCase())); } catch (Exception e) { log.warn("Unknown ControlType '{}', skipping: {}", typeStr, e.getMessage()); }
                 }
                 String catStr = node.path("category").asText(null);
                 if (catStr != null) {
-                    try { ctrl.setCategory(ControlCategory.valueOf(catStr.toUpperCase())); } catch (Exception ignored) {}
+                    try { ctrl.setCategory(ControlCategory.valueOf(catStr.toUpperCase())); } catch (Exception e) { log.warn("Unknown ControlCategory '{}', skipping: {}", catStr, e.getMessage()); }
                 }
 
                 JsonNode standardsNode = node.path("mapped_standards");
