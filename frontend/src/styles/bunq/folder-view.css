@@ -167,7 +167,7 @@
   align-items: center;
   padding-top: 10px;
   border-top: 1px solid var(--line-0);
-  margin-top: 2px;
+  margin-top: auto;
 }
 .doccard__links {
   display: inline-flex;

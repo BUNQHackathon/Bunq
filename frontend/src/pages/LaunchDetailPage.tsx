@@ -175,8 +175,8 @@ function JurisdictionLiveIndicator({
   const label = currentStage
     ? `${currentStage}${ordinal != null && total != null ? ` ${ordinal}/${total}` : ''}`
     : status === 'connecting'
-    ? 'Connecting…'
-    : null;
+      ? 'Connecting…'
+      : null;
 
   if (!label) return null;
 
@@ -318,7 +318,7 @@ export default function LaunchDetailPage() {
     setRetrying(true);
     rerunFailedJurisdictions(id)
       .then(() => { refetch(); })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => { setRetrying(false); });
   };
 
@@ -386,7 +386,7 @@ export default function LaunchDetailPage() {
                 </span>
                 <span className="juris__legend-item">
                   <span className="juris__legend-dot" style={{ background: verdictToHex('RED') }} />
-                  Breaches
+                  Breach
                 </span>
                 <span className="juris__legend-item">
                   <span className="juris__legend-dot" style={{ background: 'repeating-linear-gradient(45deg, #6b6b6b 0 2px, #9a9a9a 2px 4px)' }} />
@@ -502,15 +502,15 @@ export default function LaunchDetailPage() {
                   {aggState && (() => {
                     const aggKey: StatusKey =
                       aggState.kind === 'running' ? 'inprogress' :
-                      aggState.kind === 'failed'  ? 'failed' :
-                      verdictToStatus(aggState.verdict);
+                        aggState.kind === 'failed' ? 'failed' :
+                          verdictToStatus(aggState.verdict);
                     const aggLabel =
-                      aggKey === 'inprogress'   ? 'In progress' :
-                      aggKey === 'failed'        ? 'Failed' :
-                      aggKey === 'compliant'     ? 'Compliant' :
-                      aggKey === 'warning'       ? 'Needs review' :
-                      aggKey === 'noncompliant'  ? 'Breach' :
-                      'Unknown';
+                      aggKey === 'inprogress' ? 'In progress' :
+                        aggKey === 'failed' ? 'Failed' :
+                          aggKey === 'compliant' ? 'Compliant' :
+                            aggKey === 'warning' ? 'Needs review' :
+                              aggKey === 'noncompliant' ? 'Breach' :
+                                'Unknown';
                     return (
                       <span className={`fjp__row-status fjp__row-status--${aggKey}`}>
                         <span className="fjp__row-status-dot" />
@@ -614,7 +614,7 @@ export default function LaunchDetailPage() {
                   onClick={() => setFilter('noncompliant')}
                 >
                   <span className="fjp__chip-dot" style={{ background: '#a83820' }} />
-                  <span>Breaches</span>
+                  <span>Breach</span>
                   <span className="fjp__chip-count">{counts.block}</span>
                 </button>
                 <button

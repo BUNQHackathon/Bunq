@@ -204,7 +204,7 @@ export default function LaunchesPage() {
                 </div>
                 <div className="doccard__title">{launch.name}</div>
                 <div className="doccard__meta" style={{ minHeight: 36 }}>
-                  {launch.brief || '—'}
+                  {launch.brief}
                 </div>
                 <div className="doccard__foot">
                   {agg && <VerdictPill verdict={agg} showEmoji={false} />}
