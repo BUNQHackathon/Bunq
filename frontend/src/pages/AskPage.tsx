@@ -55,7 +55,7 @@ const CATEGORIES = [
 
 function CategoryRow() {
   return (
-    <div className="ask__categories flex flex-nowrap sm:flex-wrap sm:justify-center items-center gap-x-4 gap-y-2 md:gap-7 mb-5 px-2 overflow-x-auto" style={{ scrollbarWidth: 'none', opacity: 0.9 }}>
+    <div className="ask__categories flex flex-nowrap sm:flex-wrap sm:justify-center items-center gap-x-4 gap-y-2 md:gap-7 mb-5 px-2 overflow-x-auto" style={{ scrollbarWidth: 'none', opacity: 0.9, pointerEvents: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}>
       {CATEGORIES.map((cat) => (
         <span
           key={cat.label}
@@ -348,6 +348,8 @@ export default function AskPage() {
                 style={{
                   fontSize: 'clamp(40px, 9vw, 124px)',
                   pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
                   opacity: 0.95,
                   paddingBottom: '0.35em',
                   WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
@@ -361,6 +363,8 @@ export default function AskPage() {
                 style={{
                   fontSize: 'clamp(40px, 9vw, 124px)',
                   pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
                   opacity: 0.95,
                   paddingBottom: '0.35em',
                   marginTop: 'calc(0.25rem - 0.35em)',
