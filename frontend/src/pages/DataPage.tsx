@@ -301,7 +301,8 @@ function DocCard({ doc }: DocCardProps) {
   if (isLibrary(doc)) {
     return (
       <div
-        className="rounded-xl border border-white/[0.06] hover:border-white/[0.14] p-4 bg-prism-panel select-none cursor-pointer transition-all"
+        className="rounded-xl border p-4 select-none cursor-pointer transition-all"
+        style={{ background: 'var(--bg-1)', borderColor: 'var(--line-1)' }}
         onClick={() => navigate(`/library/${doc.id}`)}
       >
         {cardBody}
@@ -312,7 +313,8 @@ function DocCard({ doc }: DocCardProps) {
   return (
     <div
       onClick={() => navigate(`/doc/${doc.id}`)}
-      className="rounded-xl border border-white/[0.06] hover:border-white/[0.14] p-4 cursor-pointer transition-all bg-prism-panel"
+      className="rounded-xl border p-4 cursor-pointer transition-all"
+      style={{ background: 'var(--bg-1)', borderColor: 'var(--line-1)' }}
     >
       {cardBody}
     </div>
@@ -501,7 +503,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
   return (
     <div
       className="flex flex-col h-[calc(100vh-56px)] relative"
-      style={{ isolation: 'isolate' }}
+      style={{ isolation: 'isolate', background: 'var(--bg-0)' }}
     >
       {modal}
       <div aria-hidden style={gridOverlayStyle} />
@@ -517,7 +519,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         }}
       />
       {/* Breadcrumb bar */}
-      <div className="shrink-0 h-12 px-3 sm:px-6 flex items-center justify-between border-b border-white/[0.05]">
+      <div className="shrink-0 h-12 px-3 sm:px-6 flex items-center justify-between border-b border-white/[0.05]" style={{ background: 'var(--bg-1)' }}>
         <div className="flex items-center gap-4">
           <span className="font-mono text-[12px] text-white/60">
             {breadcrumbPrefix} / {breadcrumbName} · {breadcrumbCount} files
@@ -542,7 +544,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
               {typeFilter ? `Type: ${typeFilter.toUpperCase()}` : 'Type'}
             </button>
             {typeMenuOpen && (
-              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] bg-prism-panel shadow-lg overflow-hidden">
+              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] shadow-lg overflow-hidden" style={{ background: 'var(--bg-1)' }}>
                 <button
                   onClick={() => { setTypeFilter(null); setTypeMenuOpen(false); }}
                   className={`w-full text-left px-3 py-1.5 font-mono text-[11px] hover:bg-white/[0.05] ${typeFilter === null ? 'text-white' : 'text-white/70'}`}
@@ -570,7 +572,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
               <IconChevron size={11} />
             </button>
             {sortMenuOpen && (
-              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] bg-prism-panel shadow-lg overflow-hidden">
+              <div className="absolute right-0 mt-1 z-20 min-w-[140px] rounded-lg border border-white/[0.1] shadow-lg overflow-hidden" style={{ background: 'var(--bg-1)' }}>
                 {([['recent', 'Recent'], ['oldest', 'Oldest'], ['name', 'Name (A→Z)'], ['size', 'Size']] as const).map(([k, label]) => (
                   <button
                     key={k}
@@ -600,7 +602,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
       {/* Main row */}
       <div className="flex-1 overflow-hidden flex">
         {/* Left tree */}
-        <div className="hidden md:block shrink-0 w-[260px] bg-prism-panel border-r border-white/[0.05] overflow-y-auto flex flex-col">
+        <div className="hidden md:block shrink-0 w-[260px] border-r border-white/[0.05] overflow-y-auto flex flex-col" style={{ background: 'var(--bg-1)' }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
             <span className="font-mono uppercase text-[11px] text-white/30 tracking-widest">
               Library
@@ -680,7 +682,8 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           onClick={() => setUploadModalOpen(false)}
         >
           <div
-            className="w-[calc(100vw-32px)] max-w-[420px] rounded-xl border border-white/[0.1] bg-prism-panel p-5 shadow-2xl"
+            className="w-[calc(100vw-32px)] max-w-[420px] rounded-xl border border-white/[0.1] p-5 shadow-2xl"
+            style={{ background: 'var(--bg-1)', borderColor: 'var(--line-1)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="font-mono uppercase text-[11px] text-white/40 tracking-widest mb-4">
