@@ -17,7 +17,7 @@ import {
 import { useJurisdictionStream } from '../hooks/useJurisdictionStream';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
-import VerdictPill, { verdictToHex, FAILED_COLOR } from '../components/VerdictPill';
+import { verdictToHex, FAILED_COLOR } from '../components/VerdictPill';
 import HeroGradient from '../components/HeroGradient';
 import { ISO2_TO_ISO3, ISO3_TO_ISO2, MOCK_COUNTRY_COLOR, MOCK_COUNTRY_LABEL } from '../api/mockCountries';
 
@@ -482,7 +482,7 @@ export default function LaunchDetailPage() {
         {/* Brief overlay */}
         {launch && (
           <div className="fjp__brief-overlay">
-            <article className="fjp__brief doccard doccard--hot">
+            <article className="fjp__brief doccard doccard--hot glow-behind">
               <div className="doccard__head">
                 <span
                   style={{
@@ -499,25 +499,25 @@ export default function LaunchDetailPage() {
                   Launch · {createdAtShort}
                 </span>
                 <span style={{ marginLeft: 'auto' }}>
-                  {aggState?.kind === 'verdict' && (
-                    <VerdictPill verdict={aggState.verdict} />
-                  )}
-                  {aggState?.kind === 'running' && (
-                    <span
-                      className="chip chip--sm"
-                      style={{ animation: 'ldPulse 1.5s ease-in-out infinite' }}
-                    >
-                      RUNNING
-                    </span>
-                  )}
-                  {aggState?.kind === 'failed' && (
-                    <span
-                      className="chip chip--sm"
-                      style={{ color: 'var(--danger, #d94a4a)', borderColor: 'rgba(217,74,74,0.3)' }}
-                    >
-                      FAILED
-                    </span>
-                  )}
+                  {aggState && (() => {
+                    const aggKey: StatusKey =
+                      aggState.kind === 'running' ? 'inprogress' :
+                      aggState.kind === 'failed'  ? 'failed' :
+                      verdictToStatus(aggState.verdict);
+                    const aggLabel =
+                      aggKey === 'inprogress'   ? 'In progress' :
+                      aggKey === 'failed'        ? 'Failed' :
+                      aggKey === 'compliant'     ? 'Compliant' :
+                      aggKey === 'warning'       ? 'Needs review' :
+                      aggKey === 'noncompliant'  ? 'Breach' :
+                      'Unknown';
+                    return (
+                      <span className={`fjp__row-status fjp__row-status--${aggKey}`}>
+                        <span className="fjp__row-status-dot" />
+                        {aggLabel}
+                      </span>
+                    );
+                  })()}
                 </span>
               </div>
 
