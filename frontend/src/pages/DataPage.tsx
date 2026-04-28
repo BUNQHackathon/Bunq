@@ -519,7 +519,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         }}
       />
       {/* Breadcrumb bar */}
-      <div className="shrink-0 h-12 px-3 sm:px-6 flex items-center justify-between border-b border-white/[0.05]" style={{ background: 'var(--bg-1)' }}>
+      <div className="shrink-0 h-12 px-3 sm:px-6 flex items-center justify-between border-b border-white/[0.05]" style={{ background: 'var(--bg-0)' }}>
         <div className="flex items-center gap-4">
           <span className="font-mono text-[12px] text-white/60">
             {breadcrumbPrefix} / {breadcrumbName} · {breadcrumbCount} files
