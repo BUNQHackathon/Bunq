@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -165,6 +165,7 @@ interface ChatMessage {
 export default function DocPage() {
   const { docId } = useParams<{ docId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [doc, setDoc] = useState<DocumentContent | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -177,7 +178,8 @@ export default function DocPage() {
   const [rightCollapsed, setRightCollapsed] = useState<boolean>(false);
 
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState<number>(1);
+  const initialPage = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
+  const [pageNumber, setPageNumber] = useState<number>(initialPage);
   const [scale, setScale] = useState<number>(1.0);
 
   const articleRef = useRef<HTMLDivElement>(null);

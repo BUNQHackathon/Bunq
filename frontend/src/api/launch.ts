@@ -1,5 +1,17 @@
 import { API_BASE, getJson, postJson } from './client';
 
+/**
+ * Thrown by downloadProofPack when the pipeline is still running and the
+ * proof pack is not yet available. Callers can `instanceof`-check this to
+ * show a user-facing message instead of a generic error.
+ */
+export class ProofPackNotReadyError extends Error {
+  constructor(message = 'Proof pack not ready — pipeline still running') {
+    super(message);
+    this.name = 'ProofPackNotReadyError';
+  }
+}
+
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export type Verdict = 'GREEN' | 'AMBER' | 'RED' | 'PENDING' | 'UNKNOWN';
@@ -134,18 +146,10 @@ export async function downloadProofPack(launchId: string, code: string): Promise
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(objUrl);
-  } catch (_err) {
-    // Pipeline still running — synthesize empty zip as user-friendly fallback
-    alert('Proof pack not ready yet — pipeline still running');
-    const blob = new Blob([], { type: 'application/zip' });
-    const objUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = objUrl;
-    a.download = `proof-pack-${launchId}-${code}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(objUrl);
+  } catch (err) {
+    throw new ProofPackNotReadyError(
+      err instanceof Error ? err.message : 'Proof pack not ready — pipeline still running',
+    );
   }
 }
 

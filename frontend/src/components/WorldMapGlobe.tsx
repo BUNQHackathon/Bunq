@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Globe from 'globe.gl';
-import { MeshLambertMaterial, Color, type Shader } from 'three';
+import { MeshLambertMaterial, Color, type WebGLProgramParametersWithUniforms } from 'three';
 
 // ── GeoJSON source URLs (same as JurisdictionsPage) ──────────────────────────
 const GEO_URL_PRIMARY =
@@ -29,7 +29,7 @@ const STRIPE_BAND_PX = 6.0;
 // the design (Lambert lighting only modulates intensity, not hue).
 function buildAmberStripeMaterial(): MeshLambertMaterial {
   const mat = new MeshLambertMaterial({ color: 0xffffff });
-  mat.onBeforeCompile = (shader: Shader) => {
+  mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
     shader.uniforms.stripeColorA = { value: new Color(STRIPE_GOLD) };
     shader.uniforms.stripeColorB = { value: new Color(STRIPE_RED) };
     shader.uniforms.stripeBandPx = { value: STRIPE_BAND_PX };
@@ -69,7 +69,7 @@ function getAmberMaterial(): MeshLambertMaterial {
 
 function buildUnknownStripeMaterial(): MeshLambertMaterial {
   const mat = new MeshLambertMaterial({ color: 0xffffff });
-  mat.onBeforeCompile = (shader: Shader) => {
+  mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
     shader.uniforms.stripeColorA = { value: new Color(UNKNOWN_STRIPE_DARK) };
     shader.uniforms.stripeColorB = { value: new Color(UNKNOWN_STRIPE_LIGHT) };
     shader.uniforms.stripeBandPx = { value: STRIPE_BAND_PX };

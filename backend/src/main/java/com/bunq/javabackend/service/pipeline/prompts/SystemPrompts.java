@@ -66,8 +66,12 @@ public final class SystemPrompts {
             + "in the source text. If the claim cannot be grounded in the provided text, mark verified=false.";
 
     public static final String GROUND_CHECK_BATCH =
-            "You are a citation verifier processing a batch of checks. Each check has a mapping_id, a claim, and a source_text. "
-            + "For each entry, verify the claim appears verbatim or with negligible paraphrase in its source_text. "
+            "You are a citation verifier processing a batch of checks. "
+            + "The input contains two fields: "
+            + "(1) 'documents': a map from doc_id to source text, and "
+            + "(2) 'checks': a list where each entry has a mapping_id, a claim, and a doc_id referencing the documents map. "
+            + "For each check, look up the source text via its doc_id, then verify the claim appears verbatim or "
+            + "with negligible paraphrase in that source text. "
             + "Mark verified=false if the claim cannot be grounded. Return results for every mapping_id in the input.";
 
     public static final String NARRATE_EXEC_SUMMARY =

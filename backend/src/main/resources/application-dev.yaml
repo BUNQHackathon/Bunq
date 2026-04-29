@@ -1,20 +1,20 @@
 aws:
-  account-id: ${AWS_ACCOUNT_ID}
+  account-id: ${AWS_ACCOUNT_ID:914115115148}
   s3:
-    uploads-bucket: ${UPLOADS_BUCKET}
+    uploads-bucket: ${UPLOADS_BUCKET:launchlens-uploads-914115115148}
   bedrock:
-    kb-data-source-id: ${WARMUP_KB_DS_ID}
+    kb-data-source-id: ${WARMUP_KB_DS_ID:FNGFIGBJNZ}
     kb:
-      regulations-id: ${KB_REGULATIONS_ID}
-      policies-id: ${KB_POLICIES_ID}
-      controls-id: ${KB_CONTROLS_ID}
+      regulations-id: ${KB_REGULATIONS_ID:YIBSPZAPVL}
+      policies-id: ${KB_POLICIES_ID:PJSPTYAB1N}
+      controls-id: ${KB_CONTROLS_ID:MVGWGRJRJW}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 app:
   admin:
-    token: ${ADMIN_TOKEN:}
+    token: ${ADMIN_TOKEN:dev}
 
 sidecar:
   base-url: ${SIDECAR_BASE_URL:http://localhost:8001}

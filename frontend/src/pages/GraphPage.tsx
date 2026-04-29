@@ -36,12 +36,35 @@ interface GraphNode extends d3.SimulationNodeDatum {
   severity?: 'low' | 'medium' | 'high' | 'critical';
   recommendedAction?: string;
   nodeType?: 'obligation' | 'control' | 'gap' | 'evidence';
+  // provenance fields for "View source"
+  documentId?: string;
+  sourceTextSnippet?: string;
+  article?: string;
+  section?: string;
+  paragraph?: string;
+  s3Uri?: string;
 }
+
+type GroundCheckStatus = 'verified' | 'failed' | 'none';
 
 interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   source: GraphNode | string;
   target: GraphNode | string;
+  reviewerNotes?: string;
+  groundCheckStatus?: GroundCheckStatus;
 }
+
+function deriveGroundCheckStatus(reviewerNotes?: string): GroundCheckStatus {
+  if (!reviewerNotes) return 'none';
+  if (reviewerNotes.startsWith('ground-check failed:')) return 'failed';
+  return 'verified';
+}
+
+const GROUND_CHECK_EDGE_COLOR: Record<GroundCheckStatus, string> = {
+  verified: '#10b981', // emerald-500
+  failed:   '#f59e0b', // amber-500
+  none:     'rgba(246,241,234,0.06)',
+};
 
 interface Tooltip {
   x: number;
@@ -107,10 +130,11 @@ interface GraphCanvasProps {
   nodes: GraphNode[];
   links: GraphLink[];
   onNodeClick: (node: GraphNode) => void;
+  onLinkClick: (link: GraphLink) => void;
   selectedId: string | null;
 }
 
-function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps) {
+function GraphCanvas({ nodes, links, onNodeClick, onLinkClick, selectedId }: GraphCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
@@ -165,10 +189,14 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
 
     sim.alpha(1).alphaDecay(0.0228).velocityDecay(0.4).restart();
 
-    // Link stroke uses a soft warm-white matching the canvas dark bg
+    // Link stroke color by ground-check status
     const linkSel = g.append('g').selectAll<SVGLineElement, GraphLink>('line').data(links).join('line')
-      .attr('stroke', 'var(--line-soft, rgba(246,241,234,0.06))')
-      .attr('stroke-width', 0.75);
+      .attr('stroke', (d: GraphLink) => GROUND_CHECK_EDGE_COLOR[d.groundCheckStatus ?? 'none'])
+      .attr('stroke-width', (d: GraphLink) => d.groundCheckStatus && d.groundCheckStatus !== 'none' ? 1.25 : 0.75)
+      .style('cursor', (d: GraphLink) => d.groundCheckStatus === 'failed' ? 'pointer' : 'default')
+      .on('click', (_e: MouseEvent, d: GraphLink) => {
+        if (d.groundCheckStatus === 'failed') onLinkClick(d);
+      });
 
     const nodeG = g.append('g').selectAll<SVGGElement, GraphNode>('g').data(nodes).join('g')
       .style('cursor', 'pointer')
@@ -208,7 +236,7 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
       .on('mouseleave', function (_e: MouseEvent, d: GraphNode) {
         d3.select(this).select<SVGCircleElement>('.core').attr('filter', 'url(#glow2)').attr('r', d.size);
         d3.select(this).select<SVGCircleElement>('.halo').attr('opacity', d.doc ? 0.1 : 0.05);
-        linkSel.attr('stroke', 'var(--line-soft, rgba(246,241,234,0.06))');
+        linkSel.attr('stroke', (l: GraphLink) => GROUND_CHECK_EDGE_COLOR[l.groundCheckStatus ?? 'none']);
         nodeG.select<SVGTextElement>('.node-label').attr('fill', 'var(--ink-2, #8a8278)');
         setTooltip(null);
       })
@@ -310,6 +338,7 @@ function GraphCanvas({ nodes, links, onNodeClick, selectedId }: GraphCanvasProps
 interface NodeDetailPanelProps {
   node: GraphNode;
   links: GraphLink[];
+  selectedLink: GraphLink | null;
   onClose: () => void;
 }
 
@@ -321,7 +350,7 @@ const SEVERITY_TOKEN: Record<string, { color: string; bg: string; border: string
   critical: { color: 'var(--danger, #d94a4a)',   bg: 'rgba(217,74,74,0.08)',   border: 'rgba(217,74,74,0.25)'   },
 };
 
-function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
+function NodeDetailPanel({ node, links, selectedLink, onClose }: NodeDetailPanelProps) {
   const connections = links
     .filter(l => (l.source as GraphNode).id === node.id || (l.target as GraphNode).id === node.id)
     .map(l => {
@@ -403,11 +432,60 @@ function NodeDetailPanel({ node, links, onClose }: NodeDetailPanelProps) {
         </div>
       </div>
 
-      {/* Resolve action for gap nodes */}
-      {isGap && (
-        <div className="graph__focus-actions" style={{ marginTop: 4, marginBottom: 14 }}>
-          <button className="btn btn--orange-hollow btn--sm">Mark resolved</button>
-          <button className="btn btn--sm btn--ghost">Dismiss</button>
+      {/* View source */}
+      {(node.documentId || node.s3Uri) && (
+        <div style={{ marginBottom: 14 }}>
+          {node.documentId && (
+            <Link
+              to={`/doc/${encodeURIComponent(node.documentId)}`}
+              className="mono-label"
+              style={{ color: 'var(--orange, #ef6a2a)', textDecoration: 'none', fontSize: 10 }}
+            >
+              VIEW SOURCE ↗
+            </Link>
+          )}
+          {!node.documentId && node.s3Uri && (
+            <span className="mono-label" style={{ fontSize: 10, color: 'var(--ink-2)' }}>
+              {node.s3Uri}
+            </span>
+          )}
+          {node.sourceTextSnippet && (
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 11,
+                color: 'var(--ink-2)',
+                fontStyle: 'italic',
+                background: 'var(--bg-2)',
+                border: '1px solid var(--line-0)',
+                borderRadius: 'var(--r-sm)',
+                padding: '6px 10px',
+                lineHeight: 1.5,
+              }}
+            >
+              "{node.sourceTextSnippet}"
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Ground check failure — shown when a failed edge was clicked */}
+      {selectedLink?.groundCheckStatus === 'failed' && selectedLink.reviewerNotes && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '8px 10px',
+            background: 'rgba(245,158,11,0.07)',
+            border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: 'var(--r-sm)',
+          }}
+        >
+          <div className="mono-label" style={{ color: 'var(--warning, #d9b03d)', fontSize: 10, marginBottom: 4 }}>
+            GROUND CHECK
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--ink-1)', lineHeight: 1.5 }}>
+            {selectedLink.reviewerNotes.replace(/^ground-check failed:\s*/i, '')}
+          </div>
         </div>
       )}
 
@@ -468,6 +546,7 @@ export default function GraphPage() {
   const [nodes, setNodes] = useState<GraphNode[]>(isLive ? [] : MOCK_NODES);
   const [links, setLinks] = useState<GraphLink[]>(isLive ? [] : MOCK_LINKS);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [selectedLink, setSelectedLink] = useState<GraphLink | null>(null);
   const [loading, setLoading] = useState(isLive);
   const [error, setError] = useState<string | null>(null);
   const [launchName, setLaunchName] = useState<string>(id ?? '');
@@ -499,10 +578,16 @@ export default function GraphPage() {
           nodeType: n.type,
           severity: n.severity,
           recommendedAction: n.recommendedAction,
+          documentId: n.documentId,
+          sourceTextSnippet: n.sourceTextSnippet,
+          article: n.article,
+          section: n.section,
+          paragraph: n.paragraph,
+          s3Uri: n.s3Uri,
         }));
         const nodeIds = new Set(mappedNodes.map(n => n.id));
         const mappedLinks: GraphLink[] = payload.edges
-          .map(e => {
+          .map((e): GraphLink | null => {
             let source = e.source;
             let target = e.target;
             if ((!source || !target) && e.id) {
@@ -512,9 +597,12 @@ export default function GraphPage() {
                 target = target ?? e.id.slice(idx + 2);
               }
             }
-            return source && target ? { source, target } : null;
+            if (!source || !target) return null;
+            const link: GraphLink = { source, target, groundCheckStatus: deriveGroundCheckStatus(e.reviewerNotes) };
+            if (e.reviewerNotes !== undefined) link.reviewerNotes = e.reviewerNotes;
+            return link;
           })
-          .filter((l): l is { source: string; target: string } => l !== null && nodeIds.has(l.source) && nodeIds.has(l.target));
+          .filter((l): l is GraphLink => l !== null && nodeIds.has(l.source as string) && nodeIds.has(l.target as string));
         setNodes(mappedNodes);
         setLinks(mappedLinks);
         setLoading(false);
@@ -562,10 +650,23 @@ export default function GraphPage() {
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(prev => prev?.id === node.id ? null : node);
+    setSelectedLink(null);
+  }, []);
+
+  const handleLinkClick = useCallback((link: GraphLink) => {
+    // Surface the failed edge in the panel — open/keep panel with nearest node context
+    setSelectedLink(link);
+    // If no node is selected yet, select the source node to anchor the panel
+    setSelectedNode(prev => {
+      if (prev) return prev;
+      const src = link.source as GraphNode;
+      return src.id ? src : null;
+    });
   }, []);
 
   const handleClose = useCallback(() => {
     setSelectedNode(null);
+    setSelectedLink(null);
   }, []);
 
   // The graph layout is full-bleed inside the AppShell frame__view.
@@ -711,6 +812,7 @@ export default function GraphPage() {
               nodes={nodes}
               links={links}
               onNodeClick={handleNodeClick}
+              onLinkClick={handleLinkClick}
               selectedId={selectedNode?.id ?? null}
             />
 
@@ -718,6 +820,7 @@ export default function GraphPage() {
               <NodeDetailPanel
                 node={selectedNode}
                 links={links}
+                selectedLink={selectedLink}
                 onClose={handleClose}
               />
             )}

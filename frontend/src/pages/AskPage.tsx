@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import PrismCanvas from '../components/PrismCanvas';
@@ -585,38 +585,71 @@ function ChatBubble({ message, loading, onOpenGraph }: ChatBubbleProps) {
               Sources ({message.citations.length})
             </p>
             <div className="flex flex-col gap-2">
-              {message.citations.map((c, i) => (
-                <div
-                  key={c.chunkId || i}
-                  className="rounded-lg px-3 py-2.5"
-                  style={{
-                    background: '#141414',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className="text-[10px] font-mono rounded-full px-2 py-0.5"
-                      style={{
-                        background: `${KB_COLORS[c.kbType] ?? '#888'}22`,
-                        color: KB_COLORS[c.kbType] ?? '#888',
-                        border: `1px solid ${KB_COLORS[c.kbType] ?? '#888'}44`,
-                      }}
+              {message.citations.map((c, i) => {
+                const targetDocId = c.docId ?? c.documentId;
+                const cardHref = targetDocId ? `/doc/${targetDocId}` : undefined;
+                const truncHash = (h: string) =>
+                  h.length > 8 ? `${h.slice(0, 4)}…${h.slice(-4)}` : h;
+                const hasHashLine = c.chunkId || c.sha256;
+                const inner = (
+                  <>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className="text-[10px] font-mono rounded-full px-2 py-0.5"
+                        style={{
+                          background: `${KB_COLORS[c.kbType] ?? '#888'}22`,
+                          color: KB_COLORS[c.kbType] ?? '#888',
+                          border: `1px solid ${KB_COLORS[c.kbType] ?? '#888'}44`,
+                        }}
+                      >
+                        {c.kbType}
+                      </span>
+                      <span className="text-[12px] text-white/70 font-medium truncate">
+                        {c.displayName ?? citationFileName(c.s3Uri)}
+                      </span>
+                    </div>
+                    {hasHashLine && (
+                      <p className="font-mono text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                        {c.chunkId && (
+                          <span title={c.chunkId}>chunk {truncHash(c.chunkId)}</span>
+                        )}
+                        {c.chunkId && c.sha256 && ' · '}
+                        {c.sha256 && (
+                          <span title={c.sha256}>sha {truncHash(c.sha256)}</span>
+                        )}
+                      </p>
+                    )}
+                    <p
+                      className="text-[11px] leading-relaxed line-clamp-2"
+                      style={{ color: 'rgba(255,255,255,0.4)' }}
                     >
-                      {c.kbType}
-                    </span>
-                    <span className="text-[12px] text-white/70 font-medium truncate">
-                      {c.displayName ?? citationFileName(c.s3Uri)}
-                    </span>
-                  </div>
-                  <p
-                    className="text-[11px] leading-relaxed line-clamp-2"
-                    style={{ color: 'rgba(255,255,255,0.4)' }}
+                      {c.sourceText}
+                    </p>
+                  </>
+                );
+                const cardStyle = {
+                  background: '#141414',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                };
+                return cardHref ? (
+                  <Link
+                    key={c.chunkId || i}
+                    to={cardHref}
+                    className="block rounded-lg px-3 py-2.5 hover:border-white/10 transition-colors"
+                    style={cardStyle}
                   >
-                    {c.sourceText}
-                  </p>
-                </div>
-              ))}
+                    {inner}
+                  </Link>
+                ) : (
+                  <div
+                    key={c.chunkId || i}
+                    className="rounded-lg px-3 py-2.5"
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

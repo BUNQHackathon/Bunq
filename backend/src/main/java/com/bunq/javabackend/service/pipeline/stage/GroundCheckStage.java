@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 @Service
 public class GroundCheckStage implements Stage {
 
-    private static final int BATCH_SIZE = 50;
+    private static final int BATCH_SIZE = 15;
     /** Truncation cap for full document text sent to NOVA-PRO. Keeps token cost manageable.
      *  Known limitation: obligations from text beyond this offset are verified against a truncated document. */
     private static final int DOC_TEXT_MAX_CHARS = 200_000;
@@ -187,7 +187,10 @@ public class GroundCheckStage implements Stage {
             }
         }
 
-        // Build input for the batch tool call
+        // Build input for the batch tool call.
+        // B10-fix: send each unique document text ONCE in a top-level "documents" map keyed by
+        // doc_id. Each check references its doc via "doc_id" instead of inlining the full text
+        // repeatedly — this prevents token explosion when multiple mappings share the same document.
         List<Map<String, String>> checks = new ArrayList<>();
         Map<String, Mapping> byId = new HashMap<>();
         for (Mapping mapping : batch) {
@@ -196,17 +199,18 @@ public class GroundCheckStage implements Stage {
                 obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
             }
             String docId = obl != null ? obl.getDocumentId() : null;
-            // Use full document text as verification source (B10); fall back to empty if unavailable
-            String sourceText = docId != null ? docTexts.getOrDefault(docId, "") : "";
             Map<String, String> check = new HashMap<>();
             check.put("mapping_id", mapping.getId());
             check.put("claim", mapping.getSemanticReason());
-            check.put("source_text", sourceText);
+            // Reference document by id rather than embedding the full text in every check entry.
+            // The model receives documents[doc_id] = <text> in the top-level payload.
+            check.put("doc_id", docId != null ? docId : "");
             checks.add(check);
             byId.put(mapping.getId(), mapping);
         }
 
         Map<String, Object> userInput = new HashMap<>();
+        userInput.put("documents", docTexts);   // unique doc texts, keyed by documentId
         userInput.put("checks", checks);
 
         try {

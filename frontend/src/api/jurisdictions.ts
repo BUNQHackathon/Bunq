@@ -40,6 +40,13 @@ export interface ComplianceGraphNode {
   status?: 'covered' | 'partial' | 'missing' | string;
   severity?: 'low' | 'medium' | 'high' | 'critical';
   recommendedAction?: string;
+  // provenance fields for "View source" affordance
+  documentId?: string;
+  sourceTextSnippet?: string;
+  article?: string;
+  section?: string;
+  paragraph?: string;
+  s3Uri?: string;
 }
 
 export interface ComplianceGraphEdge {
@@ -49,6 +56,8 @@ export interface ComplianceGraphEdge {
   // optional — present in some payload variants; otherwise parse from id
   source?: string;
   target?: string;
+  // ground-check result from reviewer
+  reviewerNotes?: string;
 }
 
 export interface ComplianceGraphPayload {

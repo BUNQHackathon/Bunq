@@ -23,6 +23,9 @@ export interface Citation {
   s3Uri: string;
   sourceText: string;
   displayName?: string | null;
+  sha256?: string;
+  docId?: string;
+  documentId?: string;
 }
 
 export interface TokenUsage {

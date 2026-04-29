@@ -227,11 +227,11 @@ public class ExtractControlsStage implements Stage {
 
                 String typeStr = node.path("control_type").asText(null);
                 if (typeStr != null) {
-                    try { ctrl.setControlType(ControlType.valueOf(typeStr.toUpperCase())); } catch (Exception e) { log.warn("Unknown ControlType '{}', skipping: {}", typeStr, e.getMessage()); }
+                    try { ctrl.setControlType(ControlType.valueOf(typeStr.toLowerCase())); } catch (Exception e) { log.warn("Unknown ControlType '{}', skipping: {}", typeStr, e.getMessage()); }
                 }
                 String catStr = node.path("category").asText(null);
                 if (catStr != null) {
-                    try { ctrl.setCategory(ControlCategory.valueOf(catStr.toUpperCase())); } catch (Exception e) { log.warn("Unknown ControlCategory '{}', skipping: {}", catStr, e.getMessage()); }
+                    try { ctrl.setCategory(ControlCategory.valueOf(catStr.toLowerCase())); } catch (Exception e) { log.warn("Unknown ControlCategory '{}', skipping: {}", catStr, e.getMessage()); }
                 }
 
                 JsonNode standardsNode = node.path("mapped_standards");

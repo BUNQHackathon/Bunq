@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,7 +14,8 @@ import {
   type Verdict,
   type JurisdictionStatus,
 } from '../api/launch';
-import { useJurisdictionStream } from '../hooks/useJurisdictionStream';
+import { useJurisdictionStream, type AuditEvent } from '../hooks/useJurisdictionStream';
+import { getSessionCost, type SessionCost } from '../api/cost';
 import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import { verdictToHex, FAILED_COLOR } from '../components/VerdictPill';
@@ -156,19 +157,344 @@ function Hero({ title, total, ok, review, block, failed, anyRunning, animate }: 
   );
 }
 
+// ── Audit feed helpers ────────────────────────────────────────────────────────
+
+function auditChipStyle(kind: AuditEvent['kind']): React.CSSProperties {
+  switch (kind) {
+    case 'obligation.extracted':
+    case 'control.extracted':
+      return { background: 'rgba(52,211,153,0.15)', color: '#34d399' };
+    case 'gap.identified':
+    case 'mapping.progress':
+      return { background: 'rgba(251,191,36,0.15)', color: '#fbbf24' };
+    case 'ground_check.dropped':
+    case 'sanctions.hit':
+      return { background: 'rgba(239,68,68,0.15)', color: '#ef4444' };
+    case 'obligation.rejected':
+    case 'control.rejected':
+      return { background: 'rgba(251,146,60,0.15)', color: '#fb923c' };
+    case 'cost.update':
+    case 'sanctions.degraded':
+    case 'narrative.completed':
+    default:
+      return { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' };
+  }
+}
+
+function auditKindLabel(kind: AuditEvent['kind']): string {
+  switch (kind) {
+    case 'obligation.extracted': return 'obl+';
+    case 'obligation.rejected':  return 'obl✗';
+    case 'control.extracted':    return 'ctl+';
+    case 'control.rejected':     return 'ctl✗';
+    case 'mapping.computed':     return 'map';
+    case 'mapping.progress':     return 'map%';
+    case 'gap.identified':       return 'gap';
+    case 'sanctions.hit':        return 'sanc';
+    case 'sanctions.degraded':   return 'sanc~';
+    case 'ground_check.verified': return 'gc✓';
+    case 'ground_check.dropped':  return 'gc✗';
+    case 'narrative.completed':  return 'narr';
+    case 'cost.update':          return '$';
+  }
+}
+
+function auditSummary(evt: AuditEvent): string {
+  switch (evt.kind) {
+    case 'obligation.extracted':
+      return (evt.obligation.subject ?? evt.obligation.action ?? 'obligation').slice(0, 60);
+    case 'obligation.rejected':
+      return `${evt.subject.slice(0, 40)} — ${evt.reason.slice(0, 30)}`;
+    case 'control.extracted':
+      return (evt.control.description ?? evt.control.controlType ?? 'control').slice(0, 60);
+    case 'control.rejected':
+      return `${evt.subject.slice(0, 40)} — ${evt.reason.slice(0, 30)}`;
+    case 'mapping.computed': {
+      const score = evt.mapping.mappingConfidence != null
+        ? `${Math.round(evt.mapping.mappingConfidence as number)}%`
+        : '';
+      const reason = (evt.mapping.semanticReason ?? '').slice(0, 50);
+      return [score, reason].filter(Boolean).join(' · ');
+    }
+    case 'mapping.progress':
+      return `${evt.processed}/${evt.total} mapped`;
+    case 'gap.identified':
+      return `${evt.gap.severity ?? evt.gap.gapType ?? 'gap'} · ${(evt.gap.narrative ?? evt.gap.obligationId ?? '').slice(0, 50)}`;
+    case 'sanctions.hit':
+      return `${evt.hit.counterparty?.name ?? 'hit'} (${evt.hit.matchStatus ?? ''})`;
+    case 'sanctions.degraded':
+      return evt.reason.slice(0, 60);
+    case 'ground_check.verified':
+      return `verified ${evt.mapping.id ?? ''}`;
+    case 'ground_check.dropped':
+      return `dropped ${evt.mapping.id ?? ''} — ${evt.reason.slice(0, 40)}`;
+    case 'narrative.completed':
+      return evt.summary.slice(0, 60);
+    case 'cost.update':
+      return `${evt.model} · $${evt.total_usd.toFixed(4)}`;
+  }
+}
+
+function fmtTs(ts: number): string {
+  const d = new Date(ts);
+  return d.toTimeString().slice(0, 8);
+}
+
+// ── Live Audit Feed Panel ─────────────────────────────────────────────────────
+
+function AuditFeedPanel({ auditEvents, status }: { auditEvents: AuditEvent[]; status: string }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  // Scroll to top when new events arrive
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [auditEvents.length]);
+
+  if (auditEvents.length === 0 && status !== 'open') return null;
+
+  const visible = auditEvents.slice(0, 50);
+
+  return (
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '12px 14px',
+        marginTop: 14,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontFamily: 'var(--mono)',
+          color: 'rgba(255,255,255,0.4)',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}
+      >
+        Live audit feed
+        {auditEvents.length > 0 && (
+          <span style={{ marginLeft: 6, color: 'rgba(255,255,255,0.25)' }}>
+            {auditEvents.length}
+          </span>
+        )}
+      </div>
+
+      {auditEvents.length === 0 ? (
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--mono)' }}>
+          Waiting for events…
+        </div>
+      ) : (
+        <div
+          ref={listRef}
+          style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}
+        >
+          {visible.map((evt, i) => (
+            <div key={i}>
+              <div
+                onClick={() => setOpenIdx(openIdx === i ? null : i)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  padding: '3px 0',
+                  borderRadius: 4,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontFamily: 'var(--mono)',
+                    color: 'rgba(255,255,255,0.3)',
+                    flexShrink: 0,
+                    width: 56,
+                  }}
+                >
+                  {fmtTs(evt.ts)}
+                </span>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontFamily: 'var(--mono)',
+                    padding: '1px 5px',
+                    borderRadius: 4,
+                    flexShrink: 0,
+                    ...auditChipStyle(evt.kind),
+                  }}
+                >
+                  {auditKindLabel(evt.kind)}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontFamily: 'var(--mono)',
+                    color: 'rgba(255,255,255,0.65)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flex: 1,
+                  }}
+                >
+                  {auditSummary(evt)}
+                </span>
+              </div>
+              {openIdx === i && (
+                <pre
+                  style={{
+                    margin: '2px 0 4px 62px',
+                    padding: '6px 8px',
+                    background: 'rgba(0,0,0,0.3)',
+                    borderRadius: 6,
+                    fontSize: 10,
+                    fontFamily: 'var(--mono)',
+                    color: 'rgba(255,255,255,0.55)',
+                    overflowX: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                    maxHeight: 180,
+                    overflowY: 'auto',
+                  }}
+                >
+                  {JSON.stringify(evt, null, 2)}
+                </pre>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Cost panel ────────────────────────────────────────────────────────────────
+
+function fmtTokensK(n: number): string {
+  if (n >= 1000) return `${Math.round(n / 1000)}k`;
+  return String(n);
+}
+
+function CostPanel({ cost }: { cost: SessionCost }) {
+  const totalIn = cost.totalInputTokens + cost.totalCacheCreationTokens + cost.totalCacheReadTokens;
+  const cacheRatio = totalIn > 0
+    ? Math.round((cost.totalCacheReadTokens / totalIn) * 100)
+    : 0;
+  const usd = (cost.totalUsdCents / 100).toFixed(2);
+
+  const models = Array.from(
+    new Set(
+      Object.values(cost.perStage).flatMap((s) => s.models ?? []),
+    ),
+  ).join(' + ') || '—';
+
+  const inK = fmtTokensK(cost.totalInputTokens + cost.totalCacheCreationTokens);
+  const outK = fmtTokensK(cost.totalOutputTokens);
+
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        fontFamily: 'var(--mono)',
+        color: 'rgba(255,255,255,0.45)',
+        marginTop: 6,
+        padding: '4px 8px',
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: 6,
+        border: '1px solid rgba(255,255,255,0.06)',
+        display: 'inline-flex',
+        gap: 4,
+        flexWrap: 'wrap',
+      }}
+    >
+      <span style={{ color: 'rgba(255,255,255,0.6)' }}>{models}</span>
+      <span>·</span>
+      <span>{inK} in / {outK} out</span>
+      <span>·</span>
+      <span>{cacheRatio}% cache</span>
+      <span>·</span>
+      <span style={{ color: 'rgba(255,255,255,0.7)' }}>${usd}</span>
+    </div>
+  );
+}
+
+// ── SSE connection banner ─────────────────────────────────────────────────────
+
+function SseBanner({ status }: { status: string }) {
+  if (status === 'open' || status === 'closed' || status === 'connecting') {
+    if (status === 'connecting') {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11,
+            fontFamily: 'var(--mono)',
+            color: 'rgba(255,255,255,0.4)',
+            padding: '6px 10px',
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ animation: 'ldPulse 1s ease-in-out infinite', display: 'inline-block' }}>◌</span>
+          Connecting…
+        </div>
+      );
+    }
+    return null;
+  }
+  if (status === 'retrying') {
+    return (
+      <div
+        style={{
+          fontSize: 11,
+          fontFamily: 'var(--mono)',
+          color: '#fbbf24',
+          padding: '6px 10px',
+          marginBottom: 8,
+          background: 'rgba(251,191,36,0.07)',
+          borderRadius: 6,
+          border: '1px solid rgba(251,191,36,0.2)',
+        }}
+      >
+        Reconnecting live updates…
+      </div>
+    );
+  }
+  if (status === 'dead') {
+    return (
+      <div
+        style={{
+          fontSize: 11,
+          fontFamily: 'var(--mono)',
+          color: '#ef4444',
+          padding: '6px 10px',
+          marginBottom: 8,
+          background: 'rgba(239,68,68,0.08)',
+          borderRadius: 6,
+          border: '1px solid rgba(239,68,68,0.25)',
+        }}
+      >
+        Live updates lost — refresh the page to resume
+      </div>
+    );
+  }
+  return null;
+}
+
 // ── Live stage indicator (additive, shown only when RUNNING + SSE active) ─────
 function JurisdictionLiveIndicator({
-  launchId,
-  code,
-  onDone,
+  currentStage,
+  status,
+  lastEvent,
 }: {
-  launchId: string;
-  code: string;
-  onDone: () => void;
+  currentStage: string | null;
+  status: string;
+  lastEvent: any;
 }) {
-  const { currentStage, status, lastEvent } = useJurisdictionStream(launchId, code, { onDone });
-
-  if (status === 'idle' || status === 'closed') return null;
+  if (status === 'closed') return null;
 
   const ordinal = lastEvent?.type === 'stage.started' ? lastEvent.ordinal : undefined;
   const total = lastEvent?.type === 'stage.started' ? lastEvent.totalStages : undefined;
@@ -646,172 +972,17 @@ export default function LaunchDetailPage() {
               {detail.jurisdictions.length > 0 && filtered.length === 0 && (
                 <div className="fjp__empty">No jurisdictions match this filter.</div>
               )}
-              {filtered.map((run) => {
-                const code = run.jurisdictionCode;
-                const iso3 = ISO2_TO_ISO3[code] ?? code;
-                const isSelected = iso3 === selectedIso3;
-                const key = runStatusKey(run);
-                const isRunning = run.status === 'RUNNING' || run.status === 'PENDING';
-
-                const defaultSummary = [
-                  `Gaps ${run.gapsCount}`,
-                  `Sanctions hits ${run.sanctionsHits}`,
-                  run.lastRunAt ? `Last run ${new Date(run.lastRunAt).toLocaleDateString()}` : '',
-                ].filter(Boolean).join(' · ');
-
-                const countsLine = `Obligations: ${run.obligationsCount ?? 0} • Controls: ${run.controlsCount ?? 0} • Gaps: ${run.gapsCount ?? 0}`;
-
-                const actionItems =
-                  run.verdict === 'RED'
-                    ? (run.blockers ?? []).slice(0, 5)
-                    : (run.requiredChanges ?? []).slice(0, 5);
-
-                return (
-                  <div
-                    key={code}
-                    className={`fjp__row fjp__row--${key} fjp__row--open`}
-                    ref={(el) => {
-                      if (el) rowRefs.current.set(code, el);
-                      else rowRefs.current.delete(code);
-                    }}
-                    style={isSelected ? { borderColor: 'var(--orange)' } : undefined}
-                  >
-                    <div className="fjp__row-head fjp__row-head--static">
-                      <span className="fjp__row-flag">{jurisdictionFlag(code)}</span>
-                      <span className="fjp__row-name">{jurisdictionLabel(code)}</span>
-                      <span
-                        className={`fjp__row-status fjp__row-status--${key}`}
-                        title={statusTooltip(run, key, isRunning)}
-                      >
-                        <span className="fjp__row-status-dot" />
-                        {/* StripLiveLabel replaces static "In progress" with live SSE stage name */}
-                        {isRunning
-                          ? <StripLiveLabel launchId={id!} code={code} onDone={refetch} />
-                          : statusLabelForRun(run, key, false)}
-                      </span>
-                      <span className="fjp__row-summary" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                        <span>{run.summary ?? defaultSummary}</span>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--mono)' }}>
-                          {countsLine}
-                        </span>
-                      </span>
-                      <button
-                        className="fjp__deselect"
-                        onClick={() => navigate(`/jurisdictions/${code}/launches/${id}`)}
-                        title="Open graph"
-                        aria-label="Open graph"
-                      >
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="fjp__row-detail">
-                      <div className="fjp__detail-grid">
-                        <div className="fjp__detail-block fjp__detail-block--wide">
-                          <div className="mono-label">Compliance summary</div>
-                          {run.summary && (
-                            <div className="fjp__detail-value" style={{ marginBottom: actionItems.length > 0 ? 10 : 0 }}>
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                  p: ({ children }) => <p style={{ margin: '0 0 6px 0' }}>{children}</p>,
-                                  ul: ({ children }) => <ul style={{ margin: '4px 0', paddingLeft: 16, listStyle: 'disc' }}>{children}</ul>,
-                                  ol: ({ children }) => <ol style={{ margin: '4px 0', paddingLeft: 18 }}>{children}</ol>,
-                                  li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
-                                  strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
-                                  em: ({ children }) => <em>{children}</em>,
-                                  code: ({ className, children }) =>
-                                    className?.startsWith('language-') ? (
-                                      <pre style={{ margin: '6px 0', padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 6, overflowX: 'auto', fontSize: 12 }}><code>{children}</code></pre>
-                                    ) : (
-                                      <code style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.08)', borderRadius: 4, fontSize: 12 }}>{children}</code>
-                                    ),
-                                  a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" style={{ color: '#fb923c', textDecoration: 'underline' }}>{children}</a>,
-                                  h1: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
-                                  h2: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
-                                  h3: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
-                                  hr: () => <hr style={{ margin: '6px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />,
-                                }}
-                              >
-                                {run.summary}
-                              </ReactMarkdown>
-                            </div>
-                          )}
-                          {actionItems.length > 0 ? (
-                            <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
-                              {actionItems.map((item, i) => (
-                                <li key={i} className="fjp__detail-value" style={{ marginBottom: 2 }}>
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : !run.summary ? (
-                            <div className="fjp__detail-value">No action required</div>
-                          ) : null}
-                        </div>
-                        <div className="fjp__detail-block fjp__detail-block--wide">
-                          <div className="mono-label">Stats</div>
-                          <div className="fjp__detail-refs">
-                            <span className="fjp__ref">Obligations {run.obligationsCount ?? 0}</span>
-                            {run.currentSessionId ? (
-                              <Link
-                                to={`/sessions/${run.currentSessionId}/controls`}
-                                className="fjp__ref"
-                                style={{ color: 'var(--orange)', textDecoration: 'none' }}
-                              >
-                                Controls {run.controlsCount ?? 0} →
-                              </Link>
-                            ) : (
-                              <span className="fjp__ref">Controls {run.controlsCount ?? 0}</span>
-                            )}
-                            <span className="fjp__ref">Gaps {run.gapsCount}</span>
-                            <span className="fjp__ref">Sanctions {run.sanctionsHits}</span>
-                            {run.obligationsCovered !== undefined && run.obligationsTotal !== undefined && (
-                              <span className="fjp__ref">
-                                Coverage {run.obligationsCovered}/{run.obligationsTotal}
-                              </span>
-                            )}
-                            {run.lastRunAt && (
-                              <span className="fjp__ref">
-                                Last run {new Date(run.lastRunAt).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* JurisdictionLiveIndicator — shown in row detail when RUNNING */}
-                      {isRunning && id && (
-                        <div style={{ marginTop: 10 }}>
-                          <JurisdictionLiveIndicator
-                            launchId={id}
-                            code={code}
-                            onDone={refetch}
-                          />
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                        <button
-                          className="btn btn--orange-hollow btn--sm"
-                          onClick={() => downloadProofPack(id!, code)}
-                        >
-                          Download proof pack
-                        </button>
-                        <button
-                          className="btn btn--sm"
-                          onClick={() => navigate(`/jurisdictions/${code}/launches/${id}`)}
-                        >
-                          Open graph →
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {filtered.map((run) => (
+                <JurisdictionRow 
+                  key={run.jurisdictionCode} 
+                  run={run} 
+                  launchId={id!} 
+                  selectedIso3={selectedIso3} 
+                  rowRefs={rowRefs} 
+                  refetch={refetch} 
+                  navigate={navigate} 
+                />
+              ))}
             </div>
           )}
         </div>
@@ -820,9 +991,266 @@ export default function LaunchDetailPage() {
   );
 }
 
+function JurisdictionRow({ run, launchId, selectedIso3, rowRefs, refetch, navigate }: any) {
+  const code = run.jurisdictionCode;
+  const iso3 = ISO2_TO_ISO3[code] ?? code;
+  const isSelected = iso3 === selectedIso3;
+  const key = runStatusKey(run);
+  const isRunning = run.status === 'RUNNING' || run.status === 'PENDING';
+
+  const defaultSummary = [
+    `Gaps ${run.gapsCount}`,
+    `Sanctions hits ${run.sanctionsHits}`,
+    run.lastRunAt ? `Last run ${new Date(run.lastRunAt).toLocaleDateString()}` : '',
+  ].filter(Boolean).join(' · ');
+
+  const countsLine = `Obligations: ${run.obligationsCount ?? 0} • Controls: ${run.controlsCount ?? 0} • Gaps: ${run.gapsCount ?? 0}`;
+
+  const actionItems =
+    run.verdict === 'RED'
+      ? (run.blockers ?? []).slice(0, 5)
+      : (run.requiredChanges ?? []).slice(0, 5);
+
+  const { auditEvents, status, currentStage, lastEvent } = useJurisdictionStream(launchId, code, {
+    enabled: isRunning,
+    onDone: refetch,
+  });
+
+  return (
+    <div
+      className={`fjp__row fjp__row--${key} fjp__row--open`}
+      ref={(el) => {
+        if (el) rowRefs.current.set(code, el);
+        else rowRefs.current.delete(code);
+      }}
+      style={isSelected ? { borderColor: 'var(--orange)' } : undefined}
+    >
+      <div className="fjp__row-head fjp__row-head--static">
+        <span className="fjp__row-flag">{jurisdictionFlag(code)}</span>
+        <span className="fjp__row-name">{jurisdictionLabel(code)}</span>
+        <span
+          className={`fjp__row-status fjp__row-status--${key}`}
+          title={statusTooltip(run, key, isRunning)}
+        >
+          <span className="fjp__row-status-dot" />
+          {isRunning
+            ? <StripLiveLabel currentStage={currentStage} lastEvent={lastEvent} />
+            : statusLabelForRun(run, key, false)}
+        </span>
+        <span className="fjp__row-summary" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+          <span>{run.summary ?? defaultSummary}</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--mono)' }}>
+            {countsLine}
+          </span>
+        </span>
+        <button
+          className="fjp__deselect"
+          onClick={() => navigate(`/jurisdictions/${code}/launches/${launchId}`)}
+          title="Open graph"
+          aria-label="Open graph"
+        >
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </div>
+
+      <RunDetailSection
+        run={run}
+        isRunning={isRunning}
+        actionItems={actionItems}
+        onDownload={() => downloadProofPack(launchId, code)}
+        onOpenGraph={() => navigate(`/jurisdictions/${code}/launches/${launchId}`)}
+        auditEvents={auditEvents}
+        status={status}
+        currentStage={currentStage}
+        lastEvent={lastEvent}
+      />
+    </div>
+  );
+}
+
+// ── Run detail section — owns its own SSE hook instance ──────────────────────
+
+function RunDetailSection({
+  run,
+  isRunning,
+  actionItems,
+  onDownload,
+  onOpenGraph,
+  auditEvents,
+  status,
+  currentStage,
+  lastEvent,
+}: {
+  run: JurisdictionRun;
+  isRunning: boolean;
+  actionItems: string[];
+  onDownload: () => void;
+  onOpenGraph: () => void;
+  auditEvents: AuditEvent[];
+  status: string;
+  currentStage: string | null;
+  lastEvent: any;
+}) {
+
+  // F3 — cost panel state
+  const [cost, setCost] = useState<SessionCost | null>(null);
+  const lastCostUpdateCount = useRef(0);
+  const costUpdateCount = auditEvents.filter((e) => e.kind === 'cost.update').length;
+
+  useEffect(() => {
+    if (!run.currentSessionId) return;
+    // Fetch on mount
+    getSessionCost(run.currentSessionId).then(setCost);
+  }, [run.currentSessionId]);
+
+  useEffect(() => {
+    if (!run.currentSessionId) return;
+    if (costUpdateCount > lastCostUpdateCount.current) {
+      lastCostUpdateCount.current = costUpdateCount;
+      getSessionCost(run.currentSessionId).then(setCost);
+    }
+  }, [costUpdateCount, run.currentSessionId]);
+
+  // F2 — ground-check dropped count (live session events only)
+  const gcDroppedCount = auditEvents.filter((e) => e.kind === 'ground_check.dropped').length;
+
+  return (
+    <div className="fjp__row-detail">
+      {/* F5 — SSE banner */}
+      {isRunning && <SseBanner status={status} />}
+
+      <div className="fjp__detail-grid">
+        <div className="fjp__detail-block fjp__detail-block--wide">
+          <div className="mono-label">Compliance summary</div>
+          {run.summary && (
+            <div className="fjp__detail-value" style={{ marginBottom: actionItems.length > 0 ? 10 : 0 }}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <p style={{ margin: '0 0 6px 0' }}>{children}</p>,
+                  ul: ({ children }) => <ul style={{ margin: '4px 0', paddingLeft: 16, listStyle: 'disc' }}>{children}</ul>,
+                  ol: ({ children }) => <ol style={{ margin: '4px 0', paddingLeft: 18 }}>{children}</ol>,
+                  li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+                  strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
+                  em: ({ children }) => <em>{children}</em>,
+                  code: ({ className, children }) =>
+                    className?.startsWith('language-') ? (
+                      <pre style={{ margin: '6px 0', padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 6, overflowX: 'auto', fontSize: 12 }}><code>{children}</code></pre>
+                    ) : (
+                      <code style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.08)', borderRadius: 4, fontSize: 12 }}>{children}</code>
+                    ),
+                  a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer" style={{ color: '#fb923c', textDecoration: 'underline' }}>{children}</a>,
+                  h1: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                  h2: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                  h3: ({ children }) => <div style={{ fontWeight: 600, fontSize: 14, margin: '6px 0 4px' }}>{children}</div>,
+                  hr: () => <hr style={{ margin: '6px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />,
+                }}
+              >
+                {run.summary}
+              </ReactMarkdown>
+            </div>
+          )}
+          {actionItems.length > 0 ? (
+            <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
+              {actionItems.map((item, i) => (
+                <li key={i} className="fjp__detail-value" style={{ marginBottom: 2 }}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          ) : !run.summary ? (
+            <div className="fjp__detail-value">No action required</div>
+          ) : null}
+        </div>
+        <div className="fjp__detail-block fjp__detail-block--wide">
+          <div className="mono-label">Stats</div>
+          <div className="fjp__detail-refs">
+            {run.currentSessionId ? (
+              <Link
+                to={`/sessions/${run.currentSessionId}/obligations`}
+                className="fjp__ref"
+                style={{ color: 'var(--orange)', textDecoration: 'none' }}
+              >
+                Obligations {run.obligationsCount ?? 0} →
+              </Link>
+            ) : (
+              <span className="fjp__ref">Obligations {run.obligationsCount ?? 0}</span>
+            )}
+            {run.currentSessionId ? (
+              <Link
+                to={`/sessions/${run.currentSessionId}/controls`}
+                className="fjp__ref"
+                style={{ color: 'var(--orange)', textDecoration: 'none' }}
+              >
+                Controls {run.controlsCount ?? 0} →
+              </Link>
+            ) : (
+              <span className="fjp__ref">Controls {run.controlsCount ?? 0}</span>
+            )}
+            <span className="fjp__ref">Gaps {run.gapsCount}</span>
+            <span className="fjp__ref">Sanctions {run.sanctionsHits}</span>
+            {/* F2 — ground-check review count */}
+            <span
+              className="fjp__ref"
+              style={gcDroppedCount > 0 ? { color: '#fbbf24' } : undefined}
+            >
+              Review ({gcDroppedCount})
+            </span>
+            {run.obligationsCovered !== undefined && run.obligationsTotal !== undefined && (
+              <span className="fjp__ref">
+                Coverage {run.obligationsCovered}/{run.obligationsTotal}
+              </span>
+            )}
+            {run.lastRunAt && (
+              <span className="fjp__ref">
+                Last run {new Date(run.lastRunAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          {/* F3 — cost panel */}
+          {cost && (cost.totalUsdCents > 0 || costUpdateCount > 0) && (
+            <CostPanel cost={cost} />
+          )}
+        </div>
+      </div>
+
+      {/* JurisdictionLiveIndicator — shown in row detail when RUNNING */}
+      {isRunning && (
+        <div style={{ marginTop: 10 }}>
+          <JurisdictionLiveIndicator
+            currentStage={currentStage}
+            status={status}
+            lastEvent={lastEvent}
+          />
+        </div>
+      )}
+
+      {/* F1 — Live audit feed */}
+      <AuditFeedPanel auditEvents={auditEvents} status={status} />
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <button
+          className="btn btn--orange-hollow btn--sm"
+          onClick={onDownload}
+        >
+          Download proof pack
+        </button>
+        <button
+          className="btn btn--sm"
+          onClick={onOpenGraph}
+        >
+          Open graph →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Strip chip live label (shows current stage or "In progress" fallback) ────────
-function StripLiveLabel({ launchId, code, onDone }: { launchId: string; code: string; onDone: () => void }) {
-  const { currentStage, lastEvent } = useJurisdictionStream(launchId, code, { onDone });
+function StripLiveLabel({ currentStage, lastEvent }: { currentStage: string | null; lastEvent: any }) {
   const ordinal = lastEvent?.type === 'stage.started' ? lastEvent.ordinal : undefined;
   const total = lastEvent?.type === 'stage.started' ? lastEvent.totalStages : undefined;
   const label = currentStage

@@ -13,6 +13,7 @@ import SessionDetailPage from './pages/SessionDetailPage';
 import ObligationDetailPage from './pages/ObligationDetailPage';
 import ControlDetailPage from './pages/ControlDetailPage';
 import ControlsPage from './pages/ControlsPage';
+import ObligationsPage from './pages/ObligationsPage';
 import { useMode } from './components/ModeToggle';
 import LoginPage from './pages/LoginPage';
 
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/obligation/:id" element={<ObligationDetailPage />} />
         <Route path="/control/:id" element={<ControlDetailPage />} />
         <Route path="/sessions/:id/controls" element={<ControlsPage />} />
+        <Route path="/sessions/:id/obligations" element={<ObligationsPage />} />
       </Route>
     </Routes>
   );
