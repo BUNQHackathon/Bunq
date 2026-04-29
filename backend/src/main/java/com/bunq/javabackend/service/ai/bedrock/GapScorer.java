@@ -21,7 +21,7 @@ public class GapScorer {
 
     private final BedrockService bedrockService;
 
-    public GapScore score(MatchableObligation obl, BedrockModel model) {
+    public GapScore score(String sessionId, String stage, MatchableObligation obl, BedrockModel model) {
         try {
             HashMap<String, Object> userInput = new HashMap<>();
             userInput.put("obligation_id", obl.id());
@@ -31,6 +31,7 @@ public class GapScorer {
             userInput.put("regulatory_penalty", obl.regulatoryPenalty());
 
             JsonNode toolInput = bedrockService.invokeModelWithTool(
+                    sessionId, stage,
                     model.getModelId(),
                     SystemPrompts.SCORE_GAP,
                     userInput,

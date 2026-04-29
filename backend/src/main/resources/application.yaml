@@ -30,6 +30,7 @@ aws:
     doc-jurisdictions-table: ${AWS_DYNAMODB_DOC_JURISDICTIONS_TABLE:launchlens-doc-jurisdictions}
     launches-table: ${AWS_DYNAMODB_LAUNCHES_TABLE:launchlens-launches}
     jurisdiction-runs-table: ${AWS_DYNAMODB_JURISDICTION_RUNS_TABLE:launchlens-jurisdiction-runs}
+    session-cost-table: ${AWS_DYNAMODB_SESSION_COST_TABLE:launchlens-session-costs}
   bedrock:
     region: ${AWS_BEDROCK_REGION:eu-central-1}
     max-concurrent: ${BEDROCK_MAX_CONCURRENT:15}

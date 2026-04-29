@@ -756,7 +756,17 @@ export default function LaunchDetailPage() {
                           <div className="mono-label">Stats</div>
                           <div className="fjp__detail-refs">
                             <span className="fjp__ref">Obligations {run.obligationsCount ?? 0}</span>
-                            <span className="fjp__ref">Controls {run.controlsCount ?? 0}</span>
+                            {run.currentSessionId ? (
+                              <Link
+                                to={`/sessions/${run.currentSessionId}/controls`}
+                                className="fjp__ref"
+                                style={{ color: 'var(--orange)', textDecoration: 'none' }}
+                              >
+                                Controls {run.controlsCount ?? 0} →
+                              </Link>
+                            ) : (
+                              <span className="fjp__ref">Controls {run.controlsCount ?? 0}</span>
+                            )}
                             <span className="fjp__ref">Gaps {run.gapsCount}</span>
                             <span className="fjp__ref">Sanctions {run.sanctionsHits}</span>
                             {run.obligationsCovered !== undefined && run.obligationsTotal !== undefined && (

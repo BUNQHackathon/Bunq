@@ -115,7 +115,8 @@ public class LaunchService {
                             "role", "user",
                             "content", prompt))));
 
-            JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
+            JsonNode response = bedrockService.invokeModel(null, null,
+                    BedrockModel.HAIKU.getModelId(), requestJson);
             String text = response.path("content").get(0).path("text").asText("").strip();
 
             // Strip markdown code fences if Claude adds them

@@ -12,6 +12,7 @@ import LibraryDocPage from './pages/LibraryDocPage';
 import SessionDetailPage from './pages/SessionDetailPage';
 import ObligationDetailPage from './pages/ObligationDetailPage';
 import ControlDetailPage from './pages/ControlDetailPage';
+import ControlsPage from './pages/ControlsPage';
 import { useMode } from './components/ModeToggle';
 import LoginPage from './pages/LoginPage';
 
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/session/:id" element={<SessionDetailPage />} />
         <Route path="/obligation/:id" element={<ObligationDetailPage />} />
         <Route path="/control/:id" element={<ControlDetailPage />} />
+        <Route path="/sessions/:id/controls" element={<ControlsPage />} />
       </Route>
     </Routes>
   );

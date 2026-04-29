@@ -3,6 +3,18 @@ moved {
   to   = aws_dynamodb_table.sessions
 }
 
+# B11: Per-session Bedrock cost rollup. PK is sessionId (not "id") so provisioned explicitly.
+resource "aws_dynamodb_table" "session_costs" {
+  name         = "${local.name_prefix}-session-costs"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "sessionId"
+
+  attribute {
+    name = "sessionId"
+    type = "S"
+  }
+}
+
 resource "aws_dynamodb_table" "this" {
   for_each     = toset([for t in local.dynamodb_tables : t if !contains(["audit-log", "obligations", "controls"], t)])
   name         = "${local.name_prefix}-${each.value}"

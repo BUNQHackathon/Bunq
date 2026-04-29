@@ -162,24 +162,58 @@ public class MapObligationsControlsStage implements Stage {
                     obl.getRiskCategory() != null ? obl.getRiskCategory() : "").trim();
             if (query.isBlank()) return List.of();
 
+            // Chunks arrive sorted by KB score descending from KnowledgeBaseService
             List<KnowledgeBaseService.RetrievedChunk> chunks =
                     knowledgeBaseService.retrieveControls(query, KB_TOP_K).join();
             if (chunks.isEmpty()) return List.of();
 
-            // Match KB chunk text against control descriptions (case-insensitive substring)
+            // Build a controlId → Control index for O(1) lookup
+            Map<String, Control> controlIndex = new HashMap<>(allControls.size() * 2);
+            for (Control ctrl : allControls) {
+                if (ctrl.getId() != null) controlIndex.put(ctrl.getId(), ctrl);
+            }
+
             List<Control> matched = new ArrayList<>();
             for (KnowledgeBaseService.RetrievedChunk chunk : chunks) {
+                if (matched.size() >= MAX_CANDIDATE_CONTROLS) break;
+
+                // B6: prefer controlId from chunk metadata (set at ingest time)
+                String metaControlId = chunk.metadata() != null ? chunk.metadata().get("controlId") : null;
+                if (metaControlId != null) {
+                    Control ctrl = controlIndex.get(metaControlId);
+                    if (ctrl != null && !matched.contains(ctrl)) {
+                        matched.add(ctrl);
+                        continue;
+                    }
+                }
+
+                // Fallback: substring match on description — remains until KB is re-indexed with metadata
                 String chunkText = chunk.text() != null ? chunk.text().toLowerCase() : "";
                 for (Control ctrl : allControls) {
                     if (matched.contains(ctrl)) continue;
                     String desc = ctrl.getDescription() != null ? ctrl.getDescription().toLowerCase() : "";
                     if (!desc.isBlank() && chunkText.contains(desc.substring(0, Math.min(desc.length(), 40)))) {
                         matched.add(ctrl);
+                        break;
                     }
                 }
-                if (matched.size() >= KB_TOP_K) break;
             }
-            return matched;
+
+            if (matched.isEmpty()) return List.of();
+
+            // B8: rerank candidates by relevance to the obligation query, return top-N
+            List<Reranker.RankedItem> items = matched.stream()
+                    .map(c -> new Reranker.RankedItem(c.getId(),
+                            c.getDescription() != null ? c.getDescription() : ""))
+                    .toList();
+            List<Reranker.RankedItem> reranked = reranker.rerank(query, items, RERANK_TOP_N);
+
+            // Map back to Control objects preserving rerank order
+            return reranked.stream()
+                    .map(r -> controlIndex.get(r.id()))
+                    .filter(Objects::nonNull)
+                    .toList();
+
         } catch (Exception e) {
             log.warn("KB candidate retrieval failed for obligation {}: {}", obl.getId(), e.getMessage());
             return List.of();
@@ -232,7 +266,8 @@ public class MapObligationsControlsStage implements Stage {
                         c.getCategory() != null ? c.getCategory().name() : null,
                         c.getMappedStandards()))
                 .toList();
-        List<MatchResult> matchResults = matcher.match(matchableObl, matchableControls);
+        List<MatchResult> matchResults = matcher.match(ctx.getSessionId(), "map_obligations_controls",
+                matchableObl, matchableControls);
 
         for (MatchResult result : matchResults) {
             String controlId = result.controlId();

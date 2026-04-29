@@ -19,7 +19,8 @@ public class ObligationControlMatcher {
 
     private final BedrockService bedrockService;
 
-    public List<MatchResult> match(MatchableObligation obl, List<MatchableControl> candidates) {
+    public List<MatchResult> match(String sessionId, String stage,
+                                    MatchableObligation obl, List<MatchableControl> candidates) {
         List<MatchResult> results = new ArrayList<>();
         try {
             HashMap<String, Object> userInput = new HashMap<>();
@@ -37,6 +38,7 @@ public class ObligationControlMatcher {
             }).toList());
 
             JsonNode toolInput = bedrockService.invokeModelWithTool(
+                    sessionId, stage,
                     BedrockModel.HAIKU.getModelId(),
                     SystemPrompts.MATCH_OBLIGATIONS_TO_CONTROLS,
                     userInput,

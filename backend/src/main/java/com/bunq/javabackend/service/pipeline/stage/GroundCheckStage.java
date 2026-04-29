@@ -138,6 +138,55 @@ public class GroundCheckStage implements Stage {
 
     private void processBatch(List<Mapping> batch, Map<String, Obligation> oblMap,
                               PipelineContext ctx, List<String> evidenceHashes) {
+        // B10: collect distinct documentIds in this batch, then fetch full extracted doc text
+        // from S3 (extractions/{docId}.txt) once per docId. This replaces the obligation
+        // sourceTextSnippet (a Haiku paraphrase) with the original text the LLM actually saw.
+        // Known limitation: obligations from text beyond DOC_TEXT_MAX_CHARS are verified against
+        // a truncated document; this keeps NOVA-PRO token cost manageable.
+        Map<String, String> docTexts = new HashMap<>();
+        for (Mapping mapping : batch) {
+            Obligation obl = oblMap.get(mapping.getObligationId());
+            if (obl == null) {
+                obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
+            }
+            String docId = obl != null ? obl.getDocumentId() : null;
+            if (docId != null && !docTexts.containsKey(docId)) {
+                String s3Key = "extractions/" + docId + ".txt";
+                try {
+                    String fullText = s3Client.getObjectAsBytes(
+                            GetObjectRequest.builder()
+                                    .bucket(uploadsBucket)
+                                    .key(s3Key)
+                                    .build())
+                            .asUtf8String();
+                    if (fullText.length() > DOC_TEXT_MAX_CHARS) {
+                        fullText = fullText.substring(0, DOC_TEXT_MAX_CHARS);
+                    }
+                    docTexts.put(docId, fullText);
+                } catch (NoSuchKeyException e) {
+                    log.error("GroundCheck: S3 key {} not found for document {}; batch marked failed", s3Key, docId);
+                    // Fail closed: mark all mappings in this batch as failed and abort
+                    for (Mapping m : batch) {
+                        m.setReviewerNotes("ground-check failed: source document text unavailable");
+                        mappingRepository.save(m);
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
+                                Map.of("mappingId", m.getId(), "reason", "source document text unavailable"));
+                    }
+                    return;
+                } catch (Exception e) {
+                    log.error("GroundCheck: failed to fetch S3 key {} for document {}: {}; batch marked failed",
+                            s3Key, docId, e.getMessage());
+                    for (Mapping m : batch) {
+                        m.setReviewerNotes("ground-check failed: source document text unavailable");
+                        mappingRepository.save(m);
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
+                                Map.of("mappingId", m.getId(), "reason", "source document text unavailable"));
+                    }
+                    return;
+                }
+            }
+        }
+
         // Build input for the batch tool call
         List<Map<String, String>> checks = new ArrayList<>();
         Map<String, Mapping> byId = new HashMap<>();
@@ -146,13 +195,13 @@ public class GroundCheckStage implements Stage {
             if (obl == null) {
                 obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
             }
-            String sourceText = obl != null && obl.getSource() != null
-                    ? obl.getSource().getSourceText()
-                    : "";
+            String docId = obl != null ? obl.getDocumentId() : null;
+            // Use full document text as verification source (B10); fall back to empty if unavailable
+            String sourceText = docId != null ? docTexts.getOrDefault(docId, "") : "";
             Map<String, String> check = new HashMap<>();
             check.put("mapping_id", mapping.getId());
             check.put("claim", mapping.getSemanticReason());
-            check.put("source_text", sourceText != null ? sourceText : "");
+            check.put("source_text", sourceText);
             checks.add(check);
             byId.put(mapping.getId(), mapping);
         }
@@ -162,6 +211,7 @@ public class GroundCheckStage implements Stage {
 
         try {
             JsonNode toolInput = bedrockService.invokeModelWithTool(
+                    ctx.getSessionId(), "ground_check",
                     BedrockModel.NOVA_PRO.getModelId(),
                     SystemPrompts.GROUND_CHECK_BATCH,
                     userInput,

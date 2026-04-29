@@ -69,7 +69,7 @@ public class NarrateStage implements Stage {
 
             String overallSeverity = determineOverall(gaps);
             List<String> topRisks = extractTopRisks(gaps);
-            String narrative = generateNarrative(gaps, mappings, overallSeverity);
+            String narrative = generateNarrative(gaps, mappings, overallSeverity, ctx.getSessionId());
 
             sessionRepository.findById(ctx.getSessionId()).ifPresent(session -> {
                 session.setExecutiveSummary(narrative);
@@ -119,7 +119,8 @@ public class NarrateStage implements Stage {
                 .toList();
     }
 
-    private String generateNarrative(List<Gap> gaps, List<Mapping> mappings, String overallSeverity) {
+    private String generateNarrative(List<Gap> gaps, List<Mapping> mappings, String overallSeverity,
+                                      String sessionId) {
         try {
             HashMap<String, Object> userInput = new HashMap<String, Object>();
             userInput.put("overall_severity", overallSeverity);
@@ -142,7 +143,8 @@ public class NarrateStage implements Stage {
                     ))
             ));
 
-            JsonNode response = bedrockService.invokeModel(BedrockModel.HAIKU.getModelId(), requestJson);
+            JsonNode response = bedrockService.invokeModel(sessionId, "narrate",
+                    BedrockModel.HAIKU.getModelId(), requestJson);
             JsonNode content = response.path("content");
             if (content.isArray() && !content.isEmpty()) {
                 return content.get(0).path("text").asText("");

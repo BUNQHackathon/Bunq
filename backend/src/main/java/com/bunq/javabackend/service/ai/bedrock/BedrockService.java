@@ -1,5 +1,7 @@
 package com.bunq.javabackend.service.ai.bedrock;
 
+import com.bunq.javabackend.model.enums.BedrockModel;
+import com.bunq.javabackend.service.observability.SessionCostService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -64,13 +66,24 @@ public class BedrockService {
     private final BedrockRuntimeClient bedrockRuntimeClient;
     private final ObjectMapper objectMapper;
     private final Semaphore bedrockPermits;
+    private final SessionCostService sessionCostService;
 
     public BedrockService(BedrockRuntimeClient bedrockRuntimeClient,
                           ObjectMapper objectMapper,
-                          @Value("${bedrock.max-concurrent:30}") int maxConcurrent) {
+                          @Value("${bedrock.max-concurrent:30}") int maxConcurrent,
+                          SessionCostService sessionCostService) {
         this.bedrockRuntimeClient = bedrockRuntimeClient;
         this.objectMapper = objectMapper;
         this.bedrockPermits = new Semaphore(maxConcurrent);
+        this.sessionCostService = sessionCostService;
+    }
+
+    /** Resolves a raw modelId string to the matching BedrockModel enum, or null if not found. */
+    private static BedrockModel resolveModel(String modelId) {
+        for (BedrockModel m : BedrockModel.values()) {
+            if (m.getModelId().equals(modelId)) return m;
+        }
+        return null;
     }
 
     /**
@@ -87,7 +100,15 @@ public class BedrockService {
         }
     }
 
-    public JsonNode invokeModel(String modelId, String requestJson) {
+    /**
+     * Invokes a Bedrock model with full fallback chain, backoff, and cost recording.
+     *
+     * @param sessionId  Session to attribute cost to; null silently skips cost recording.
+     * @param stage      Pipeline stage name (e.g. "narrate"); null silently skips cost recording.
+     * @param modelId    Primary model ID to attempt first.
+     * @param requestJson Anthropic-shaped JSON request body.
+     */
+    public JsonNode invokeModel(String sessionId, String stage, String modelId, String requestJson) {
         List<String> candidates = new java.util.ArrayList<>();
         candidates.add(modelId);
         candidates.addAll(FALLBACK_CHAIN.getOrDefault(modelId, List.of()));
@@ -103,7 +124,8 @@ public class BedrockService {
                     backoffSleep(attempt - 1);
                 }
 
-                // B5b: bounded semaphore acquire with 60s timeout
+                // B5b: bounded semaphore acquire with 60s timeout.
+                // Backpressure on one model falls through to the next in the chain (Bonus fix).
                 boolean acquired;
                 try {
                     acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
@@ -112,7 +134,8 @@ public class BedrockService {
                     throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
                 }
                 if (!acquired) {
-                    throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s");
+                    log.warn("Bedrock semaphore timeout for model {}; trying next in chain", currentModel);
+                    break; // advance to next model in fallback chain
                 }
 
                 try {
@@ -133,12 +156,18 @@ public class BedrockService {
                     try {
                         JsonNode root = objectMapper.readTree(response.body().asUtf8String());
                         JsonNode usage = root.path("usage");
-                        if (!usage.isMissingNode()) {
+                        if (!usage.isMissingNode() && sessionId != null && stage != null) {
+                            int cacheCreation = usage.path("cache_creation_input_tokens").asInt();
+                            int cacheRead     = usage.path("cache_read_input_tokens").asInt();
+                            int inputTok      = usage.path("input_tokens").asInt();
+                            int outputTok     = usage.path("output_tokens").asInt();
                             log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
-                                    usage.path("cache_creation_input_tokens").asInt(),
-                                    usage.path("cache_read_input_tokens").asInt(),
-                                    usage.path("input_tokens").asInt(),
-                                    usage.path("output_tokens").asInt());
+                                    cacheCreation, cacheRead, inputTok, outputTok);
+                            BedrockModel resolvedModel = resolveModel(currentModel);
+                            if (resolvedModel != null) {
+                                sessionCostService.recordCall(sessionId, stage, resolvedModel,
+                                        inputTok, outputTok, cacheCreation, cacheRead);
+                            }
                         }
                         return root;
                     } catch (Exception e) {
@@ -159,7 +188,8 @@ public class BedrockService {
                 }
             }
         }
-        throw lastThrottle;
+        if (lastThrottle != null) throw lastThrottle;
+        throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s: all models in chain exhausted");
     }
 
     /**
@@ -334,7 +364,19 @@ public class BedrockService {
      * <p>
      * Expected response shape: {"content": [{"type": "tool_use", "input": {...}}], "usage": {...}}
      */
-    public JsonNode invokeModelWithTool(String modelId, String systemPrompt, Object userInput, String toolJson) {
+    /**
+     * Invokes a Bedrock model with tool-use, full fallback chain, backoff, and cost recording.
+     *
+     * @param sessionId   Session to attribute cost to; null silently skips cost recording.
+     * @param stage       Pipeline stage name (e.g. "extract_obligations"); null skips cost recording.
+     * @param modelId     Primary model ID to attempt first.
+     * @param systemPrompt Anthropic system prompt string.
+     * @param userInput   Object serialised as JSON and sent as the user message.
+     * @param toolJson    Tool definition JSON string.
+     */
+    public JsonNode invokeModelWithTool(String sessionId, String stage,
+                                        String modelId, String systemPrompt,
+                                        Object userInput, String toolJson) {
         try {
             String userText = objectMapper.writeValueAsString(userInput);
 
@@ -353,7 +395,8 @@ public class BedrockService {
                         backoffSleep(attempt - 1);
                     }
 
-                    // B5b: bounded semaphore acquire with 60s timeout
+                    // B5b: bounded semaphore acquire with 60s timeout.
+                    // Backpressure on one model falls through to the next in the chain (Bonus fix).
                     boolean acquired;
                     try {
                         acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
@@ -362,7 +405,8 @@ public class BedrockService {
                         throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
                     }
                     if (!acquired) {
-                        throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s");
+                        log.warn("Bedrock semaphore timeout for model {}; trying next in chain", currentModel);
+                        break; // advance to next model in fallback chain
                     }
 
                     try {
@@ -418,6 +462,22 @@ public class BedrockService {
                         InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
                         JsonNode root = objectMapper.readTree(response.body().asUtf8String());
 
+                        // B11: record cost for this tool call
+                        JsonNode usageTool = root.path("usage");
+                        if (!usageTool.isMissingNode() && sessionId != null && stage != null) {
+                            int cacheCreation = usageTool.path("cache_creation_input_tokens").asInt();
+                            int cacheRead     = usageTool.path("cache_read_input_tokens").asInt();
+                            int inputTok      = usageTool.path("input_tokens").asInt();
+                            int outputTok     = usageTool.path("output_tokens").asInt();
+                            log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
+                                    cacheCreation, cacheRead, inputTok, outputTok);
+                            BedrockModel resolvedModel = resolveModel(currentModel);
+                            if (resolvedModel != null) {
+                                sessionCostService.recordCall(sessionId, stage, resolvedModel,
+                                        inputTok, outputTok, cacheCreation, cacheRead);
+                            }
+                        }
+
                         // Extract tool_use input block
                         JsonNode content = root.path("content");
                         if (content.isArray()) {
@@ -460,7 +520,8 @@ public class BedrockService {
                     }
                 }
             }
-            throw lastThrottle;
+            if (lastThrottle != null) throw lastThrottle;
+            throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s: all models in chain exhausted");
         } catch (ThrottlingException e) {
             throw e;
         } catch (RuntimeException e) {

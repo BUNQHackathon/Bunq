@@ -154,7 +154,7 @@ public class ChatWithGraphService {
             // Step 5: Matching fan-out
             Set<String> coveredObligationIds = new HashSet<>();
             for (MatchableObligation obl : matchableObligations) {
-                List<MatchResult> results = matcher.match(obl, matchableControls);
+                List<MatchResult> results = matcher.match(chatId, "chat", obl, matchableControls);
                 boolean hasSatisfactoryMatch = false;
                 for (MatchResult result : results) {
                     if (result.confidence() >= 30) {
@@ -179,7 +179,7 @@ public class ChatWithGraphService {
 
             List<CompletableFuture<GapScore>> gapFutures = uncovered.stream()
                     .map(obl -> CompletableFuture.supplyAsync(
-                            () -> gapScorer.score(obl, BedrockModel.SONNET), pipelineExecutor))
+                            () -> gapScorer.score(chatId, "chat", obl, BedrockModel.SONNET), pipelineExecutor))
                     .toList();
 
             CompletableFuture.allOf(gapFutures.toArray(new CompletableFuture[0])).join();

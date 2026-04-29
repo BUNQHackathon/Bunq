@@ -95,6 +95,7 @@ public class GapAnalyzeStage implements Stage {
 
     private Gap scoreGap(Obligation obl, String sessionId) {
         GapScore s = gapScorer.score(
+                sessionId, "score_gap",
                 new MatchableObligation(obl.getId(), obl.getSubject(), obl.getAction(),
                         obl.getRiskCategory(), obl.getRegulatoryPenaltyRange()),
                 BedrockModel.HAIKU);

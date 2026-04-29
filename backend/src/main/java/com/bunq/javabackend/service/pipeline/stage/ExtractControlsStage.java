@@ -161,6 +161,7 @@ public class ExtractControlsStage implements Stage {
         Map<String, String> userInput = Map.of("policy_text", text, "policy_id", "POL-" + ctx.getSessionId());
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
+                ctx.getSessionId(), "extract_controls",
                 BedrockModel.HAIKU.getModelId(),
                 SystemPrompts.EXTRACT_CONTROLS,
                 userInput,
