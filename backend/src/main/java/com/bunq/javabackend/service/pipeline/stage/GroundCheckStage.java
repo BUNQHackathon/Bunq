@@ -38,9 +38,13 @@ import java.util.stream.Collectors;
 @Service
 public class GroundCheckStage implements Stage {
 
-    private static final int BATCH_SIZE = 15;
-    /** Truncation cap for full document text sent to NOVA-PRO. Keeps token cost manageable.
-     *  Known limitation: obligations from text beyond this offset are verified against a truncated document. */
+    private static final int BATCH_SIZE = 20;
+    /**
+     * Truncation cap for full document text sent to NOVA-PRO. Keeps token cost
+     * manageable.
+     * Known limitation: obligations from text beyond this offset are verified
+     * against a truncated document.
+     */
     private static final int DOC_TEXT_MAX_CHARS = 200_000;
 
     private final BedrockService bedrockService;
@@ -56,13 +60,13 @@ public class GroundCheckStage implements Stage {
     private String uploadsBucket;
 
     public GroundCheckStage(BedrockService bedrockService,
-                            MappingRepository mappingRepository,
-                            ObligationRepository obligationRepository,
-                            ObjectMapper objectMapper,
-                            AuditLogService auditLogService,
-                            EvidenceRepository evidenceRepository,
-                            S3Client s3Client,
-                            @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
+            MappingRepository mappingRepository,
+            ObligationRepository obligationRepository,
+            ObjectMapper objectMapper,
+            AuditLogService auditLogService,
+            EvidenceRepository evidenceRepository,
+            S3Client s3Client,
+            @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.bedrockService = bedrockService;
         this.mappingRepository = mappingRepository;
         this.obligationRepository = obligationRepository;
@@ -94,11 +98,13 @@ public class GroundCheckStage implements Stage {
                     .collect(Collectors.toMap(Obligation::getId, o -> o, (a, b) -> a));
 
             // Collect only mappings that have a semanticReason
-            // B7: partition into cached (skip LLM re-check) and those that need verification
+            // B7: partition into cached (skip LLM re-check) and those that need
+            // verification
             List<Mapping> skipped = new ArrayList<>();
             List<Mapping> toCheck = new ArrayList<>();
             for (Mapping m : mappings) {
-                if (m.getSemanticReason() == null) continue;
+                if (m.getSemanticReason() == null)
+                    continue;
                 boolean isCached = m.getMetadata() != null && "cached".equals(m.getMetadata().get("route"));
                 boolean alreadyFailed = m.getReviewerNotes() != null
                         && m.getReviewerNotes().contains("ground-check failed");
@@ -137,11 +143,15 @@ public class GroundCheckStage implements Stage {
     }
 
     private void processBatch(List<Mapping> batch, Map<String, Obligation> oblMap,
-                              PipelineContext ctx, List<String> evidenceHashes) {
-        // B10: collect distinct documentIds in this batch, then fetch full extracted doc text
-        // from S3 (extractions/{docId}.txt) once per docId. This replaces the obligation
-        // sourceTextSnippet (a Haiku paraphrase) with the original text the LLM actually saw.
-        // Known limitation: obligations from text beyond DOC_TEXT_MAX_CHARS are verified against
+            PipelineContext ctx, List<String> evidenceHashes) {
+        // B10: collect distinct documentIds in this batch, then fetch full extracted
+        // doc text
+        // from S3 (extractions/{docId}.txt) once per docId. This replaces the
+        // obligation
+        // sourceTextSnippet (a Haiku paraphrase) with the original text the LLM
+        // actually saw.
+        // Known limitation: obligations from text beyond DOC_TEXT_MAX_CHARS are
+        // verified against
         // a truncated document; this keeps NOVA-PRO token cost manageable.
         Map<String, String> docTexts = new HashMap<>();
         for (Mapping mapping : batch) {
@@ -188,9 +198,12 @@ public class GroundCheckStage implements Stage {
         }
 
         // Build input for the batch tool call.
-        // B10-fix: send each unique document text ONCE in a top-level "documents" map keyed by
-        // doc_id. Each check references its doc via "doc_id" instead of inlining the full text
-        // repeatedly — this prevents token explosion when multiple mappings share the same document.
+        // B10-fix: send each unique document text ONCE in a top-level "documents" map
+        // keyed by
+        // doc_id. Each check references its doc via "doc_id" instead of inlining the
+        // full text
+        // repeatedly — this prevents token explosion when multiple mappings share the
+        // same document.
         List<Map<String, String>> checks = new ArrayList<>();
         Map<String, Mapping> byId = new HashMap<>();
         for (Mapping mapping : batch) {
@@ -202,7 +215,8 @@ public class GroundCheckStage implements Stage {
             Map<String, String> check = new HashMap<>();
             check.put("mapping_id", mapping.getId());
             check.put("claim", mapping.getSemanticReason());
-            // Reference document by id rather than embedding the full text in every check entry.
+            // Reference document by id rather than embedding the full text in every check
+            // entry.
             // The model receives documents[doc_id] = <text> in the top-level payload.
             check.put("doc_id", docId != null ? docId : "");
             checks.add(check);
@@ -210,7 +224,7 @@ public class GroundCheckStage implements Stage {
         }
 
         Map<String, Object> userInput = new HashMap<>();
-        userInput.put("documents", docTexts);   // unique doc texts, keyed by documentId
+        userInput.put("documents", docTexts); // unique doc texts, keyed by documentId
         userInput.put("checks", checks);
 
         try {
@@ -219,8 +233,7 @@ public class GroundCheckStage implements Stage {
                     BedrockModel.NOVA_PRO.getModelId(),
                     SystemPrompts.GROUND_CHECK_BATCH,
                     userInput,
-                    ToolDefinitions.BATCH_GROUND_CHECK_TOOL
-            );
+                    ToolDefinitions.BATCH_GROUND_CHECK_TOOL);
 
             JsonNode results = toolInput.path("results");
             if (results.isArray()) {
@@ -228,7 +241,8 @@ public class GroundCheckStage implements Stage {
                     String mappingId = resultNode.path("mapping_id").asText(null);
                     boolean verified = resultNode.path("verified").asBoolean(true);
                     Mapping mapping = byId.get(mappingId);
-                    if (mapping == null) continue;
+                    if (mapping == null)
+                        continue;
                     applyResult(mapping, verified, ctx, evidenceHashes);
                 }
             }
