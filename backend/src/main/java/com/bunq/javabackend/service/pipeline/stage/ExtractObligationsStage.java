@@ -223,7 +223,7 @@ public class ExtractObligationsStage implements Stage {
         String regulationName = doc != null
                 ? stripPdf(doc.getFilename())
                 : "REG-" + ctx.getSessionId();
-        return parseObligations(toolInput, ctx.getSessionId(), documentId, regulationName);
+        return parseObligations(ctx, chunkText, toolInput, ctx.getSessionId(), documentId, regulationName);
     }
 
     private Obligation cloneObligation(Obligation original, String sessionId) {
@@ -257,7 +257,8 @@ public class ExtractObligationsStage implements Stage {
         return name.endsWith(".pdf") ? name.substring(0, name.length() - 4) : name;
     }
 
-    private List<Obligation> parseObligations(JsonNode toolInput, String sessionId, String documentId,
+    private List<Obligation> parseObligations(PipelineContext ctx, String chunkText,
+                                              JsonNode toolInput, String sessionId, String documentId,
                                               String regulationName) {
         List<Obligation> result = new ArrayList<>();
         if (toolInput == null || toolInput.isMissingNode()) return result;
@@ -287,7 +288,8 @@ public class ExtractObligationsStage implements Stage {
                 }
 
                 ObligationSource source = new ObligationSource();
-                source.setSourceText(node.path("source_text_snippet").asText(null));
+                String snippet = node.path("source_text_snippet").asText(null);
+                source.setSourceText(snippet);
                 source.setRegulation(regulationName);
                 source.setArticle(blankToNull(node.path("article").asText(null)));
                 source.setSection(blankToNull(node.path("section").asText(null)));
@@ -297,12 +299,36 @@ public class ExtractObligationsStage implements Stage {
                 }
                 obl.setSource(source);
 
+                if (!isGrounded(snippet, chunkText)) {
+                    String preview = snippet != null && snippet.length() > 60
+                            ? snippet.substring(0, 60) + "..." : snippet;
+                    log.warn("Obligation rejected (snippet not grounded in chunk); subject='{}' snippet='{}'",
+                            obl.getSubject(), preview);
+                    ctx.getSseEmitterService().send(sessionId, "obligation.rejected",
+                            Map.of("reason", "snippet_not_grounded",
+                                    "subject", obl.getSubject() != null ? obl.getSubject() : "",
+                                    "snippet_preview", preview != null ? preview : ""));
+                    continue;
+                }
+
                 result.add(obl);
             } catch (Exception e) {
                 log.warn("Failed to parse obligation node: {}", e.getMessage());
             }
         }
         return result;
+    }
+
+    private static boolean isGrounded(String snippet, String chunkText) {
+        if (snippet == null || snippet.isBlank() || chunkText == null) return false;
+        String n = normalize(snippet);
+        if (n.isEmpty()) return false;
+        String needle = n.length() > 30 ? n.substring(0, 30) : n;
+        return normalize(chunkText).contains(needle);
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("\\s+", " ").trim();
     }
 
     private com.bunq.javabackend.model.enums.DeonticOperator parseEnum(String raw) {

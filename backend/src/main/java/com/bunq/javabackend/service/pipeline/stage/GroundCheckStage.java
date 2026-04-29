@@ -19,7 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +39,9 @@ import java.util.stream.Collectors;
 public class GroundCheckStage implements Stage {
 
     private static final int BATCH_SIZE = 50;
+    /** Truncation cap for full document text sent to NOVA-PRO. Keeps token cost manageable.
+     *  Known limitation: obligations from text beyond this offset are verified against a truncated document. */
+    private static final int DOC_TEXT_MAX_CHARS = 200_000;
 
     private final BedrockService bedrockService;
     private final MappingRepository mappingRepository;
@@ -43,6 +50,10 @@ public class GroundCheckStage implements Stage {
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
     private final Executor pipelineExecutor;
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.uploads-bucket}")
+    private String uploadsBucket;
 
     public GroundCheckStage(BedrockService bedrockService,
                             MappingRepository mappingRepository,
@@ -50,6 +61,7 @@ public class GroundCheckStage implements Stage {
                             ObjectMapper objectMapper,
                             AuditLogService auditLogService,
                             EvidenceRepository evidenceRepository,
+                            S3Client s3Client,
                             @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.bedrockService = bedrockService;
         this.mappingRepository = mappingRepository;
@@ -57,6 +69,7 @@ public class GroundCheckStage implements Stage {
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
         this.evidenceRepository = evidenceRepository;
+        this.s3Client = s3Client;
         this.pipelineExecutor = pipelineExecutor;
     }
 
@@ -81,9 +94,27 @@ public class GroundCheckStage implements Stage {
                     .collect(Collectors.toMap(Obligation::getId, o -> o, (a, b) -> a));
 
             // Collect only mappings that have a semanticReason
-            List<Mapping> toCheck = mappings.stream()
-                    .filter(m -> m.getSemanticReason() != null)
-                    .toList();
+            // B7: partition into cached (skip LLM re-check) and those that need verification
+            List<Mapping> skipped = new ArrayList<>();
+            List<Mapping> toCheck = new ArrayList<>();
+            for (Mapping m : mappings) {
+                if (m.getSemanticReason() == null) continue;
+                boolean isCached = m.getMetadata() != null && "cached".equals(m.getMetadata().get("route"));
+                boolean alreadyFailed = m.getReviewerNotes() != null
+                        && m.getReviewerNotes().contains("ground-check failed");
+                if (isCached && !alreadyFailed) {
+                    skipped.add(m);
+                } else {
+                    toCheck.add(m);
+                }
+            }
+
+            // B7: emit verified SSE for skipped cached mappings so UI sees a uniform stream
+            for (Mapping m : skipped) {
+                ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.verified",
+                        MappingMapper.toDto(m));
+            }
+            log.info("GroundCheck skip: {} cached mappings already verified", skipped.size());
 
             // Partition into batches of BATCH_SIZE
             List<List<Mapping>> batches = new ArrayList<>();
@@ -100,8 +131,8 @@ public class GroundCheckStage implements Stage {
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-            log.info("GroundCheckStage: checked {} mappings in {} batches for session {}",
-                    toCheck.size(), batches.size(), ctx.getSessionId());
+            log.info("GroundCheckStage: checked {} mappings in {} batches for session {} (skipped {} cached)",
+                    toCheck.size(), batches.size(), ctx.getSessionId(), skipped.size());
         });
     }
 

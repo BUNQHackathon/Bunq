@@ -15,7 +15,9 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.RetrieveRespons
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,7 +34,8 @@ public class KnowledgeBaseService {
             String chunkId,
             double score,
             String s3Uri,
-            String text
+            String text,
+            Map<String, String> metadata
     ) {}
 
     public CompletableFuture<List<RetrievedChunk>> retrieveControls(String query, int topK) {
@@ -167,7 +170,16 @@ public class KnowledgeBaseService {
                     ? s3Uri + "#" + Integer.toHexString(Objects.hashCode(result.content().text()))
                     : kbType.name() + "#" + Integer.toHexString(Objects.hashCode(result.content().text()));
             double score = result.score() != null ? result.score() : 0.0;
-            return new RetrievedChunk(kbType, chunkId, score, s3Uri, result.content().text());
+
+            // Extract metadata map — Bedrock returns Map<String, Document>; convert to Map<String, String>
+            Map<String, String> metadata = new HashMap<>();
+            if (result.metadata() != null) {
+                result.metadata().forEach((k, v) -> {
+                    if (v != null) metadata.put(k, v.toString());
+                });
+            }
+
+            return new RetrievedChunk(kbType, chunkId, score, s3Uri, result.content().text(), metadata);
         } catch (Exception ex) {
             log.warn("Failed to map KB result for {}: {}", kbType, ex.getMessage());
             return null;

@@ -31,10 +31,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class BedrockService {
+
+    // B4: retry constants — retry the same model before falling through the chain
+    private static final int MAX_SAME_MODEL_RETRIES = 3;
+    private static final long BASE_BACKOFF_MS = 100L;
 
     // Fallback chain: if a model is throttled, retry on the next model in the list.
     // Order is cheapest→most-capable so we only escalate under pressure.
@@ -67,6 +73,20 @@ public class BedrockService {
         this.bedrockPermits = new Semaphore(maxConcurrent);
     }
 
+    /**
+     * B4: Sleeps with exponential backoff + jitter before a retry.
+     * Re-interrupts and rethrows as RuntimeException on InterruptedException.
+     */
+    private static void backoffSleep(int attempt) {
+        long delay = BASE_BACKOFF_MS * (1L << attempt) + ThreadLocalRandom.current().nextLong(0, 100);
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted during Bedrock backoff sleep", ie);
+        }
+    }
+
     public JsonNode invokeModel(String modelId, String requestJson) {
         List<String> candidates = new java.util.ArrayList<>();
         candidates.add(modelId);
@@ -75,48 +95,68 @@ public class BedrockService {
         ThrottlingException lastThrottle = null;
         for (int i = 0; i < candidates.size(); i++) {
             String currentModel = candidates.get(i);
-            try {
-                bedrockPermits.acquire();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
-            }
-            try {
-                if (isNovaModel(currentModel)) {
-                    if (i > 0) {
-                        log.warn("Falling back from {} to Nova model {} via Converse API", candidates.get(i - 1), currentModel);
-                    }
-                    return invokeNovaViaConverse(currentModel, requestJson);
-                }
-                InvokeModelRequest request = InvokeModelRequest.builder()
-                        .modelId(currentModel)
-                        .contentType("application/json")
-                        .accept("application/json")
-                        .body(SdkBytes.fromUtf8String(requestJson))
-                        .build();
 
-                InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
+            // B4: retry the same model up to MAX_SAME_MODEL_RETRIES times before falling through
+            for (int attempt = 0; attempt <= MAX_SAME_MODEL_RETRIES; attempt++) {
+                if (attempt > 0) {
+                    log.warn("Model {} throttled, retry attempt {}/{} with backoff", currentModel, attempt, MAX_SAME_MODEL_RETRIES);
+                    backoffSleep(attempt - 1);
+                }
+
+                // B5b: bounded semaphore acquire with 60s timeout
+                boolean acquired;
                 try {
-                    JsonNode root = objectMapper.readTree(response.body().asUtf8String());
-                    JsonNode usage = root.path("usage");
-                    if (!usage.isMissingNode()) {
-                        log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
-                                usage.path("cache_creation_input_tokens").asInt(),
-                                usage.path("cache_read_input_tokens").asInt(),
-                                usage.path("input_tokens").asInt(),
-                                usage.path("output_tokens").asInt());
+                    acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
+                }
+                if (!acquired) {
+                    throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s");
+                }
+
+                try {
+                    if (isNovaModel(currentModel)) {
+                        if (i > 0) {
+                            log.warn("Falling back from {} to Nova model {} via Converse API", candidates.get(i - 1), currentModel);
+                        }
+                        return invokeNovaViaConverse(currentModel, requestJson);
                     }
-                    return root;
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to parse Bedrock response", e);
+                    InvokeModelRequest request = InvokeModelRequest.builder()
+                            .modelId(currentModel)
+                            .contentType("application/json")
+                            .accept("application/json")
+                            .body(SdkBytes.fromUtf8String(requestJson))
+                            .build();
+
+                    InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
+                    try {
+                        JsonNode root = objectMapper.readTree(response.body().asUtf8String());
+                        JsonNode usage = root.path("usage");
+                        if (!usage.isMissingNode()) {
+                            log.info("Bedrock usage — cache_creation={} cache_read={} input={} output={}",
+                                    usage.path("cache_creation_input_tokens").asInt(),
+                                    usage.path("cache_read_input_tokens").asInt(),
+                                    usage.path("input_tokens").asInt(),
+                                    usage.path("output_tokens").asInt());
+                        }
+                        return root;
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to parse Bedrock response", e);
+                    }
+                } catch (ThrottlingException e) {
+                    lastThrottle = e;
+                    if (attempt < MAX_SAME_MODEL_RETRIES) {
+                        // will retry same model
+                    } else {
+                        // exhausted retries for this model; fall through to next in chain
+                        if (i + 1 < candidates.size()) {
+                            log.warn("Model {} throttled after {} retries, falling back to {}", currentModel, MAX_SAME_MODEL_RETRIES, candidates.get(i + 1));
+                        }
+                    }
+                } finally {
+                    bedrockPermits.release();
                 }
-            } catch (ThrottlingException e) {
-                lastThrottle = e;
-                if (i + 1 < candidates.size()) {
-                    log.warn("Model {} throttled after retries, falling back to {}", currentModel, candidates.get(i + 1));
-                }
-            } finally {
-                bedrockPermits.release();
             }
         }
         throw lastThrottle;
@@ -305,90 +345,119 @@ public class BedrockService {
             ThrottlingException lastThrottle = null;
             for (int i = 0; i < candidates.size(); i++) {
                 String currentModel = candidates.get(i);
-                try {
-                    bedrockPermits.acquire();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
-                }
-                try {
-                    if (isNovaModel(currentModel)) {
-                        if (i > 0) {
-                            log.warn("Falling back from {} to Nova model {} via Converse API", candidates.get(i - 1), currentModel);
-                        }
-                        return invokeNovaWithToolViaConverse(currentModel, systemPrompt, userText, toolJson);
+
+                // B4: retry the same model up to MAX_SAME_MODEL_RETRIES times before falling through
+                for (int attempt = 0; attempt <= MAX_SAME_MODEL_RETRIES; attempt++) {
+                    if (attempt > 0) {
+                        log.warn("Model {} throttled, retry attempt {}/{} with backoff", currentModel, attempt, MAX_SAME_MODEL_RETRIES);
+                        backoffSleep(attempt - 1);
                     }
 
-                    // Anthropic path
-                    String requestJson = """
-                            {
-                              "anthropic_version": "bedrock-2023-05-31",
-                              "max_tokens": 32768,
-                              "system": [
-                                {
-                                  "type": "text",
-                                  "text": %s,
-                                  "cache_control": {"type": "ephemeral"}
-                                }
-                              ],
-                              "tools": [%s],
-                              "tool_choice": {"type": "any"},
-                              "messages": [
-                                {
-                                  "role": "user",
-                                  "content": %s
-                                }
-                              ]
+                    // B5b: bounded semaphore acquire with 60s timeout
+                    boolean acquired;
+                    try {
+                        acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
+                    }
+                    if (!acquired) {
+                        throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s");
+                    }
+
+                    try {
+                        if (isNovaModel(currentModel)) {
+                            if (i > 0) {
+                                log.warn("Falling back from {} to Nova model {} via Converse API", candidates.get(i - 1), currentModel);
                             }
-                            """.formatted(
-                            objectMapper.writeValueAsString(systemPrompt),
-                            toolJson,
-                            objectMapper.writeValueAsString(userText));
+                            return invokeNovaWithToolViaConverse(currentModel, systemPrompt, userText, toolJson);
+                        }
 
-                    InvokeModelRequest request = InvokeModelRequest.builder()
-                            .modelId(currentModel)
-                            .contentType("application/json")
-                            .accept("application/json")
-                            .body(SdkBytes.fromUtf8String(requestJson))
-                            .build();
-
-                    InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
-                    JsonNode root = objectMapper.readTree(response.body().asUtf8String());
-
-                    // Extract tool_use input block
-                    JsonNode content = root.path("content");
-                    if (content.isArray()) {
-                        for (JsonNode block : content) {
-                            if ("tool_use".equals(block.path("type").asText())) {
-                                JsonNode input = block.path("input");
-                                // DIAG: log empty/suspect tool_use inputs to surface truncation
-                                String stopReason = root.path("stop_reason").asText("?");
-                                if (input.isMissingNode() || input.isEmpty()) {
-                                    log.warn("Bedrock tool_use input EMPTY (stop_reason={}, raw_block={})",
-                                            stopReason, block.toString().substring(0, Math.min(500, block.toString().length())));
-                                } else if ("max_tokens".equals(stopReason)) {
-                                    log.warn("Bedrock tool_use TRUNCATED at max_tokens (stop_reason={}, input_keys={}, sample={})",
-                                            stopReason,
-                                            input.propertyNames(),
-                                            input.toString().substring(0, Math.min(800, input.toString().length())));
+                        // Anthropic path
+                        // B1: temperature=0 for deterministic/reproducible tool-use calls
+                        // B2: cache_control ttl extended to 1h for longer prompt cache retention
+                        // NOTE: As of 2026-04, AWS Bedrock does not expose an anthropic-beta header
+                        // mechanism via InvokeModelRequest. The "ttl" field in cache_control is sent
+                        // as-is in the JSON body; whether Bedrock honours it depends on backend support.
+                        // If extended-cache-ttl is not yet active on Bedrock, this field is silently
+                        // ignored and the default TTL applies. Re-evaluate when Bedrock publishes
+                        // support for anthropic-beta: extended-cache-ttl-2025-04-11.
+                        String requestJson = """
+                                {
+                                  "anthropic_version": "bedrock-2023-05-31",
+                                  "max_tokens": 32768,
+                                  "temperature": 0,
+                                  "system": [
+                                    {
+                                      "type": "text",
+                                      "text": %s,
+                                      "cache_control": {"type": "ephemeral", "ttl": "1h"}
+                                    }
+                                  ],
+                                  "tools": [%s],
+                                  "tool_choice": {"type": "any"},
+                                  "messages": [
+                                    {
+                                      "role": "user",
+                                      "content": %s
+                                    }
+                                  ]
                                 }
-                                return input;
+                                """.formatted(
+                                objectMapper.writeValueAsString(systemPrompt),
+                                toolJson,
+                                objectMapper.writeValueAsString(userText));
+
+                        InvokeModelRequest request = InvokeModelRequest.builder()
+                                .modelId(currentModel)
+                                .contentType("application/json")
+                                .accept("application/json")
+                                .body(SdkBytes.fromUtf8String(requestJson))
+                                .build();
+
+                        InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request);
+                        JsonNode root = objectMapper.readTree(response.body().asUtf8String());
+
+                        // Extract tool_use input block
+                        JsonNode content = root.path("content");
+                        if (content.isArray()) {
+                            for (JsonNode block : content) {
+                                if ("tool_use".equals(block.path("type").asText())) {
+                                    JsonNode input = block.path("input");
+                                    // DIAG: log empty/suspect tool_use inputs to surface truncation
+                                    String stopReason = root.path("stop_reason").asText("?");
+                                    if (input.isMissingNode() || input.isEmpty()) {
+                                        log.warn("Bedrock tool_use input EMPTY (stop_reason={}, raw_block={})",
+                                                stopReason, block.toString().substring(0, Math.min(500, block.toString().length())));
+                                    } else if ("max_tokens".equals(stopReason)) {
+                                        log.warn("Bedrock tool_use TRUNCATED at max_tokens (stop_reason={}, input_keys={}, sample={})",
+                                                stopReason,
+                                                input.propertyNames(),
+                                                input.toString().substring(0, Math.min(800, input.toString().length())));
+                                    }
+                                    return input;
+                                }
+                            }
+                            // No tool_use block found — log what came back instead
+                            log.warn("Bedrock returned no tool_use block (stop_reason={}, content_types={})",
+                                    root.path("stop_reason").asText("?"),
+                                    java.util.stream.StreamSupport.stream(content.spliterator(), false)
+                                            .map(b -> b.path("type").asText("?")).toList());
+                        }
+                        return root;
+                    } catch (ThrottlingException e) {
+                        lastThrottle = e;
+                        if (attempt < MAX_SAME_MODEL_RETRIES) {
+                            // will retry same model
+                        } else {
+                            // exhausted retries for this model; fall through to next in chain
+                            if (i + 1 < candidates.size()) {
+                                log.warn("Model {} throttled after {} retries, falling back to {}", currentModel, MAX_SAME_MODEL_RETRIES, candidates.get(i + 1));
                             }
                         }
-                        // No tool_use block found — log what came back instead
-                        log.warn("Bedrock returned no tool_use block (stop_reason={}, content_types={})",
-                                root.path("stop_reason").asText("?"),
-                                java.util.stream.StreamSupport.stream(content.spliterator(), false)
-                                        .map(b -> b.path("type").asText("?")).toList());
+                    } finally {
+                        bedrockPermits.release();
                     }
-                    return root;
-                } catch (ThrottlingException e) {
-                    lastThrottle = e;
-                    if (i + 1 < candidates.size()) {
-                        log.warn("Model {} throttled after retries, falling back to {}", currentModel, candidates.get(i + 1));
-                    }
-                } finally {
-                    bedrockPermits.release();
                 }
             }
             throw lastThrottle;

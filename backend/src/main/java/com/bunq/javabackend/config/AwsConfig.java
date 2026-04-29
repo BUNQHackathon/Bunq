@@ -63,7 +63,7 @@ public class AwsConfig {
                 .region(Region.of(bedrockRegion))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
                         .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
-                        .apiCallTimeout(Duration.ofSeconds(600))
+                        .apiCallTimeout(Duration.ofSeconds(120))
                         .apiCallAttemptTimeout(Duration.ofSeconds(540))
                         .build())
                 .httpClientBuilder(ApacheHttpClient.builder()

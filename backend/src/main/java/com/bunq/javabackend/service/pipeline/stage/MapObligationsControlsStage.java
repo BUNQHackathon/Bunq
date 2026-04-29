@@ -13,6 +13,7 @@ import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.service.infra.AuditLogService;
 import com.bunq.javabackend.service.ai.kb.KnowledgeBaseService;
+import com.bunq.javabackend.service.ai.kb.Reranker;
 import com.bunq.javabackend.service.ai.bedrock.MatchResult;
 import com.bunq.javabackend.service.ai.bedrock.MatchableControl;
 import com.bunq.javabackend.service.ai.bedrock.MatchableObligation;
@@ -42,7 +43,8 @@ public class MapObligationsControlsStage implements Stage {
 
     private static final int BATCH_SIZE = 10;
     private static final int MAX_CANDIDATE_CONTROLS = 20;
-    private static final int KB_TOP_K = 5;
+    private static final int KB_TOP_K = 20;  // fetch more from KB; reranker narrows to RERANK_TOP_N
+    private static final int RERANK_TOP_N = 5;
 
     private final ObligationControlMatcher matcher;
     private final MappingRepository mappingRepository;
@@ -51,12 +53,14 @@ public class MapObligationsControlsStage implements Stage {
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
     private final KnowledgeBaseService knowledgeBaseService;
+    private final Reranker reranker;
     private final Executor pipelineExecutor;
 
     public MapObligationsControlsStage(ObligationControlMatcher matcher, MappingRepository mappingRepository,
                                        ObligationRepository obligationRepository, ControlRepository controlRepository,
                                        AuditLogService auditLogService, EvidenceRepository evidenceRepository,
                                        KnowledgeBaseService knowledgeBaseService,
+                                       Reranker reranker,
                                        @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.matcher = matcher;
         this.mappingRepository = mappingRepository;
@@ -65,6 +69,7 @@ public class MapObligationsControlsStage implements Stage {
         this.auditLogService = auditLogService;
         this.evidenceRepository = evidenceRepository;
         this.knowledgeBaseService = knowledgeBaseService;
+        this.reranker = reranker;
         this.pipelineExecutor = pipelineExecutor;
     }
 

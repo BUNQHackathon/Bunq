@@ -168,7 +168,7 @@ public class ExtractControlsStage implements Stage {
         );
 
         String documentId = doc != null ? doc.getId() : null;
-        List<Control> extracted = parseControls(toolInput, ctx.getSessionId(), documentId);
+        List<Control> extracted = parseControls(ctx, text, toolInput, ctx.getSessionId(), documentId);
 
         for (Control ctrl : extracted) {
             controlRepository.save(ctrl);
@@ -207,7 +207,8 @@ public class ExtractControlsStage implements Stage {
         return clone;
     }
 
-    private List<Control> parseControls(JsonNode toolInput, String sessionId, String documentId) {
+    private List<Control> parseControls(PipelineContext ctx, String sourceText,
+                                        JsonNode toolInput, String sessionId, String documentId) {
         List<Control> result = new ArrayList<>();
         if (toolInput == null || toolInput.isMissingNode()) return result;
 
@@ -239,11 +240,37 @@ public class ExtractControlsStage implements Stage {
                     ctrl.setMappedStandards(standards);
                 }
 
+                String snippet = node.path("source_text_snippet").asText(null);
+
+                if (!isGrounded(snippet, sourceText)) {
+                    String preview = snippet != null && snippet.length() > 60
+                            ? snippet.substring(0, 60) + "..." : snippet;
+                    log.warn("Control rejected (snippet not grounded in source); description='{}' snippet='{}'",
+                            ctrl.getDescription(), preview);
+                    ctx.getSseEmitterService().send(sessionId, "control.rejected",
+                            Map.of("reason", "snippet_not_grounded",
+                                    "subject", ctrl.getDescription() != null ? ctrl.getDescription() : "",
+                                    "snippet_preview", preview != null ? preview : ""));
+                    continue;
+                }
+
                 result.add(ctrl);
             } catch (Exception e) {
                 log.warn("Failed to parse control node: {}", e.getMessage());
             }
         }
         return result;
+    }
+
+    private static boolean isGrounded(String snippet, String sourceText) {
+        if (snippet == null || snippet.isBlank() || sourceText == null) return false;
+        String n = normalize(snippet);
+        if (n.isEmpty()) return false;
+        String needle = n.length() > 30 ? n.substring(0, 30) : n;
+        return normalize(sourceText).contains(needle);
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("\\s+", " ").trim();
     }
 }

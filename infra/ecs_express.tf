@@ -144,6 +144,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
       name  = "ADMIN_TOKEN"
       value = "demo-test-7f3a9b2c"
     }
+    environment {
+      name  = "CORS_ALLOWED_ORIGINS"
+      value = var.amplify_origin
+    }
 
     secret {
       name       = "OPENSANCTIONS_API_KEY"
@@ -164,4 +168,28 @@ resource "aws_ecs_express_gateway_service" "backend" {
     null_resource.jib_build,
     aws_iam_role_policy.ecs_task_execution_secrets,
   ]
+}
+
+# ── ALB idle timeout ──────────────────────────────────────────────────────────
+# Express Mode auto-provisions the ALB and aws_ecs_express_gateway_service does
+# not expose load_balancer_attributes. Default idle_timeout is 60s, which kills
+# long SSE chat streams. Look up the managed ALB by tag and bump it to 300s.
+data "aws_lbs" "express" {
+  tags = {
+    AmazonECSManaged = "true"
+    Project          = var.project_prefix
+  }
+
+  depends_on = [aws_ecs_express_gateway_service.backend]
+}
+
+resource "null_resource" "alb_idle_timeout" {
+  triggers = {
+    lb_arn  = tolist(data.aws_lbs.express.arns)[0]
+    timeout = "300"
+  }
+
+  provisioner "local-exec" {
+    command = "aws elbv2 modify-load-balancer-attributes --region ${var.region} --load-balancer-arn ${tolist(data.aws_lbs.express.arns)[0]} --attributes Key=idle_timeout.timeout_seconds,Value=300"
+  }
 }
