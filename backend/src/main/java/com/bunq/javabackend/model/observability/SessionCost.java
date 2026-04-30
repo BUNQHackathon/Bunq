@@ -29,7 +29,7 @@ import java.util.Map;
 public class SessionCost {
 
     @Getter(onMethod_ = {@DynamoDbPartitionKey, @DynamoDbAttribute("session_id")})
-    private String sessionId;
+    private String sessionId; // DynamoDB PK attribute name: session_id
 
     @Getter(onMethod_ = @DynamoDbAttribute("total_input_tokens"))
     private long totalInputTokens;

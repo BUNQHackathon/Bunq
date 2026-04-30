@@ -229,7 +229,7 @@ public class ExtractObligationsStage implements Stage {
 
     private Obligation cloneObligation(Obligation original, String sessionId) {
         Obligation clone = new Obligation();
-        clone.setId(IdGenerator.generateObligationId());
+        clone.setId(original.getId());  // preserve content-addressable ID so mapping cache works
         clone.setSessionId(sessionId);
         clone.setDocumentId(original.getDocumentId());
         clone.setDeontic(original.getDeontic());
@@ -271,12 +271,14 @@ public class ExtractObligationsStage implements Stage {
         for (JsonNode node : arrayNode) {
             try {
                 Obligation obl = new Obligation();
-                obl.setId(IdGenerator.generateObligationId());
+                String oblSubject = node.path("subject").asText(null);
+                String oblAction  = node.path("action").asText(null);
+                obl.setId(IdGenerator.obligationId(documentId, oblSubject, oblAction));
                 obl.setSessionId(sessionId);
                 obl.setDocumentId(documentId);
                 obl.setDeontic(parseEnum(node.path("deontic").asText()));
-                obl.setSubject(node.path("subject").asText(null));
-                obl.setAction(node.path("action").asText(null));
+                obl.setSubject(oblSubject);
+                obl.setAction(oblAction);
                 obl.setRiskCategory(node.path("risk_category").asText(null));
                 obl.setExtractionConfidence(node.path("extraction_confidence").asDouble(0.0));
                 obl.setExtractedAt(Instant.now());

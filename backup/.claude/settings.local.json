@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python backup_dynamodb.py --profile default --region eu-central-1 --out-dir dynamodb_backup)",
+      "Bash(mkdir -p s3_backup)",
+      "Bash(aws s3 *)"
+    ]
+  }
+}

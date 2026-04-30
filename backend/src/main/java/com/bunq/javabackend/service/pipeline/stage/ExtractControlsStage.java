@@ -189,7 +189,7 @@ public class ExtractControlsStage implements Stage {
 
     private Control cloneControl(Control original, String sessionId) {
         Control clone = new Control();
-        clone.setId(IdGenerator.generateControlId());
+        clone.setId(original.getId());  // preserve content-addressable ID
         clone.setSessionId(sessionId);
         clone.setDocumentId(original.getDocumentId());
         clone.setControlType(original.getControlType());
@@ -219,10 +219,11 @@ public class ExtractControlsStage implements Stage {
         for (JsonNode node : arrayNode) {
             try {
                 Control ctrl = new Control();
-                ctrl.setId(IdGenerator.generateControlId());
+                String ctrlDesc = node.path("description").asText(null);
+                ctrl.setId(IdGenerator.controlId(documentId, ctrlDesc));
                 ctrl.setSessionId(sessionId);
                 ctrl.setDocumentId(documentId);
-                ctrl.setDescription(node.path("description").asText(null));
+                ctrl.setDescription(ctrlDesc);
                 ctrl.setOwner(node.path("owner").asText(null));
 
                 String typeStr = node.path("control_type").asText(null);

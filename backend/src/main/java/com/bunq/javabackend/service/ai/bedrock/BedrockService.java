@@ -380,6 +380,27 @@ public class BedrockService {
         try {
             String userText = objectMapper.writeValueAsString(userInput);
 
+            // B2-extended: also mark the tool definition as cacheable so Bedrock caches
+            // the tools block (typically 1-3k tokens) alongside the system prompt.
+            // Done once per call before the retry loop; same input toolJson → byte-identical output.
+            String cachedToolJson;
+            try {
+                JsonNode toolNode = objectMapper.readTree(toolJson);
+                if (toolNode.isObject()) {
+                    ObjectNode toolObj = (ObjectNode) toolNode;
+                    ObjectNode cacheControl = objectMapper.createObjectNode();
+                    cacheControl.put("type", "ephemeral");
+                    cacheControl.put("ttl", "1h");
+                    toolObj.set("cache_control", cacheControl);
+                    cachedToolJson = objectMapper.writeValueAsString(toolObj);
+                } else {
+                    cachedToolJson = toolJson;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to add cache_control to tool definition, falling back to uncached tools: {}", e.getMessage());
+                cachedToolJson = toolJson;
+            }
+
             List<String> candidates = new java.util.ArrayList<>();
             candidates.add(modelId);
             candidates.addAll(FALLBACK_CHAIN.getOrDefault(modelId, List.of()));
@@ -449,7 +470,7 @@ public class BedrockService {
                                 }
                                 """.formatted(
                                 objectMapper.writeValueAsString(systemPrompt),
-                                toolJson,
+                                cachedToolJson,
                                 objectMapper.writeValueAsString(userText));
 
                         InvokeModelRequest request = InvokeModelRequest.builder()

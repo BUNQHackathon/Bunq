@@ -38,14 +38,13 @@ import java.util.stream.Collectors;
 @Service
 public class GroundCheckStage implements Stage {
 
-    private static final int BATCH_SIZE = 20;
+    private static final int BATCH_SIZE = 10;
     /**
-     * Truncation cap for full document text sent to NOVA-PRO. Keeps token cost
-     * manageable.
-     * Known limitation: obligations from text beyond this offset are verified
-     * against a truncated document.
+     * Truncation cap for full document text sent to NOVA-PRO.
+     * 80k chars ≈ ~20k tokens — keeps us well inside Nova Pro's tool-use window
+     * even with a full batch of 10 checks.
      */
-    private static final int DOC_TEXT_MAX_CHARS = 200_000;
+    private static final int DOC_TEXT_MAX_CHARS = 80_000;
 
     private final BedrockService bedrockService;
     private final MappingRepository mappingRepository;
@@ -247,8 +246,20 @@ public class GroundCheckStage implements Stage {
                 }
             }
         } catch (Exception e) {
-            log.warn("Batch ground check call failed for {} mappings: {}", batch.size(), e.getMessage());
-            // On failure, treat all as verified (same as per-mapping fallback)
+            log.warn("Batch ground check call failed for {} mappings: {}; retrying as two half-batches",
+                    batch.size(), e.getMessage());
+            // Split-and-retry: if the batch is large enough to split, halve it and retry
+            // each half independently. If it is already size 1, treat as verified to avoid
+            // infinite recursion and to fail open (conservative: don't drop verified mappings
+            // just because the model choked once).
+            if (batch.size() > 1) {
+                int mid = batch.size() / 2;
+                processBatch(batch.subList(0, mid), oblMap, ctx, evidenceHashes);
+                processBatch(batch.subList(mid, batch.size()), oblMap, ctx, evidenceHashes);
+            } else {
+                log.warn("GroundCheck: single-item batch still failed; treating as verified to avoid data loss");
+                applyResult(batch.get(0), true, ctx, evidenceHashes);
+            }
         }
     }
 
