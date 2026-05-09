@@ -7,16 +7,16 @@ moved {
 resource "aws_dynamodb_table" "session_costs" {
   name         = "${local.name_prefix}-session-costs"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "sessionId"
+  hash_key     = "session_id"
 
   attribute {
-    name = "sessionId"
+    name = "session_id"
     type = "S"
   }
 }
 
 resource "aws_dynamodb_table" "this" {
-  for_each     = toset([for t in local.dynamodb_tables : t if !contains(["audit-log", "obligations", "controls"], t)])
+  for_each     = toset([for t in local.dynamodb_tables : t if !contains(["audit-log", "obligations", "controls", "mappings", "gaps", "evidence", "sanctions-hits"], t)])
   name         = "${local.name_prefix}-${each.value}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
@@ -24,6 +24,114 @@ resource "aws_dynamodb_table" "this" {
   attribute {
     name = "id"
     type = "S"
+  }
+}
+
+moved {
+  from = aws_dynamodb_table.this["mappings"]
+  to   = aws_dynamodb_table.mappings
+}
+
+moved {
+  from = aws_dynamodb_table.this["gaps"]
+  to   = aws_dynamodb_table.gaps
+}
+
+moved {
+  from = aws_dynamodb_table.this["evidence"]
+  to   = aws_dynamodb_table.evidence
+}
+
+moved {
+  from = aws_dynamodb_table.this["sanctions-hits"]
+  to   = aws_dynamodb_table.sanctions_hits
+}
+
+resource "aws_dynamodb_table" "mappings" {
+  name         = "${local.name_prefix}-mappings"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "gaps" {
+  name         = "${local.name_prefix}-gaps"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "evidence" {
+  name         = "${local.name_prefix}-evidence"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "sanctions_hits" {
+  name         = "${local.name_prefix}-sanctions-hits"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "session-id-index"
+    hash_key        = "session_id"
+    projection_type = "ALL"
   }
 }
 
@@ -198,6 +306,17 @@ resource "aws_dynamodb_table" "sessions" {
     hash_key        = "launch_id"
     range_key       = "createdAt"
     projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "audit_chain_tails" {
+  name         = "${local.name_prefix}-audit-chain-tails"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "session_id"
+
+  attribute {
+    name = "session_id"
+    type = "S"
   }
 }
 

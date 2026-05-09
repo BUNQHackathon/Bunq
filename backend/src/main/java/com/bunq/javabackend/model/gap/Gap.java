@@ -1,5 +1,6 @@
 package com.bunq.javabackend.model.gap;
 
+import com.bunq.javabackend.helper.dynamodb.LocalDateAttributeConverter;
 import com.bunq.javabackend.model.enums.GapStatus;
 import com.bunq.javabackend.model.enums.GapType;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttri
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -40,7 +42,7 @@ public class Gap {
     @Getter(onMethod_ = @DynamoDbAttribute("recommended_actions"))
     private List<RecommendedAction> recommendedActions;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("remediation_deadline"))
+    @Getter(onMethod_ = {@DynamoDbAttribute("remediation_deadline"), @DynamoDbConvertedBy(LocalDateAttributeConverter.class)})
     private LocalDate remediationDeadline;
 
     @Getter(onMethod_ = @DynamoDbAttribute("escalation_required"))
@@ -49,7 +51,7 @@ public class Gap {
     @Getter(onMethod_ = @DynamoDbAttribute("narrative"))
     private String narrative;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("session_id"))
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "session-id-index"), @DynamoDbAttribute("session_id")})
     private String sessionId;
 
     // 5-dimensional residual risk fields

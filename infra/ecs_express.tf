@@ -33,7 +33,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
   task_role_arn           = aws_iam_role.task.arn
   cpu                     = 1024
   memory                  = 2048
-  health_check_path       = "/api/v1/actuator/health"
+  health_check_path       = "/api/v1/actuator/health/liveness"
 
   primary_container {
     image          = "${aws_ecr_repository.backend.repository_url}:${var.image_tag}"
@@ -86,19 +86,19 @@ resource "aws_ecs_express_gateway_service" "backend" {
     }
     environment {
       name  = "AWS_DYNAMODB_MAPPINGS_TABLE"
-      value = aws_dynamodb_table.this["mappings"].name
+      value = aws_dynamodb_table.mappings.name
     }
     environment {
       name  = "AWS_DYNAMODB_GAPS_TABLE"
-      value = aws_dynamodb_table.this["gaps"].name
+      value = aws_dynamodb_table.gaps.name
     }
     environment {
       name  = "AWS_DYNAMODB_SANCTIONS_HITS_TABLE"
-      value = aws_dynamodb_table.this["sanctions-hits"].name
+      value = aws_dynamodb_table.sanctions_hits.name
     }
     environment {
       name  = "AWS_DYNAMODB_EVIDENCE_TABLE"
-      value = aws_dynamodb_table.this["evidence"].name
+      value = aws_dynamodb_table.evidence.name
     }
     environment {
       name  = "AWS_DYNAMODB_SANCTIONS_ENTITIES_TABLE"
@@ -109,12 +109,24 @@ resource "aws_ecs_express_gateway_service" "backend" {
       value = aws_dynamodb_table.audit_log.name
     }
     environment {
+      name  = "AWS_DYNAMODB_AUDIT_CHAIN_TAILS_TABLE"
+      value = aws_dynamodb_table.audit_chain_tails.name
+    }
+    environment {
       name  = "AWS_DYNAMODB_JURISDICTION_RUNS_TABLE"
       value = aws_dynamodb_table.jurisdiction_runs.name
     }
     environment {
       name  = "AWS_DYNAMODB_LAUNCHES_TABLE"
       value = aws_dynamodb_table.this["launches"].name
+    }
+    environment {
+      name  = "AWS_DYNAMODB_SESSION_COST_TABLE"
+      value = aws_dynamodb_table.session_costs.name
+    }
+    environment {
+      name  = "AWS_DYNAMODB_CHAT_MESSAGES_TABLE"
+      value = aws_dynamodb_table.this["chat-messages"].name
     }
     environment {
       name  = "AWS_S3_UPLOADS_BUCKET"

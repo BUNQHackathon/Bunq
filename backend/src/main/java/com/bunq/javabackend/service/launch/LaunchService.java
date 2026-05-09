@@ -346,6 +346,19 @@ public class LaunchService {
         return run;
     }
 
+    /**
+     * Returns documents for the given jurisdictionCode, after verifying that the launch exists
+     * and that the jurisdiction is registered for it.
+     */
+    public List<Document> autoDocsForJurisdiction(String launchId, String jurisdictionCode) {
+        launchRepository.findById(launchId)
+                .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
+        jurisdictionRunRepository.findByLaunchIdAndCode(launchId, jurisdictionCode)
+                .orElseThrow(() -> new NotFoundException(
+                        "Jurisdiction not registered for launch: " + jurisdictionCode));
+        return autoDocService.forJurisdiction(jurisdictionCode);
+    }
+
     public List<JurisdictionRun> rerunFailed(String launchId) {
         launchRepository.findById(launchId)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));

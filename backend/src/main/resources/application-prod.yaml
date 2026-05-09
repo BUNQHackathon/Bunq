@@ -19,3 +19,15 @@ app:
 sidecar:
   base-url: ${SIDECAR_BASE_URL}
   token: ${SIDECAR_TOKEN}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

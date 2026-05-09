@@ -177,6 +177,10 @@ public class ChatService {
             StringBuilder fullText = new StringBuilder();
             AtomicReference<TokenUsageDTO> usageRef = new AtomicReference<TokenUsageDTO>(null);
 
+            List<Citation> citationModels =
+                    chunks.stream().map(this::toCitationModel).toList();
+            String sessionId = req.getSessionId();
+
             bedrockStreamingService
                     .streamWithCachedSystem(BedrockModel.SONNET.getModelId(), SYSTEM_PROMPT, userContent)
                     .doOnNext(delta -> {
@@ -198,32 +202,41 @@ public class ChatService {
                                     .build());
                         }
                     })
-                    .blockLast();
-
-            String assistantId = UUID.randomUUID().toString();
-            TokenUsageDTO usage = usageRef.get();
-
-            ChatMessage assistantMessage = ChatMessage.builder()
-                    .id(assistantId)
-                    .chatId(chatId)
-                    .sessionId(req.getSessionId())
-                    .role("ASSISTANT")
-                    .content(fullText.toString())
-                    .citations(chunks.stream().map(this::toCitationModel).toList())
-                    .timestamp(Instant.now())
-                    .tokenUsage(usage != null ? toTokenUsageModel(usage) : null)
-                    .build();
-            chatMessageRepository.save(assistantMessage);
-
-            sseEmitterService.send(chatId, ChatCompletedEvent.builder()
-                    .sessionId(chatId)
-                    .chatId(chatId)
-                    .timestamp(Instant.now())
-                    .messageId(assistantId)
-                    .tokenUsage(usage)
-                    .build());
-
-            sseEmitterService.complete(chatId);
+                    .doOnComplete(() -> {
+                        String assistantId = UUID.randomUUID().toString();
+                        TokenUsageDTO usage = usageRef.get();
+                        ChatMessage assistantMessage = ChatMessage.builder()
+                                .id(assistantId)
+                                .chatId(chatId)
+                                .sessionId(sessionId)
+                                .role("ASSISTANT")
+                                .content(fullText.toString())
+                                .citations(citationModels)
+                                .timestamp(Instant.now())
+                                .tokenUsage(usage != null ? toTokenUsageModel(usage) : null)
+                                .build();
+                        chatMessageRepository.save(assistantMessage);
+                        sseEmitterService.send(chatId, ChatCompletedEvent.builder()
+                                .sessionId(chatId)
+                                .chatId(chatId)
+                                .timestamp(Instant.now())
+                                .messageId(assistantId)
+                                .tokenUsage(usage)
+                                .build());
+                        sseEmitterService.complete(chatId);
+                    })
+                    .doOnError(ex -> {
+                        log.warn("Chat {} stream failed: {}", chatId, ex.getMessage(), ex);
+                        sseEmitterService.send(chatId, ChatFailedEvent.builder()
+                                .sessionId(chatId)
+                                .chatId(chatId)
+                                .timestamp(Instant.now())
+                                .errorCode(ex.getClass().getSimpleName())
+                                .message(ex.getMessage())
+                                .build());
+                        sseEmitterService.complete(chatId);
+                    })
+                    .subscribe();
 
         } catch (Exception ex) {
             log.warn("Chat {} failed: {}", chatId, ex.getMessage(), ex);

@@ -15,8 +15,8 @@ import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
 import com.bunq.javabackend.util.IdGenerator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,15 +24,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SanctionsScreenStage implements Stage {
 
     private final SidecarClient sidecarClient;
     private final SanctionHitRepository sanctionHitRepository;
     private final SanctionsEntityRepository sanctionsEntityRepository;
+    private final Executor stageWorkerExecutor;
+
+    public SanctionsScreenStage(SidecarClient sidecarClient,
+                                SanctionHitRepository sanctionHitRepository,
+                                SanctionsEntityRepository sanctionsEntityRepository,
+                                @Qualifier("stageWorkerExecutor") Executor stageWorkerExecutor) {
+        this.sidecarClient = sidecarClient;
+        this.sanctionHitRepository = sanctionHitRepository;
+        this.sanctionsEntityRepository = sanctionsEntityRepository;
+        this.stageWorkerExecutor = stageWorkerExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -98,7 +109,7 @@ public class SanctionsScreenStage implements Stage {
 
             log.info("SanctionsScreenStage: screened {} counterparties, {} hits for session {}",
                     counterparties.size(), allHits.size(), ctx.getSessionId());
-        });
+        }, stageWorkerExecutor);
     }
 
     private List<SanctionHit> checkLocalTable(Counterparty cp, String sessionId) {

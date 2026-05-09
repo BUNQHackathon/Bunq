@@ -10,8 +10,8 @@ import com.bunq.javabackend.service.pipeline.IngestedDocument;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -28,11 +28,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class IngestStage implements Stage {
 
     private static final long MAX_PLAIN_TEXT_BYTES = 5 * 1024 * 1024L; // 5 MB
@@ -45,9 +45,24 @@ public class IngestStage implements Stage {
     private final TextractAsyncService textractAsyncService;
     private final TranscribeAsyncService transcribeAsyncService;
     private final S3Client s3Client;
+    private final Executor stageWorkerExecutor;
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
+
+    public IngestStage(SessionRepository sessionRepository,
+                       DocumentRepository documentRepository,
+                       TextractAsyncService textractAsyncService,
+                       TranscribeAsyncService transcribeAsyncService,
+                       S3Client s3Client,
+                       @Qualifier("stageWorkerExecutor") Executor stageWorkerExecutor) {
+        this.sessionRepository = sessionRepository;
+        this.documentRepository = documentRepository;
+        this.textractAsyncService = textractAsyncService;
+        this.transcribeAsyncService = transcribeAsyncService;
+        this.s3Client = s3Client;
+        this.stageWorkerExecutor = stageWorkerExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -127,7 +142,7 @@ public class IngestStage implements Stage {
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }
-                        });
+                        }, stageWorkerExecutor);
                         f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
                         return f;
                     });
@@ -171,7 +186,7 @@ public class IngestStage implements Stage {
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }
-                        });
+                        }, stageWorkerExecutor);
                         f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
                         return f;
                     });
@@ -217,7 +232,7 @@ public class IngestStage implements Stage {
                                 } catch (Exception e) {
                                     throw new CompletionException(e);
                                 }
-                            });
+                            }, stageWorkerExecutor);
                             f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
                             return f;
                         });
@@ -255,7 +270,7 @@ public class IngestStage implements Stage {
             log.info("IngestStage complete for session {}: {} documents ingested, regulation={} chars, policy={} chars, brief={} chars",
                     ctx.getSessionId(), ingestedDocuments.size(),
                     regulation.length(), policy.length(), brief.length());
-        });
+        }, stageWorkerExecutor);
     }
 
     /** Rough page estimate: form-feed chars first, else length / 3000. */

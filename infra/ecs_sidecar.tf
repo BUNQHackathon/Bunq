@@ -210,19 +210,19 @@ resource "aws_ecs_express_gateway_service" "sidecar" {
     }
     environment {
       name  = "DYNAMODB_MAPPINGS_TABLE"
-      value = aws_dynamodb_table.this["mappings"].name
+      value = aws_dynamodb_table.mappings.name
     }
     environment {
       name  = "DYNAMODB_GAPS_TABLE"
-      value = aws_dynamodb_table.this["gaps"].name
+      value = aws_dynamodb_table.gaps.name
     }
     environment {
       name  = "DYNAMODB_SANCTIONS_HITS_TABLE"
-      value = aws_dynamodb_table.this["sanctions-hits"].name
+      value = aws_dynamodb_table.sanctions_hits.name
     }
     environment {
       name  = "DYNAMODB_EVIDENCE_TABLE"
-      value = aws_dynamodb_table.this["evidence"].name
+      value = aws_dynamodb_table.evidence.name
     }
     environment {
       name  = "DYNAMODB_SANCTIONS_ENTITIES_TABLE"

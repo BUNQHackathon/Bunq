@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +68,10 @@ public class BedrockService {
     private final ObjectMapper objectMapper;
     private final Semaphore bedrockPermits;
     private final SessionCostService sessionCostService;
+    // Byte-stable cache_control-annotated tool JSON strings, keyed by the original tool JSON.
+    // Computed once per unique toolJson string so the byte image is identical across calls,
+    // ensuring Bedrock prompt cache hits on the tools block.
+    private final ConcurrentHashMap<String, String> toolJsonCacheMap = new ConcurrentHashMap<>();
 
     public BedrockService(BedrockRuntimeClient bedrockRuntimeClient,
                           ObjectMapper objectMapper,
@@ -380,26 +385,26 @@ public class BedrockService {
         try {
             String userText = objectMapper.writeValueAsString(userInput);
 
-            // B2-extended: also mark the tool definition as cacheable so Bedrock caches
-            // the tools block (typically 1-3k tokens) alongside the system prompt.
-            // Done once per call before the retry loop; same input toolJson → byte-identical output.
-            String cachedToolJson;
-            try {
-                JsonNode toolNode = objectMapper.readTree(toolJson);
-                if (toolNode.isObject()) {
-                    ObjectNode toolObj = (ObjectNode) toolNode;
-                    ObjectNode cacheControl = objectMapper.createObjectNode();
-                    cacheControl.put("type", "ephemeral");
-                    cacheControl.put("ttl", "1h");
-                    toolObj.set("cache_control", cacheControl);
-                    cachedToolJson = objectMapper.writeValueAsString(toolObj);
-                } else {
-                    cachedToolJson = toolJson;
+            // Retrieve (or compute once) the cache_control-annotated tool JSON.
+            // Using computeIfAbsent ensures the byte image is identical on every call for the
+            // same toolJson input, which is required for Bedrock prompt cache hits on the tools block.
+            String cachedToolJson = toolJsonCacheMap.computeIfAbsent(toolJson, raw -> {
+                try {
+                    JsonNode toolNode = objectMapper.readTree(raw);
+                    if (toolNode.isObject()) {
+                        ObjectNode toolObj = (ObjectNode) toolNode;
+                        ObjectNode cacheControl = objectMapper.createObjectNode();
+                        cacheControl.put("type", "ephemeral");
+                        cacheControl.put("ttl", "1h");
+                        toolObj.set("cache_control", cacheControl);
+                        return objectMapper.writeValueAsString(toolObj);
+                    }
+                    return raw;
+                } catch (Exception e) {
+                    log.warn("Failed to add cache_control to tool definition, using uncached: {}", e.getMessage());
+                    return raw;
                 }
-            } catch (Exception e) {
-                log.warn("Failed to add cache_control to tool definition, falling back to uncached tools: {}", e.getMessage());
-                cachedToolJson = toolJson;
-            }
+            });
 
             List<String> candidates = new java.util.ArrayList<>();
             candidates.add(modelId);
@@ -471,7 +476,7 @@ public class BedrockService {
                                 """.formatted(
                                 objectMapper.writeValueAsString(systemPrompt),
                                 cachedToolJson,
-                                objectMapper.writeValueAsString(userText));
+                                userText);
 
                         InvokeModelRequest request = InvokeModelRequest.builder()
                                 .modelId(currentModel)

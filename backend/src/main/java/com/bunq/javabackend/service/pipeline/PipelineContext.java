@@ -10,6 +10,7 @@ import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -37,11 +38,11 @@ public class PipelineContext {
     private List<IngestChunk> ingestedChunks = new ArrayList<>();
     /** Per-document ingested text produced by IngestStage; consumed by Phase 4 extract stages. */
     private List<IngestedDocument> ingestedDocuments = new ArrayList<>();
-    private List<Obligation> obligations = new ArrayList<>();
-    private List<Control> controls = new ArrayList<>();
-    private List<Mapping> mappings = new ArrayList<>();
+    private List<Obligation> obligations = Collections.synchronizedList(new ArrayList<>());
+    private List<Control> controls = Collections.synchronizedList(new ArrayList<>());
+    private List<Mapping> mappings = Collections.synchronizedList(new ArrayList<>());
     private List<Gap> gaps = new ArrayList<>();
-    private List<SanctionHit> sanctionHits = new ArrayList<>();
+    private List<SanctionHit> sanctionHits = Collections.synchronizedList(new ArrayList<>());
     private com.bunq.javabackend.dto.response.ExecutiveSummaryDTO summary;
     private String reportUrl;
 }

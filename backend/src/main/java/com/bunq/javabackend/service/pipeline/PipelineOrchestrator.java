@@ -31,7 +31,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -72,13 +71,13 @@ public class PipelineOrchestrator {
         String jurisdictionCode = request.getJurisdictionCode();
 
         try {
-            // CREATED → UPLOADING
+            // CREATED -> UPLOADING
             sessionService.updateState(sessionId, SessionState.UPLOADING);
 
             // Stage 1: Ingest
             runStageWithCheckpoint(ctx, ingestStage);
 
-            // UPLOADING → EXTRACTING
+            // UPLOADING -> EXTRACTING
             sessionService.updateState(sessionId, SessionState.EXTRACTING);
 
             // Stages 2+3 in parallel
@@ -86,7 +85,7 @@ public class PipelineOrchestrator {
             CompletableFuture<Void> ctrlFuture = runStageAsyncWithCheckpoint(ctx, extractControlsStage);
             CompletableFuture.allOf(oblFuture, ctrlFuture).join();
 
-            // EXTRACTING → MAPPING
+            // EXTRACTING -> MAPPING
             sessionService.updateState(sessionId, SessionState.MAPPING);
 
             // Stages 4+5 in parallel
@@ -94,7 +93,7 @@ public class PipelineOrchestrator {
             CompletableFuture<Void> mapFuture = runStageAsyncWithCheckpoint(ctx, mapObligationsControlsStage);
             CompletableFuture.allOf(sanctionsFuture, mapFuture).join();
 
-            // MAPPING → SCORING → SANCTIONS
+            // MAPPING -> SCORING -> SANCTIONS
             sessionService.updateState(sessionId, SessionState.SCORING);
             sessionService.updateState(sessionId, SessionState.SANCTIONS);
 
@@ -107,7 +106,7 @@ public class PipelineOrchestrator {
             // Stage 8: Narrate
             runStageWithCheckpoint(ctx, narrateStage);
 
-            // SANCTIONS → COMPLETE
+            // SANCTIONS -> COMPLETE
             sessionService.updateState(sessionId, SessionState.COMPLETE);
 
             if (launchId != null && jurisdictionCode != null) {
@@ -192,16 +191,7 @@ public class PipelineOrchestrator {
     }
 
     private void markCheckpointed(String sessionId, PipelineStage stage) {
-        sessionRepository.findById(sessionId).ifPresent(s -> {
-            List<String> completed = s.getCompletedStages() != null
-                    ? new ArrayList<>(s.getCompletedStages())
-                    : new ArrayList<>();
-            if (!completed.contains(stage.name())) {
-                completed.add(stage.name());
-            }
-            s.setCompletedStages(completed);
-            sessionRepository.save(s);
-        });
+        sessionRepository.addCompletedStage(sessionId, stage.name());
     }
 
     private void runStageWithCheckpoint(PipelineContext ctx, Stage stage) {
@@ -282,7 +272,7 @@ public class PipelineOrchestrator {
             cp.setName(dto.getName());
             cp.setCountry(dto.getCountry());
             if (dto.getType() != null) {
-                try { cp.setType(CounterpartyType.valueOf(dto.getType().toLowerCase())); }
+                try { cp.setType(CounterpartyType.valueOf(dto.getType().toUpperCase())); }
                 catch (Exception ignored) {}
             }
             return cp;

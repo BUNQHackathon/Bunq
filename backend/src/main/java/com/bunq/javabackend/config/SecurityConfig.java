@@ -32,13 +32,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS).permitAll()
-                .requestMatchers(HttpMethod.GET).permitAll()
-                .requestMatchers(HttpMethod.HEAD).permitAll()
-                .requestMatchers(
-                        "/swagger-ui/**", "/swagger-ui.html",
-                        "/v3/api-docs/**", "/openapi/**", "/openapi",
-                        "/actuator/health/**", "/actuator/info")
-                    .permitAll()
+                .requestMatchers("/actuator/health/**").permitAll()
                 .anyRequest().hasAuthority("ROLE_ADMIN"))
             .addFilterBefore(bearerTokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .exceptionHandling(ex -> ex

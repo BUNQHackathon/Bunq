@@ -18,7 +18,7 @@ public final class ToolDefinitions {
 
     private static String loadResource(String path) {
         try (InputStream is = ToolDefinitions.class.getResourceAsStream(path)) {
-            if (is == null) return "{}";
+            if (is == null) throw new IllegalStateException("Missing tool resource: " + path);
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load tool definition: " + path, e);

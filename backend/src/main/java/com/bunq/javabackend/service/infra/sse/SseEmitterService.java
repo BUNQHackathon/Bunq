@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,11 @@ public class SseEmitterService {
 
     public SseEmitterService() {
         heartbeat.scheduleAtFixedRate(this::sendHeartbeat, 15, 15, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        heartbeat.shutdownNow();
     }
 
     public SseEmitter register(String sessionId) {

@@ -23,10 +23,12 @@ aws:
     evidence-table: launchlens-evidence
     sanctions-entities-table: launchlens-sanctions-entities
     audit-log-table: launchlens-audit-log
+    audit-chain-tails-table: launchlens-audit-chain-tails
     documents-table: launchlens-documents
     doc-jurisdictions-table: launchlens-doc-jurisdictions
     launches-table: launchlens-launches
     jurisdiction-runs-table: launchlens-jurisdiction-runs
+    session-cost-table: launchlens-session-costs
   s3:
     uploads-bucket: test-bucket
   bedrock:

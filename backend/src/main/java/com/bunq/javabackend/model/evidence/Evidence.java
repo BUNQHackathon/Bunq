@@ -9,6 +9,7 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.Instant;
 import java.util.List;
@@ -59,7 +60,7 @@ public class Evidence {
     @Getter(onMethod_ = @DynamoDbAttribute("audit_trail"))
     private List<AuditTrailEntry> auditTrail;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("session_id"))
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "session-id-index"), @DynamoDbAttribute("session_id")})
     private String sessionId;
 
     @Getter(onMethod_ = @DynamoDbAttribute("s3_key"))

@@ -140,12 +140,12 @@ public class ExtractObligationsStage implements Stage {
                         log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
                         runBedrockExtraction(ctx, textToExtract, doc, parallelBuffer);
                     }
-                }));
+                }, pipelineExecutor));
             }
 
             CompletableFuture.allOf(docFutures.toArray(new CompletableFuture[0])).join();
             ctx.getObligations().addAll(parallelBuffer);
-        });
+        }, pipelineExecutor);
     }
 
     private String loadExtractedText(Document doc) {

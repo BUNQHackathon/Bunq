@@ -8,6 +8,7 @@ import com.bunq.javabackend.dto.response.EvidenceResponseDTO;
 import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.exception.SidecarCommunicationException;
+import com.bunq.javabackend.exception.ValidationException;
 import com.bunq.javabackend.helper.S3PresignHelper;
 import com.bunq.javabackend.helper.mapper.EvidenceMapper;
 import com.bunq.javabackend.model.evidence.Evidence;
@@ -23,6 +24,8 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.time.Instant;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,7 +57,10 @@ public class EvidenceService {
         String sha256b64 = resp.checksumSHA256();
         if (sha256b64 == null) throw new IllegalStateException(
                 "No SHA-256 stored on object " + s3Key + " (was it uploaded before checksum support?)");
-        return sha256b64;
+        // S3 returns checksumSHA256 as Base64; decode to bytes then hex-encode so Evidence rows
+        // use the same format as Document rows (both must be comparable hex strings).
+        byte[] bytes = Base64.getDecoder().decode(sha256b64);
+        return HexFormat.of().formatHex(bytes);
     }
 
     public EvidencePresignResponse presign(String sessionId, EvidencePresignRequest req) {
@@ -69,6 +75,11 @@ public class EvidenceService {
     }
 
     public EvidenceResponseDTO finalize(String sessionId, EvidenceFinalizeRequest req) {
+        // IDOR guard: reject any key that doesn't belong to this session before touching S3.
+        String expectedPrefix = "evidence/" + sessionId + "/";
+        if (!req.getS3Key().startsWith(expectedPrefix)) {
+            throw new ValidationException("S3 key does not belong to session: " + sessionId);
+        }
         String sha256 = hashFromS3(req.getS3Key());
         Evidence evidence = Evidence.builder()
                 .id(UUID.randomUUID().toString())

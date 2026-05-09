@@ -11,8 +11,6 @@ import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.helper.mapper.DocumentMapper;
 import com.bunq.javabackend.helper.mapper.LaunchMapper;
 import com.bunq.javabackend.repository.JurisdictionRunRepository;
-import com.bunq.javabackend.repository.LaunchRepository;
-import com.bunq.javabackend.service.AutoDocService;
 import com.bunq.javabackend.service.launch.LaunchService;
 import com.bunq.javabackend.service.launch.ProofPackService;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
@@ -36,8 +34,6 @@ import java.util.List;
 public class LaunchController {
 
     private final LaunchService launchService;
-    private final AutoDocService autoDocService;
-    private final LaunchRepository launchRepository;
     private final ProofPackService proofPackService;
     private final JurisdictionRunRepository jurisdictionRunRepository;
     private final SidecarClient sidecarClient;
@@ -89,13 +85,10 @@ public class LaunchController {
     public ResponseEntity<List<DocumentResponseDTO>> autoDocs(
             @PathVariable String id,
             @RequestParam("j") String jurisdictionCode) {
-        launchRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Launch not found: " + id));
-        List<DocumentResponseDTO> docs = autoDocService.forJurisdiction(jurisdictionCode)
+        List<DocumentResponseDTO> docs = launchService.autoDocsForJurisdiction(id, jurisdictionCode)
                 .stream()
                 .map(DocumentMapper::toDto)
                 .toList();
-
         return ResponseEntity.ok(docs);
     }
 

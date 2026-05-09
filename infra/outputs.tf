@@ -17,7 +17,19 @@ output "dynamodb_tables" {
   description = "Map of DynamoDB table names keyed by logical table name"
   value       = merge(
     { for k, v in aws_dynamodb_table.this : k => v.name },
-    { "audit-log" = aws_dynamodb_table.audit_log.name }
+    { "audit-log"          = aws_dynamodb_table.audit_log.name },
+    { "audit-chain-tails"  = aws_dynamodb_table.audit_chain_tails.name },
+    { "mappings"           = aws_dynamodb_table.mappings.name },
+    { "gaps"               = aws_dynamodb_table.gaps.name },
+    { "evidence"           = aws_dynamodb_table.evidence.name },
+    { "sanctions-hits"     = aws_dynamodb_table.sanctions_hits.name },
+    { "obligations"        = aws_dynamodb_table.obligations.name },
+    { "controls"           = aws_dynamodb_table.controls.name },
+    { "documents"          = aws_dynamodb_table.documents.name },
+    { "doc-jurisdictions"  = aws_dynamodb_table.doc_jurisdictions.name },
+    { "sessions"           = aws_dynamodb_table.sessions.name },
+    { "jurisdiction-runs"  = aws_dynamodb_table.jurisdiction_runs.name },
+    { "session-costs"      = aws_dynamodb_table.session_costs.name }
   )
 }
 

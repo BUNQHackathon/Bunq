@@ -8,7 +8,9 @@ import com.bunq.javabackend.model.session.Session;
 import com.bunq.javabackend.model.enums.SessionState;
 import com.bunq.javabackend.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SessionService {
@@ -78,9 +81,27 @@ public class SessionService {
                     "Cannot transition session " + sessionId + " from " + currentState + " to " + state);
         }
 
-        session.setState(state);
-        session.setUpdatedAt(Instant.now().toString());
-        sessionRepository.save(session);
+        try {
+            sessionRepository.updateStateConditional(
+                    sessionId,
+                    currentState != null ? currentState.name() : null,
+                    state.name()
+            );
+        } catch (ConditionalCheckFailedException e) {
+            // Another caller already changed the state; re-read and retry once
+            Session fresh = sessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new SessionNotFoundException(sessionId));
+            SessionState freshState = fresh.getState();
+            if (!isValidTransition(freshState, state)) {
+                throw new IllegalStateException(
+                        "Cannot transition session " + sessionId + " from " + freshState + " to " + state);
+            }
+            sessionRepository.updateStateConditional(
+                    sessionId,
+                    freshState != null ? freshState.name() : null,
+                    state.name()
+            );
+        }
     }
 
     private boolean isValidTransition(SessionState fromState, SessionState toState) {

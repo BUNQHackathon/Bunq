@@ -36,7 +36,8 @@ resource "aws_iam_role" "task" {
             "dynamodb:Scan",
             "dynamodb:BatchWriteItem",
             "dynamodb:BatchGetItem",
-            "dynamodb:DescribeTable"
+            "dynamodb:DescribeTable",
+            "dynamodb:TransactWriteItems"
           ]
           Resource = [
             "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${var.project_prefix}-*",

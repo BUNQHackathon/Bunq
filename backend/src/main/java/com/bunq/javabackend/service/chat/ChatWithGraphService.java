@@ -225,11 +225,17 @@ public class ChatWithGraphService {
                             sseEmitterService.send(chatId, "chat_delta", Map.of("text", delta.text()));
                         }
                     })
-                    .blockLast();
-
-            // Step 8: done
-            sseEmitterService.send(chatId, "done", Map.of("chatId", chatId));
-            sseEmitterService.complete(chatId);
+                    .doOnComplete(() -> {
+                        // Step 8: done
+                        sseEmitterService.send(chatId, "done", Map.of("chatId", chatId));
+                        sseEmitterService.complete(chatId);
+                    })
+                    .doOnError(ex -> {
+                        log.warn("ChatWithGraph {} stream failed: {}", chatId, ex.getMessage(), ex);
+                        sseEmitterService.send(chatId, "error", Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Unknown error"));
+                        sseEmitterService.complete(chatId);
+                    })
+                    .subscribe();
 
         } catch (Exception ex) {
             log.warn("ChatWithGraph {} failed: {}", chatId, ex.getMessage(), ex);

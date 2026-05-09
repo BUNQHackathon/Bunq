@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reranker — calls Cohere rerank-v3.5 via Bedrock invokeModel to re-score a
@@ -66,7 +67,10 @@ public class Reranker {
         if (documents.isEmpty()) return List.of();
 
         try {
-            semaphore.acquire();
+            if (!semaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                log.warn("Rerank semaphore timeout — falling back to top-{} passthrough", topN);
+                return documents.stream().limit(topN).toList();
+            }
             try {
                 return doRerank(query, documents, topN);
             } finally {

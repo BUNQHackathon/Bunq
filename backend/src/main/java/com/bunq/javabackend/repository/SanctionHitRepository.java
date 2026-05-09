@@ -4,14 +4,14 @@ import com.bunq.javabackend.model.sanction.SanctionHit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -19,11 +19,13 @@ import java.util.stream.StreamSupport;
 public class SanctionHitRepository {
 
     private final DynamoDbTable<SanctionHit> table;
+    private final DynamoDbIndex<SanctionHit> sessionIdIndex;
 
     public SanctionHitRepository(
             DynamoDbEnhancedClient client,
             @Value("${aws.dynamodb.sanctions-hits-table}") String tableName) {
         this.table = client.table(tableName, TableSchema.fromBean(SanctionHit.class));
+        this.sessionIdIndex = this.table.index("session-id-index");
     }
 
     public void save(SanctionHit sanctionHit) {
@@ -39,12 +41,12 @@ public class SanctionHitRepository {
     }
 
     public List<SanctionHit> findBySessionId(String sessionId) {
-        ScanEnhancedRequest request = ScanEnhancedRequest.builder()
-                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
-                        .expression("session_id = :sid")
-                        .expressionValues(Map.of(":sid", AttributeValue.builder().s(sessionId).build()))
-                        .build())
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(
+                        Key.builder().partitionValue(sessionId).build()))
                 .build();
-        return StreamSupport.stream(table.scan(request).items().spliterator(), false).toList();
+        return sessionIdIndex.query(request).stream()
+                .flatMap(page -> StreamSupport.stream(page.items().spliterator(), false))
+                .toList();
     }
 }

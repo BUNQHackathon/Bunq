@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @Component
@@ -31,14 +32,20 @@ public class BearerTokenAuthFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ") && !adminToken.isBlank()) {
             String provided = header.substring(7);
-            // Constant-time compare to prevent timing attacks
-            boolean matches = MessageDigest.isEqual(
-                    provided.getBytes(StandardCharsets.UTF_8),
-                    adminToken.getBytes(StandardCharsets.UTF_8));
-            if (matches) {
-                var auth = new UsernamePasswordAuthenticationToken(
-                        "admin", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            // Hash both sides to fixed 32-byte digests before constant-time compare,
+            // eliminating the length-leak timing oracle.
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] providedHash = digest.digest(provided.getBytes(StandardCharsets.UTF_8));
+                digest.reset();
+                byte[] expectedHash = digest.digest(adminToken.getBytes(StandardCharsets.UTF_8));
+                if (MessageDigest.isEqual(providedHash, expectedHash)) {
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            "admin", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (NoSuchAlgorithmException e) {
+                throw new ServletException("SHA-256 not available", e);
             }
         }
         filterChain.doFilter(request, response);

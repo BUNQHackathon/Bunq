@@ -2,6 +2,7 @@ package com.bunq.javabackend.service.documents;
 
 import com.bunq.javabackend.dto.response.PresignedUrlResponseDTO;
 import com.bunq.javabackend.exception.ForbiddenException;
+import com.bunq.javabackend.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,8 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -39,10 +42,15 @@ public class FilesService {
             throw new IllegalArgumentException("Invalid s3Uri: " + s3Uri);
         }
         String bucket = stripped.substring(0, slashIdx);
-        String key = stripped.substring(slashIdx + 1);
+        String key = URLDecoder.decode(stripped.substring(slashIdx + 1), StandardCharsets.UTF_8);
 
         if (!ALLOWED_BUCKETS.contains(bucket)) {
             throw new ForbiddenException("Bucket not allowed: " + bucket);
+        }
+
+        // Reject path traversal, null bytes, and control characters
+        if (key.contains("..") || key.indexOf('\0') >= 0 || key.chars().anyMatch(c -> c < 0x20)) {
+            throw new ValidationException("Invalid S3 key");
         }
 
         GetObjectRequest getReq = GetObjectRequest.builder().bucket(bucket).key(key).build();

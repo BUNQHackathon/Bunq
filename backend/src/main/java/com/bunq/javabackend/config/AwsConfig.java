@@ -4,6 +4,7 @@ import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.AdaptiveRetryStrategy;
+import software.amazon.awssdk.services.bedrock.BedrockClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -61,11 +63,7 @@ public class AwsConfig {
     public BedrockRuntimeClient bedrockRuntimeClient() {
         return BedrockRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
-                        .apiCallTimeout(Duration.ofSeconds(600))
-                        .apiCallAttemptTimeout(Duration.ofSeconds(540))
-                        .build())
+                .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(ApacheHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
                         .socketTimeout(Duration.ofSeconds(540)))
@@ -76,11 +74,7 @@ public class AwsConfig {
     public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient() {
         return BedrockRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
-                        .apiCallTimeout(Duration.ofSeconds(600))
-                        .apiCallAttemptTimeout(Duration.ofSeconds(540))
-                        .build())
+                .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(NettyNioAsyncHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
                         .readTimeout(Duration.ofSeconds(540)))
@@ -88,9 +82,21 @@ public class AwsConfig {
     }
 
     @Bean
+    public BedrockClient bedrockClient() {
+        return BedrockClient.builder()
+                .region(Region.of(bedrockRegion))
+                .overrideConfiguration(bedrockOverrideConfig())
+                .build();
+    }
+
+    @Bean
     public BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
         return BedrockAgentRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
+                .overrideConfiguration(bedrockOverrideConfig())
+                .httpClientBuilder(ApacheHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(10))
+                        .socketTimeout(Duration.ofSeconds(540)))
                 .build();
     }
 
@@ -98,6 +104,18 @@ public class AwsConfig {
     public BedrockAgentRuntimeAsyncClient bedrockAgentRuntimeAsyncClient() {
         return BedrockAgentRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
+                .overrideConfiguration(bedrockOverrideConfig())
+                .httpClientBuilder(NettyNioAsyncHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(10))
+                        .readTimeout(Duration.ofSeconds(540)))
+                .build();
+    }
+
+    private ClientOverrideConfiguration bedrockOverrideConfig() {
+        return ClientOverrideConfiguration.builder()
+                .retryStrategy(AdaptiveRetryStrategy.builder().maxAttempts(8).build())
+                .apiCallTimeout(Duration.ofSeconds(600))
+                .apiCallAttemptTimeout(Duration.ofSeconds(540))
                 .build();
     }
 
@@ -118,6 +136,9 @@ public class AwsConfig {
 
     @Bean
     public WebClient.Builder webClientBuilder() {
-        return WebClient.builder();
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+                .build();
+        return WebClient.builder().exchangeStrategies(strategies);
     }
 }

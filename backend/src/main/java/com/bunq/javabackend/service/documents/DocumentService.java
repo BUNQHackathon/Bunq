@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Objects;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ChecksumMode;
@@ -51,7 +52,7 @@ public class DocumentService {
 
     public DocumentPresignResponse presign(DocumentPresignRequest req) {
         S3PresignHelper.DocumentPresignResult result =
-                s3PresignHelper.presignDocumentUpload(req.getFilename(), req.getContentType(), req.getSha256());
+                s3PresignHelper.presignDocumentUpload(req.getFilename(), req.getContentType());
 
         return DocumentPresignResponse.builder()
                 .incomingKey(result.incomingKey())
@@ -94,9 +95,11 @@ public class DocumentService {
                     .build();
         }
 
-        String ext = req.getFilename().contains(".")
+        String rawExt = req.getFilename().contains(".")
                 ? req.getFilename().substring(req.getFilename().lastIndexOf('.') + 1)
                 : "bin";
+        String ext = rawExt.replaceAll("[^A-Za-z0-9]", "");
+        if (ext.isEmpty() || ext.length() > 16) ext = "bin";
         String destKey = "documents/" + hash + "." + ext;
         long sizeBytes = head.contentLength() != null ? head.contentLength() : 0L;
 
@@ -133,9 +136,20 @@ public class DocumentService {
             documentRepository.saveIfNotExists(doc);
         } catch (ConditionalCheckFailedException e) {
             // Race: another request saved it first — treat as dedup
-            Document reFetched = documentRepository.findById(hash).orElse(doc);
+            Document existing2 = documentRepository.findById(hash).orElse(doc);
+            if (existing2 != null && !Objects.equals(existing2.getS3Key(), destKey)) {
+                // Winner used a different extension — clean up our orphan copy
+                try {
+                    s3Client.deleteObject(DeleteObjectRequest.builder()
+                            .bucket(uploadsBucket)
+                            .key(destKey)
+                            .build());
+                } catch (Exception ex) {
+                    log.warn("Failed to delete orphan S3 object {}: {}", destKey, ex.getMessage());
+                }
+            }
             return DocumentFinalizeResponse.builder()
-                    .document(toResponseDTO(reFetched))
+                    .document(toResponseDTO(existing2))
                     .deduped(true)
                     .build();
         }

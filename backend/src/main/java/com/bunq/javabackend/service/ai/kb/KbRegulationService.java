@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.bedrockagentruntime.model.RetrieveResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -46,8 +45,7 @@ public class KbRegulationService {
 
     public List<KbRegulationSummaryDTO> list() {
         ListObjectsV2Request req = ListObjectsV2Request.builder().bucket(BUCKET).build();
-        ListObjectsV2Response resp = s3.listObjectsV2(req);
-        return resp.contents().stream()
+        return s3.listObjectsV2Paginator(req).contents().stream()
             .map(obj -> {
                 String key = obj.key();
                 String id = slugify(stripExt(key));
@@ -62,8 +60,7 @@ public class KbRegulationService {
 
     public KbRegulationDetailDTO get(String id) {
         ListObjectsV2Request listReq = ListObjectsV2Request.builder().bucket(BUCKET).build();
-        List<S3Object> all = s3.listObjectsV2(listReq).contents();
-        S3Object matched = all.stream()
+        S3Object matched = s3.listObjectsV2Paginator(listReq).contents().stream()
             .filter(o -> slugify(stripExt(o.key())).equals(id))
             .findFirst()
             .orElseThrow(() -> new NotFoundException("Document not found: " + id));

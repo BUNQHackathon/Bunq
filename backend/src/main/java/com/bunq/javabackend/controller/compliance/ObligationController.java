@@ -2,10 +2,10 @@ package com.bunq.javabackend.controller.compliance;
 
 import com.bunq.javabackend.dto.request.ExtractObligationsRequestDTO;
 import com.bunq.javabackend.dto.response.ObligationResponseDTO;
+import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.service.compliance.ObligationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,7 +37,7 @@ public class ObligationController {
         try {
             return ResponseEntity.ok(obligationService.get(id));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            throw new NotFoundException("Obligation not found: " + id);
         }
     }
 }

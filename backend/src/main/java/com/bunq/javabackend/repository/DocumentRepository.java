@@ -16,6 +16,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.ReadBatch;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -96,9 +97,16 @@ public class DocumentRepository {
                 .id(id)
                 .lastUsedAt(now)
                 .build();
-        table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
-                .item(update)
-                .ignoreNulls(true)
-                .build());
+        try {
+            table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
+                    .item(update)
+                    .ignoreNulls(true)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)")
+                            .build())
+                    .build());
+        } catch (ConditionalCheckFailedException ignored) {
+            // Document does not exist -- no-op; prevents phantom row creation
+        }
     }
 }

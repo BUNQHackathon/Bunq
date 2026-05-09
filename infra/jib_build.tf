@@ -5,17 +5,17 @@
 resource "null_resource" "jib_build" {
   triggers = {
     src_hash = sha1(join("", [
-      for f in sort(fileset("${path.module}/../src", "**")) :
-      filesha1("${path.module}/../src/${f}")
+      for f in sort(fileset("${path.module}/../backend/src", "**")) :
+      filesha1("${path.module}/../backend/src/${f}")
     ]))
-    pom_hash  = filesha1("${path.module}/../pom.xml")
+    pom_hash  = filesha1("${path.module}/../backend/pom.xml")
     image_tag = var.image_tag
     ecr_url   = aws_ecr_repository.backend.repository_url
   }
 
   provisioner "local-exec" {
     interpreter = ["powershell", "-NoProfile", "-Command"]
-    working_dir = "${path.module}/.."
+    working_dir = "${path.module}/../backend"
     command     = <<-EOT
       $ErrorActionPreference = 'Stop'
       $ecrImage = '${aws_ecr_repository.backend.repository_url}:${var.image_tag}'

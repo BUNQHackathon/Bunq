@@ -87,6 +87,8 @@ public class RagService {
 
     public SseEmitter queryStream(RagRequest req) {
         SseEmitter emitter = new SseEmitter(300_000L);
+        emitter.onTimeout(emitter::complete);
+        emitter.onError(t -> emitter.complete());
 
         RetrieveAndGenerateStreamRequest request = RetrieveAndGenerateStreamRequest.builder()
                 .input(i -> i.text(req.query()))
@@ -151,8 +153,9 @@ public class RagService {
                         emitter.send(SseEmitter.event().name("done").data(""));
                     } catch (Exception e) {
                         log.warn("KB retrieve failed: {}", e.getMessage());
+                    } finally {
+                        emitter.complete();
                     }
-                    emitter.complete();
                 })
                 .build();
 

@@ -18,8 +18,8 @@ import java.util.Map;
  * PK: sessionId (String).
  * total_usd_cents stores cost * 100 as a long to avoid floating-point drift.
  *
- * <p>Table must be provisioned externally (see infra/dynamodb.tf — add
- * {@code "session-costs"} to {@code local.dynamodb_tables}).
+ * <p>Table is provisioned explicitly in {@code infra/dynamodb.tf} as
+ * {@code aws_dynamodb_table.session_costs}.
  */
 @DynamoDbBean
 @NoArgsConstructor

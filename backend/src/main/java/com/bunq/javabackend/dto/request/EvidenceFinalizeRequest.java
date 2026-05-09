@@ -1,6 +1,7 @@
 package com.bunq.javabackend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class EvidenceFinalizeRequest {
     @NotBlank(message = "s3Key is required")
     private String s3Key;
+    @Pattern(regexp = "^MAP-[a-f0-9]{16}$", message = "invalid mapping id")
     private String mappingId;
     @Size(max = 10000)
     private String description;

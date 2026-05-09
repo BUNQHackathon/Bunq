@@ -3,7 +3,10 @@ package com.bunq.javabackend.controller.common;
 import com.bunq.javabackend.exception.EntityAlreadyExistsException;
 import com.bunq.javabackend.exception.ForbiddenException;
 import com.bunq.javabackend.exception.NotFoundException;
+import com.bunq.javabackend.exception.PipelineStageException;
 import com.bunq.javabackend.exception.SessionNotFoundException;
+import com.bunq.javabackend.exception.SidecarCommunicationException;
+import com.bunq.javabackend.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -17,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @ControllerAdvice
@@ -43,6 +47,23 @@ public class ErrorController {
         return generateErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Map<String, String>> handleValidation(ValidationException ex) {
+        return generateErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(SidecarCommunicationException.class)
+    public ResponseEntity<Map<String, String>> handleSidecarCommunication(SidecarCommunicationException ex) {
+        log.error("Sidecar communication failure [correlationId={}]", MDC.get("correlationId"), ex);
+        return generateErrorResponse(ex.getMessage(), HttpStatus.BAD_GATEWAY);
+    }
+
+    @ExceptionHandler(PipelineStageException.class)
+    public ResponseEntity<Map<String, String>> handlePipelineStage(PipelineStageException ex) {
+        log.error("Pipeline stage failure stage={} [correlationId={}]", ex.getStage(), MDC.get("correlationId"), ex);
+        return generateErrorResponse(ex.getMessage(), HttpStatus.BAD_GATEWAY);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         return generateErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
@@ -59,6 +80,7 @@ public class ErrorController {
                 HttpStatus.valueOf(ex.getStatusCode().value()));
     }
 
+    // Catch-all — must remain last so specific handlers above take precedence
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleOther(RuntimeException ex) {
         log.error("Unhandled RuntimeException [correlationId={}]", MDC.get("correlationId"), ex);
@@ -69,7 +91,8 @@ public class ErrorController {
         Map<String, String> error = new HashMap<>();
         error.put("message", message);
         String correlationId = MDC.get("correlationId");
-        if (correlationId != null) error.put("correlationId", correlationId);
+        // Always emit correlationId so clients can correlate errors with logs
+        error.put("correlationId", correlationId != null ? correlationId : UUID.randomUUID().toString());
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(error);
     }
 }
