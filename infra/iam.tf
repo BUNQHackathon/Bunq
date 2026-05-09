@@ -65,13 +65,25 @@ resource "aws_iam_role" "task" {
           Effect = "Allow"
           Action = [
             "bedrock:InvokeModel",
-            "bedrock:InvokeModelWithResponseStream"
+            "bedrock:InvokeModelWithResponseStream",
+            "bedrock:Converse",
+            "bedrock:ConverseStream"
           ]
           Resource = [
             "arn:aws:bedrock:${var.bedrock_region}:*:inference-profile/eu.anthropic.*",
             "arn:aws:bedrock:*::foundation-model/anthropic.*",
-            "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-*"
+            "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-*",
+            "arn:aws:bedrock:${var.bedrock_region}:*:inference-profile/eu.amazon.nova-*",
+            "arn:aws:bedrock:*::foundation-model/amazon.nova-*",
+            "arn:aws:bedrock:*::foundation-model/cohere.*"
           ]
+        },
+        {
+          Effect = "Allow"
+          Action = [
+            "bedrock:ListFoundationModels"
+          ]
+          Resource = "*"
         },
         {
           Effect = "Allow"
@@ -85,8 +97,6 @@ resource "aws_iam_role" "task" {
           Effect = "Allow"
           Action = [
             "transcribe:*",
-            "polly:SynthesizeSpeech",
-            "polly:DescribeVoices",
             "textract:DetectDocumentText",
             "textract:AnalyzeDocument",
             "textract:StartDocumentTextDetection",
