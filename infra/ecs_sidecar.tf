@@ -148,11 +148,11 @@ resource "aws_cloudwatch_log_group" "sidecar" {
 resource "null_resource" "sidecar_image_build" {
   triggers = {
     src_hash = sha1(join("", [
-      for f in sort(fileset("${path.module}/../../python-backend", "**/*.py")) :
-      filemd5("${path.module}/../../python-backend/${f}")
+      for f in sort(fileset("${path.module}/../backend/python-backend", "**/*.py")) :
+      filemd5("${path.module}/../backend/python-backend/${f}")
     ]))
-    dockerfile_hash = try(filemd5("${path.module}/../../python-backend/Dockerfile"), "no-dockerfile")
-    pyproject_hash  = try(filemd5("${path.module}/../../python-backend/pyproject.toml"), "no-pyproject")
+    dockerfile_hash = try(filemd5("${path.module}/../backend/python-backend/Dockerfile"), "no-dockerfile")
+    pyproject_hash  = try(filemd5("${path.module}/../backend/python-backend/pyproject.toml"), "no-pyproject")
     ecr_url         = aws_ecr_repository.sidecar.repository_url
   }
 
@@ -165,7 +165,7 @@ resource "null_resource" "sidecar_image_build" {
       $registry = $ecrImage.Split('/')[0]
       $pw = (aws ecr get-login-password --region ${var.region} --profile ${var.aws_profile}).Trim()
       docker login --username AWS --password $pw $registry
-      docker buildx build --platform linux/amd64 -t "$ecrImage" --push python-backend/
+      docker buildx build --platform linux/amd64 -t "$ecrImage" --push backend/python-backend/
     EOT
   }
 
@@ -176,8 +176,8 @@ resource "null_resource" "sidecar_image_build" {
 resource "aws_ecs_express_gateway_service" "sidecar" {
   service_name            = "${local.name_prefix}-sidecar-v4"
   cluster                 = "default"
-  execution_role_arn      = data.aws_iam_role.ecs_task_execution.arn
-  infrastructure_role_arn = data.aws_iam_role.ecs_infra_express.arn
+  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
+  infrastructure_role_arn = aws_iam_role.ecs_infra_express.arn
   task_role_arn           = aws_iam_role.sidecar_task.arn
   cpu                     = 512
   memory                  = 1024

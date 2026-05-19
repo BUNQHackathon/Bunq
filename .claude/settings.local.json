@@ -4,7 +4,8 @@
       "Bash",
       "PowerShell",
       "WebSearch",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "WebFetch(domain:www.jeroenreijn.com)"
     ]
   }
 }

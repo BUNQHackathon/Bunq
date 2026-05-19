@@ -5,7 +5,7 @@
 # before starting the container.
 resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
   name = "launchlens-execution-secrets"
-  role = data.aws_iam_role.ecs_task_execution.id
+  role = aws_iam_role.ecs_task_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -28,8 +28,8 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
 resource "aws_ecs_express_gateway_service" "backend" {
   service_name            = "${local.name_prefix}-backend-v5"
   cluster                 = "default"
-  execution_role_arn      = data.aws_iam_role.ecs_task_execution.arn
-  infrastructure_role_arn = data.aws_iam_role.ecs_infra_express.arn
+  execution_role_arn      = aws_iam_role.ecs_task_execution.arn
+  infrastructure_role_arn = aws_iam_role.ecs_infra_express.arn
   task_role_arn           = aws_iam_role.task.arn
   cpu                     = 1024
   memory                  = 2048
@@ -47,6 +47,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
     environment {
       name  = "AWS_REGION"
       value = var.region
+    }
+    environment {
+      name  = "AWS_ACCOUNT_ID"
+      value = data.aws_caller_identity.current.account_id
     }
     environment {
       name  = "AWS_BEDROCK_REGION"
@@ -158,7 +162,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
     }
     environment {
       name  = "CORS_ALLOWED_ORIGINS"
-      value = var.amplify_origin
+      value = "${var.amplify_origin},http://localhost:5173"
     }
 
     secret {
@@ -197,11 +201,21 @@ data "aws_lbs" "express" {
 
 resource "null_resource" "alb_idle_timeout" {
   triggers = {
-    lb_arn  = tolist(data.aws_lbs.express.arns)[0]
-    timeout = "300"
+    backend_service = aws_ecs_express_gateway_service.backend.service_name
+    timeout         = "300"
   }
 
   provisioner "local-exec" {
-    command = "aws elbv2 modify-load-balancer-attributes --region ${var.region} --load-balancer-arn ${tolist(data.aws_lbs.express.arns)[0]} --attributes Key=idle_timeout.timeout_seconds,Value=300"
+    interpreter = ["powershell", "-NoProfile", "-Command"]
+    command     = <<-EOT
+      $result = aws elbv2 describe-load-balancers --region ${var.region} --query "LoadBalancers[].LoadBalancerArn" --output text 2>$null
+      if (-not $result) { Write-Host "No ALBs found, skipping idle timeout update"; exit 0 }
+      $arns = $result.Split("`t") | Where-Object { $_ }
+      foreach ($arn in $arns) {
+        aws elbv2 modify-load-balancer-attributes --region ${var.region} --load-balancer-arn $arn --attributes Key=idle_timeout.timeout_seconds,Value=300 2>$null
+      }
+    EOT
   }
+
+  depends_on = [aws_ecs_express_gateway_service.backend]
 }
