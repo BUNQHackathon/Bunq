@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.AccessDeniedException;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.bedrockruntime.model.SpecificToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ThrottlingException;
@@ -188,6 +190,13 @@ public class BedrockService {
                             log.warn("Model {} throttled after {} retries, falling back to {}", currentModel, MAX_SAME_MODEL_RETRIES, candidates.get(i + 1));
                         }
                     }
+                } catch (ResourceNotFoundException | AccessDeniedException e) {
+                    if (i + 1 < candidates.size()) {
+                        log.warn("Model {} unavailable ({}), falling back to {}", currentModel,
+                                e.getClass().getSimpleName(), candidates.get(i + 1));
+                        break;
+                    }
+                    throw e;
                 } finally {
                     bedrockPermits.release();
                 }
@@ -541,6 +550,13 @@ public class BedrockService {
                                 log.warn("Model {} throttled after {} retries, falling back to {}", currentModel, MAX_SAME_MODEL_RETRIES, candidates.get(i + 1));
                             }
                         }
+                    } catch (ResourceNotFoundException | AccessDeniedException e) {
+                        if (i + 1 < candidates.size()) {
+                            log.warn("Model {} unavailable ({}), falling back to {}", currentModel,
+                                    e.getClass().getSimpleName(), candidates.get(i + 1));
+                            break;
+                        }
+                        throw e;
                     } finally {
                         bedrockPermits.release();
                     }

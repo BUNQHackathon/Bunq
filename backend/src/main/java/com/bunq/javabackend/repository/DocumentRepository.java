@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 @Repository
@@ -53,6 +54,10 @@ public class DocumentRepository {
 
     public Optional<Document> findById(String id) {
         return Optional.ofNullable(table.getItem(Key.builder().partitionValue(id).build()));
+    }
+
+    public void deleteById(String id) {
+        table.deleteItem(Key.builder().partitionValue(id).build());
     }
 
     public List<Document> findByIds(List<String> ids) {
@@ -107,6 +112,32 @@ public class DocumentRepository {
                     .build());
         } catch (ConditionalCheckFailedException ignored) {
             // Document does not exist -- no-op; prevents phantom row creation
+        }
+    }
+
+    public Optional<Document> updateUploadMetadata(
+            String id,
+            String kind,
+            Set<String> jurisdictions,
+            String displayName,
+            Instant now) {
+        Document update = Document.builder()
+                .id(id)
+                .kind(kind)
+                .jurisdictions(jurisdictions)
+                .displayName(displayName)
+                .lastUsedAt(now)
+                .build();
+        try {
+            return Optional.ofNullable(table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
+                    .item(update)
+                    .ignoreNulls(true)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)")
+                            .build())
+                    .build()));
+        } catch (ConditionalCheckFailedException ignored) {
+            return Optional.empty();
         }
     }
 }

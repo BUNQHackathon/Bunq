@@ -1,6 +1,26 @@
 import { getAuthToken } from '../auth/useAuth';
 
-export const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api/v1';
+function normalizeApiBase(raw: string | undefined): string {
+  const fallback = 'http://localhost:8080/api/v1';
+  const value = (raw && raw.trim()) || fallback;
+  const trimmed = value.replace(/\/+$/, '');
+
+  try {
+    const url = new URL(trimmed);
+    if (url.pathname === '' || url.pathname === '/') {
+      url.pathname = '/api/v1';
+      return url.toString().replace(/\/+$/, '');
+    }
+  } catch {
+    // Relative API bases are allowed; normalize the common empty-root form only.
+    if (trimmed === '') return fallback;
+    if (trimmed === '/') return '/api/v1';
+  }
+
+  return trimmed;
+}
+
+export const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE);
 
 const STORAGE_KEY = 'launchlens.auth:token';
 const AUTH_EVENT = 'launchlens:auth-change';

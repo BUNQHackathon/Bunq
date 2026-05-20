@@ -41,7 +41,7 @@ public class Document {
     @Getter(onMethod_ = @DynamoDbAttribute("s3_key"))
     private String s3Key;
 
-    /** kind ∈ "regulation" | "policy" | "brief" | "evidence" | "audio" | "other" */
+    /** kind in "regulation" | "policy" | "control" */
     @Getter(onMethod_ = {
         @DynamoDbAttribute("kind"),
         @DynamoDbSecondaryPartitionKey(indexNames = "kind-last-used-at-index")

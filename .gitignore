@@ -10,3 +10,4 @@ docs/superpowers/
 /backup/dynamodb_backup
 /backup/s3_backup
 /backup/.idea
+admin_accessKeys.csv

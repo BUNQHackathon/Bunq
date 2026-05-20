@@ -14,6 +14,12 @@ public class Citation {
     @Getter(onMethod_ = @DynamoDbAttribute("kbType"))
     private String kbType;
 
+    @Getter(onMethod_ = @DynamoDbAttribute("knowledgeBaseId"))
+    private String knowledgeBaseId;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("knowledgeBaseLabel"))
+    private String knowledgeBaseLabel;
+
     @Getter(onMethod_ = @DynamoDbAttribute("chunkId"))
     private String chunkId;
 
@@ -22,6 +28,15 @@ public class Citation {
 
     @Getter(onMethod_ = @DynamoDbAttribute("s3Uri"))
     private String s3Uri;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("displayName"))
+    private String displayName;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("documentId"))
+    private String documentId;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("sha256"))
+    private String sha256;
 
     @Getter(onMethod_ = @DynamoDbAttribute("sourceText"))
     private String sourceText;

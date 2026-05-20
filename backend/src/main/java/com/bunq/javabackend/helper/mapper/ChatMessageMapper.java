@@ -27,9 +27,14 @@ public class ChatMessageMapper {
         if (c == null) return null;
         return CitationDTO.builder()
                 .kbType(c.getKbType())
+                .knowledgeBaseId(c.getKnowledgeBaseId())
+                .knowledgeBaseLabel(c.getKnowledgeBaseLabel())
                 .chunkId(c.getChunkId())
                 .score(c.getScore())
                 .s3Uri(c.getS3Uri())
+                .displayName(c.getDisplayName())
+                .documentId(c.getDocumentId())
+                .sha256(c.getSha256())
                 .sourceText(c.getSourceText())
                 .build();
     }

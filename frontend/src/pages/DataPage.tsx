@@ -89,6 +89,11 @@ interface FolderNode {
 
 
 const UNASSIGNED_CODE = '__none__';
+const DOCUMENT_KIND_OPTIONS: Array<{ value: DocumentKind; label: string }> = [
+  { value: 'regulation', label: 'Regulation' },
+  { value: 'policy', label: 'Policy' },
+  { value: 'control', label: 'Control' },
+];
 
 function buildLibraryTree(docs: LibraryDocument[], assignments: Record<string, string>): FolderNode[] {
   const byJur = new Map<string, LibraryDocument[]>();
@@ -327,12 +332,9 @@ function inferKindAndType(filename: string): { kind: DocumentKind; contentType: 
   const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
   if (ext === '.pdf') return { kind: 'regulation', contentType: 'application/pdf' };
   if (ext === '.md') return { kind: 'policy', contentType: 'text/markdown' };
-  if (ext === '.csv') return { kind: 'evidence', contentType: 'text/csv' };
-  if (ext === '.txt') return { kind: 'other', contentType: 'text/plain' };
-  if (ext === '.mp3') return { kind: 'audio', contentType: 'audio/mpeg' };
-  if (ext === '.wav') return { kind: 'audio', contentType: 'audio/wav' };
-  if (ext === '.m4a') return { kind: 'audio', contentType: 'audio/mp4' };
-  return { kind: 'other', contentType: 'application/octet-stream' };
+  if (ext === '.csv') return { kind: 'control', contentType: 'text/csv' };
+  if (ext === '.txt') return { kind: 'policy', contentType: 'text/plain' };
+  return { kind: 'regulation', contentType: 'application/octet-stream' };
 }
 
 export default function DataPage() {
@@ -356,7 +358,10 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [jurisdictionMap, setJurisdictionMap] = useState<Record<string, string>>(() => getAllDocJurisdictions());
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingKind, setPendingKind] = useState<DocumentKind>('regulation');
+  const [pendingKindMenuOpen, setPendingKindMenuOpen] = useState(false);
   const [pendingJurisdiction, setPendingJurisdiction] = useState<string>(UNASSIGNED_CODE);
+  const [pendingJurisdictionMenuOpen, setPendingJurisdictionMenuOpen] = useState(false);
 
   useEffect(() => {
     if (uploadState === 'done') {
@@ -365,14 +370,14 @@ const [typeFilter, setTypeFilter] = useState<string | null>(null);
     }
   }, [uploadState]);
 
-  async function handleUpload(file: File, jurisdictionCode?: string) {
+  async function handleUpload(file: File, jurisdictionCode: string | undefined, kind: DocumentKind) {
     setUploadFileName(file.name);
     setUploadError(null);
     setUploadState('hashing');
     try {
       const sha256 = await computeSha256Base64(file);
       setUploadState('uploading');
-      const { kind, contentType } = inferKindAndType(file.name);
+      const { contentType } = inferKindAndType(file.name);
       const { incomingKey, uploadUrl } = await presignDocument({ filename: file.name, contentType, sha256 });
       await putToPresignedUrl(uploadUrl, file, contentType, sha256);
       setUploadState('finalizing');
@@ -464,11 +469,16 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
   const breadcrumbPrefix = 'Library';
 
   useEffect(() => {
-    if (!typeMenuOpen && !sortMenuOpen) return;
-    const handler = () => { setTypeMenuOpen(false); setSortMenuOpen(false); };
+    if (!typeMenuOpen && !sortMenuOpen && !pendingKindMenuOpen && !pendingJurisdictionMenuOpen) return;
+    const handler = () => {
+      setTypeMenuOpen(false);
+      setSortMenuOpen(false);
+      setPendingKindMenuOpen(false);
+      setPendingJurisdictionMenuOpen(false);
+    };
     window.addEventListener('mousedown', handler);
     return () => window.removeEventListener('mousedown', handler);
-  }, [typeMenuOpen, sortMenuOpen]);
+  }, [typeMenuOpen, sortMenuOpen, pendingKindMenuOpen, pendingJurisdictionMenuOpen]);
 
   function handleToggle(id: string) {
     setExpandedIds((prev) => {
@@ -485,6 +495,10 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         uploadState === 'finalizing' ? 'Finalizing…' :
           'Upload';
   const uploadBusy = uploadState === 'hashing' || uploadState === 'uploading' || uploadState === 'finalizing';
+  const pendingKindLabel = DOCUMENT_KIND_OPTIONS.find((option) => option.value === pendingKind)?.label ?? 'Regulation';
+  const pendingJurisdictionLabel = pendingJurisdiction === UNASSIGNED_CODE
+    ? 'Unassigned'
+    : `${jurisdictionFlag(pendingJurisdiction)} ${jurisdictionLabel(pendingJurisdiction)}`;
 
   const GRID_LINE_COLOR = 'rgba(214, 214, 214, 0.13)';
   const gridOverlayStyle = {
@@ -514,7 +528,10 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         accept=".pdf,.md,.csv,.txt,.mp3,.wav,.m4a"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) setPendingFile(file);
+          if (file) {
+            setPendingFile(file);
+            setPendingKind(inferKindAndType(file.name).kind);
+          }
           e.target.value = '';
         }}
       />
@@ -529,7 +546,14 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
         <div className="flex flex-wrap items-center gap-2">
           <button
             disabled={uploadBusy}
-            onClick={requireJudge(() => { setPendingFile(null); setPendingJurisdiction(UNASSIGNED_CODE); setUploadModalOpen(true); })}
+            onClick={requireJudge(() => {
+              setPendingFile(null);
+              setPendingKind('regulation');
+              setPendingKindMenuOpen(false);
+              setPendingJurisdictionMenuOpen(false);
+              setPendingJurisdiction(UNASSIGNED_CODE);
+              setUploadModalOpen(true);
+            })}
             className={`whitespace-nowrap flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${uploadBusy ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
           >
             <IconPlus size={11} />
@@ -637,7 +661,7 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 mb-4">
-            {([undefined, 'regulation', 'policy', 'brief', 'evidence', 'audio', 'other'] as Array<string | undefined>).map((k) => (
+            {([undefined, 'regulation', 'policy', 'control'] as Array<string | undefined>).map((k) => (
               <button
                 key={k ?? 'all'}
                 onClick={() => setKindFilter(k)}
@@ -712,18 +736,114 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
               )}
             </div>
 
+            <div className="mb-4">
+              <div className="font-mono text-[11px] text-white/50 mb-2">Document type</div>
+              <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setPendingKindMenuOpen((open) => !open)}
+                  className="w-full h-10 rounded-lg border px-3 font-mono text-[12px] text-white/85 outline-none transition-colors flex items-center justify-between"
+                  style={{
+                    background: 'rgba(255,255,255,0.035)',
+                    borderColor: pendingKindMenuOpen ? 'rgba(255,120,25,0.55)' : 'rgba(255,255,255,0.10)',
+                  }}
+                  aria-haspopup="listbox"
+                  aria-expanded={pendingKindMenuOpen}
+                >
+                  <span>{pendingKindLabel}</span>
+                  <IconChevron size={12} className={`transition-transform ${pendingKindMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {pendingKindMenuOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute left-0 right-0 top-[44px] z-[60] rounded-lg border shadow-2xl overflow-hidden"
+                    style={{
+                      background: 'rgba(15,15,16,0.98)',
+                      borderColor: 'rgba(255,255,255,0.12)',
+                      boxShadow: '0 18px 44px rgba(0,0,0,0.55)',
+                    }}
+                  >
+                    {DOCUMENT_KIND_OPTIONS.map((option) => {
+                      const selected = option.value === pendingKind;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => {
+                            setPendingKind(option.value);
+                            setPendingKindMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 font-mono text-[12px] transition-colors flex items-center justify-between hover:bg-white/[0.06]"
+                          style={{
+                            color: selected ? '#FF7819' : 'rgba(255,255,255,0.74)',
+                            background: selected ? 'rgba(255,120,25,0.10)' : 'transparent',
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          {selected && <span className="text-[10px] uppercase tracking-[0.16em]">Selected</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="mb-5">
               <div className="font-mono text-[11px] text-white/50 mb-2">Jurisdiction</div>
-              <select
-                value={pendingJurisdiction}
-                onChange={(e) => setPendingJurisdiction(e.target.value)}
-                className="w-full rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-2 font-mono text-[12px] text-white/80 outline-none focus:border-[#FF7819]/60"
-              >
-                <option value={UNASSIGNED_CODE}>Unassigned</option>
-                {JURISDICTION_CATALOG.map((j) => (
-                  <option key={j.code} value={j.code}>{j.flag} {j.name}</option>
-                ))}
-              </select>
+              <div className="relative" onMouseDown={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setPendingJurisdictionMenuOpen((open) => !open)}
+                  className="w-full h-10 rounded-lg border px-3 font-mono text-[12px] text-white/85 outline-none transition-colors flex items-center justify-between"
+                  style={{
+                    background: 'rgba(255,255,255,0.035)',
+                    borderColor: pendingJurisdictionMenuOpen ? 'rgba(255,120,25,0.55)' : 'rgba(255,255,255,0.10)',
+                  }}
+                  aria-haspopup="listbox"
+                  aria-expanded={pendingJurisdictionMenuOpen}
+                >
+                  <span className="truncate">{pendingJurisdictionLabel}</span>
+                  <IconChevron size={12} className={`shrink-0 transition-transform ${pendingJurisdictionMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {pendingJurisdictionMenuOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute left-0 right-0 top-[44px] z-[70] max-h-[220px] overflow-y-auto rounded-lg border shadow-2xl"
+                    style={{
+                      background: 'rgba(15,15,16,0.98)',
+                      borderColor: 'rgba(255,255,255,0.12)',
+                      boxShadow: '0 18px 44px rgba(0,0,0,0.55)',
+                    }}
+                  >
+                    {[{ code: UNASSIGNED_CODE, label: 'Unassigned' }, ...JURISDICTION_CATALOG.map((j) => ({ code: j.code, label: `${j.flag} ${j.name}` }))].map((option) => {
+                      const selected = option.code === pendingJurisdiction;
+                      return (
+                        <button
+                          key={option.code}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => {
+                            setPendingJurisdiction(option.code);
+                            setPendingJurisdictionMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 font-mono text-[12px] transition-colors flex items-center justify-between gap-3 hover:bg-white/[0.06]"
+                          style={{
+                            color: selected ? '#FF7819' : 'rgba(255,255,255,0.74)',
+                            background: selected ? 'rgba(255,120,25,0.10)' : 'transparent',
+                          }}
+                        >
+                          <span className="truncate">{option.label}</span>
+                          {selected && <span className="shrink-0 text-[10px] uppercase tracking-[0.16em]">Selected</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2">
@@ -739,8 +859,9 @@ const tree = useMemo(() => buildTree(docs, jurisdictionMap), [docs, jurisdiction
                   if (!pendingFile) return;
                   const file = pendingFile;
                   const jur = pendingJurisdiction;
+                  const kind = pendingKind;
                   setUploadModalOpen(false);
-                  handleUpload(file, jur);
+                  handleUpload(file, jur, kind);
                 }}
                 className={`rounded-full px-3 py-1.5 font-mono text-[12px] font-semibold transition-colors border ${(!pendingFile || uploadBusy) ? 'bg-[rgba(239,106,42,0.04)] text-[#ef6a2a]/40 border-[rgba(239,106,42,0.15)] cursor-not-allowed' : 'bg-[rgba(239,106,42,0.10)] text-[#ef6a2a] border-[rgba(239,106,42,0.3)] hover:bg-[rgba(239,106,42,0.16)] hover:border-[rgba(239,106,42,0.45)]'}`}
               >

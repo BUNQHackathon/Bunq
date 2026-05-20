@@ -3,13 +3,22 @@ import { useNavigate, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import PrismCanvas from '../components/PrismCanvas';
-import { postChatStream, citationFileName, getChatHistory, type Citation, type GraphRef } from '../api/chat';
+import {
+  postChatStream,
+  citationFileName,
+  getChatHistory,
+  listChatKnowledgeBases,
+  type Citation,
+  type GraphRef,
+  type KnowledgeBaseOption,
+} from '../api/chat';
 import GraphRefChips from '../components/GraphRefChips';
 import { matchGraphRefsFromPrompt } from '../api/mock';
 import { USE_MOCK } from '../api/launch';
 import { useChatNav } from '../lib/chatNav';
 import { useAuth } from '../auth/useAuth';
 import useJudgesGate from '../auth/useJudgesGate';
+import { getLibraryDocument } from '../api/session';
 
 // ─── Local data ───────────────────────────────────────────────────────────────
 
@@ -19,6 +28,17 @@ const suggestedQuestions = [
   'GDPR retention rules for transaction data',
   'EMI passporting requirements for France',
 ];
+
+const ALL_SOURCES_OPTION: KnowledgeBaseOption = {
+  key: 'all',
+  label: 'All sources',
+  knowledgeBaseId: null,
+  kbType: null,
+  defaultOption: true,
+};
+
+const citationDocumentNameCache = new Map<string, string>();
+const citationDocumentFetches = new Map<string, Promise<string | null>>();
 
 // ─── Local icon components ────────────────────────────────────────────────────
 
@@ -116,6 +136,39 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder }: SearchB
   );
 }
 
+interface KnowledgeBaseSelectorProps {
+  options: KnowledgeBaseOption[];
+  selectedId: string | null;
+  onChange: (knowledgeBaseId: string | null) => void;
+  disabled?: boolean;
+}
+
+function KnowledgeBaseSelector({ options, selectedId, onChange, disabled }: KnowledgeBaseSelectorProps) {
+  return (
+    <div className="w-full" style={{ maxWidth: 820, margin: '0 auto 8px' }}>
+      <select
+        value={selectedId ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+        disabled={disabled}
+        className="h-9 max-w-full rounded-lg border px-3 text-[12px] font-medium outline-none transition"
+        style={{
+          color: 'rgba(255,255,255,0.82)',
+          background: 'rgba(20,20,20,0.82)',
+          borderColor: 'rgba(255,255,255,0.10)',
+          opacity: disabled ? 0.65 : 1,
+        }}
+        aria-label="Knowledge base"
+      >
+        {options.map((option) => (
+          <option key={option.key} value={option.knowledgeBaseId ?? ''}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 interface TryAskingProps {
   onSelect: (q: string) => void;
 }
@@ -159,6 +212,8 @@ type ChatMessage = {
   content: string;
   citations?: Citation[];
   graphRefs?: GraphRef[];
+  knowledgeBaseId?: string | null;
+  knowledgeBaseLabel?: string | null;
   pending?: boolean;
 };
 
@@ -166,6 +221,15 @@ let _msgSeq = 0;
 function nextMsgId() {
   _msgSeq += 1;
   return `m${Date.now()}-${_msgSeq}`;
+}
+
+async function hydrateMessageCitationNames(messages: ChatMessage[]): Promise<ChatMessage[]> {
+  return Promise.all(messages.map(async (message) => {
+    if (!message.citations || message.citations.length === 0) {
+      return message;
+    }
+    return { ...message, citations: await hydrateCitationDocumentNames(message.citations) };
+  }));
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -177,6 +241,8 @@ export default function AskPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | undefined>(undefined);
+  const [knowledgeBaseOptions, setKnowledgeBaseOptions] = useState<KnowledgeBaseOption[]>([ALL_SOURCES_OPTION]);
+  const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -187,6 +253,37 @@ export default function AskPage() {
     title: 'Bunq judges only',
     message: 'Chat is available to Bunq judges. Please sign in with your access token to continue.',
   };
+  const selectedKnowledgeBase = knowledgeBaseOptions.find((option) => option.knowledgeBaseId === selectedKnowledgeBaseId)
+    ?? knowledgeBaseOptions.find((option) => option.knowledgeBaseId === null)
+    ?? ALL_SOURCES_OPTION;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setKnowledgeBaseOptions([ALL_SOURCES_OPTION]);
+      setSelectedKnowledgeBaseId(null);
+      return;
+    }
+
+    let cancelled = false;
+    listChatKnowledgeBases()
+      .then((options) => {
+        if (cancelled) return;
+        const nextOptions = options.length > 0 ? options : [ALL_SOURCES_OPTION];
+        setKnowledgeBaseOptions(nextOptions);
+        setSelectedKnowledgeBaseId((current) => (
+          nextOptions.some((option) => option.knowledgeBaseId === current)
+            ? current
+            : (nextOptions.find((option) => option.knowledgeBaseId === null)?.knowledgeBaseId ?? null)
+        ));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setKnowledgeBaseOptions([ALL_SOURCES_OPTION]);
+        setSelectedKnowledgeBaseId(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   // Auto-scroll only when a brand-new message is appended (user submit / new assistant bubble).
   // No scrolling during streaming, citations, or graphRefs updates — let the user read at their own pace.
@@ -214,8 +311,15 @@ export default function AskPage() {
         id: nextMsgId(),
         role: (m.role || '').toUpperCase() === 'USER' ? 'user' : 'assistant',
         content: m.content,
+        citations: m.citations ?? [],
+        graphRefs: m.graphRefs ?? [],
       }));
       setMessages(msgs);
+      hydrateMessageCitationNames(msgs)
+        .then((hydrated) => {
+          if (!cancelled) setMessages(hydrated);
+        })
+        .catch(() => {});
     }).catch(() => { });
     return () => { cancelled = true; };
   }, [activeChatId]);
@@ -259,6 +363,7 @@ export default function AskPage() {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    const requestKnowledgeBase = selectedKnowledgeBase;
 
     const userMsg: ChatMessage = { id: nextMsgId(), role: 'user', content: trimmed };
     const asstMsg: ChatMessage = {
@@ -267,6 +372,8 @@ export default function AskPage() {
       content: '',
       citations: [],
       graphRefs: [],
+      knowledgeBaseId: requestKnowledgeBase.knowledgeBaseId,
+      knowledgeBaseLabel: requestKnowledgeBase.label,
       pending: true,
     };
     setMessages((prev) => [...prev, userMsg, asstMsg]);
@@ -275,11 +382,16 @@ export default function AskPage() {
     setLoading(true);
 
     postChatStream(
-      { query: trimmed, chatId: currentChatId },
+      { query: trimmed, chatId: currentChatId, knowledgeBaseId: requestKnowledgeBase.knowledgeBaseId },
       {
         onStarted: (ev) => setCurrentChatId(ev.chatId),
         onDelta: (d) => updateLastAssistant((m) => ({ ...m, content: m.content + d })),
-        onCitations: (cits) => updateLastAssistant((m) => ({ ...m, citations: cits })),
+        onCitations: (cits) => {
+          updateLastAssistant((m) => ({ ...m, citations: cits }));
+          hydrateCitationDocumentNames(cits)
+            .then((hydrated) => updateLastAssistant((m) => ({ ...m, citations: hydrated })))
+            .catch(() => {});
+        },
         onGraphRefs: (refs) => updateLastAssistant((m) => ({ ...m, graphRefs: refs })),
         onCompleted: () => {
           setLoading(false);
@@ -378,12 +490,23 @@ export default function AskPage() {
           )}
 
           <div className="w-full flex flex-col items-center mt-2">
+            <KnowledgeBaseSelector
+              options={knowledgeBaseOptions}
+              selectedId={selectedKnowledgeBaseId}
+              onChange={setSelectedKnowledgeBaseId}
+              disabled={loading}
+            />
             <SearchBar
               query={query}
               setQuery={setQuery}
               onSubmit={handleSubmit}
               disabled={loading}
             />
+            {showHero && selectedKnowledgeBase.knowledgeBaseId === null && (
+              <p className="mt-3 text-[12px] text-white/35">
+                Currently searching all sources. Use the selector above to narrow.
+              </p>
+            )}
           </div>
 
           {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
@@ -474,6 +597,12 @@ export default function AskPage() {
           background: 'linear-gradient(to top, rgba(8,8,10,0.95) 60%, rgba(8,8,10,0))',
         }}
       >
+        <KnowledgeBaseSelector
+          options={knowledgeBaseOptions}
+          selectedId={selectedKnowledgeBaseId}
+          onChange={setSelectedKnowledgeBaseId}
+          disabled={loading}
+        />
         <SearchBar
           query={query}
           setQuery={setQuery}
@@ -489,10 +618,166 @@ export default function AskPage() {
 
 // ─── Chat bubble ──────────────────────────────────────────────────────────────
 
+function citationKbLabel(citation: Citation) {
+  return citation.knowledgeBaseLabel || citation.kbType || 'Source';
+}
+
+function groupCitations(citations: Citation[]) {
+  const groups: { label: string; citations: Citation[] }[] = [];
+  for (const citation of citations) {
+    const label = citationKbLabel(citation);
+    const group = groups.find((item) => item.label === label);
+    if (group) {
+      group.citations.push(citation);
+    } else {
+      groups.push({ label, citations: [citation] });
+    }
+  }
+  return groups;
+}
+
+function sourceDisplayName(citation: Citation) {
+  const explicit = citation.displayName?.trim();
+  if (explicit) return explicit;
+
+  const fileName = citation.s3Uri ? citationFileName(citation.s3Uri) : '';
+  if (/^[a-f0-9]{64}\.[a-z0-9]+$/i.test(fileName)) {
+    return 'Uploaded document';
+  }
+  return fileName || 'Source document';
+}
+
+function citationDocumentId(citation: Citation) {
+  const explicit = citation.docId ?? citation.documentId ?? citation.sha256;
+  if (explicit) return explicit;
+  const source = `${citation.s3Uri ?? ''} ${citation.chunkId ?? ''}`;
+  const match = source.match(/\/documents\/([a-f0-9]{64})(?:\.[^/#\s]+)?/i);
+  return match?.[1]?.toLowerCase() ?? null;
+}
+
+function truncHash(value: string) {
+  const cleaned = value.includes('#') ? value.slice(value.lastIndexOf('#') + 1) : value;
+  return cleaned.length > 12 ? `${cleaned.slice(0, 6)}...${cleaned.slice(-4)}` : cleaned;
+}
+
+function chunkLabel(citation: Citation) {
+  if (!citation.chunkId) return null;
+  return `chunk ${truncHash(citation.chunkId)}`;
+}
+
+function resolveCitationDocumentName(documentId: string): Promise<string | null> {
+  const cached = citationDocumentNameCache.get(documentId);
+  if (cached) return Promise.resolve(cached);
+
+  const inFlight = citationDocumentFetches.get(documentId);
+  if (inFlight) return inFlight;
+
+  const request = getLibraryDocument(documentId)
+    .then((doc) => {
+      const name = (doc.displayName || doc.filename || '').trim() || null;
+      if (name) citationDocumentNameCache.set(documentId, name);
+      return name;
+    })
+    .catch(() => null)
+    .finally(() => {
+      citationDocumentFetches.delete(documentId);
+    });
+
+  citationDocumentFetches.set(documentId, request);
+  return request;
+}
+
+async function hydrateCitationDocumentNames(citations: Citation[]): Promise<Citation[]> {
+  const hydrated = await Promise.all(citations.map(async (citation) => {
+    if (citation.displayName?.trim()) {
+      return citation;
+    }
+
+    const documentId = citationDocumentId(citation);
+    if (!documentId) {
+      return citation;
+    }
+
+    const name = await resolveCitationDocumentName(documentId);
+    return name ? { ...citation, documentId, sha256: citation.sha256 ?? documentId, displayName: name } : citation;
+  }));
+
+  return hydrated;
+}
+
 interface ChatBubbleProps {
   message: ChatMessage;
   loading: boolean;
   onOpenGraph: (ref: GraphRef) => void;
+}
+
+interface CitationDisclosureProps {
+  citation: Citation;
+  initiallyOpen: boolean;
+}
+
+function CitationDisclosure({ citation, initiallyOpen }: CitationDisclosureProps) {
+  const targetDocId = citationDocumentId(citation);
+  const cardHref = targetDocId ? `/doc/${targetDocId}` : undefined;
+  const sourceName = sourceDisplayName(citation);
+  const chunk = chunkLabel(citation);
+  const sha = citation.sha256 ? `sha ${truncHash(citation.sha256)}` : null;
+  const score = typeof citation.score === 'number' && citation.score > 0 ? citation.score.toFixed(2) : null;
+
+  return (
+    <details
+      open={initiallyOpen}
+      className="group rounded-lg overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid rgba(255,255,255,0.07)',
+      }}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03] [&::-webkit-details-marker]:hidden">
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] transition-transform group-open:rotate-90"
+          style={{ color: 'rgba(255,255,255,0.36)', border: '1px solid rgba(255,255,255,0.10)' }}
+        >
+          &gt;
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="shrink-0 text-[10px] font-mono rounded-full px-2 py-0.5"
+              style={{
+                background: `${KB_COLORS[citation.kbType] ?? '#888'}22`,
+                color: KB_COLORS[citation.kbType] ?? '#888',
+                border: `1px solid ${KB_COLORS[citation.kbType] ?? '#888'}44`,
+              }}
+            >
+              {citationKbLabel(citation)}
+            </span>
+            <span className="truncate text-[12px] font-medium text-white/75" title={sourceName}>
+              {sourceName}
+            </span>
+          </div>
+          {(chunk || sha || score) && (
+            <p className="mt-0.5 truncate font-mono text-[10px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              {[chunk, sha, score ? `score ${score}` : null].filter(Boolean).join(' / ')}
+            </p>
+          )}
+        </div>
+      </summary>
+      <div className="px-3 pb-3">
+        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.48)' }}>
+          {citation.sourceText}
+        </p>
+        {cardHref && (
+          <Link
+            to={cardHref}
+            className="mt-2 inline-flex text-[11px] font-medium text-orange-300 hover:text-orange-200"
+          >
+            Open document
+          </Link>
+        )}
+      </div>
+    </details>
+  );
 }
 
 function ChatBubble({ message, loading, onOpenGraph }: ChatBubbleProps) {
@@ -582,74 +867,35 @@ function ChatBubble({ message, loading, onOpenGraph }: ChatBubbleProps) {
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Sources ({message.citations.length})
+              {message.knowledgeBaseId
+                ? `Sources from ${message.knowledgeBaseLabel ?? 'selected source'} (${message.citations.length})`
+                : `Sources (${message.citations.length})`}
             </p>
-            <div className="flex flex-col gap-2">
-              {message.citations.map((c, i) => {
-                const targetDocId = c.docId ?? c.documentId;
-                const cardHref = targetDocId ? `/doc/${targetDocId}` : undefined;
-                const truncHash = (h: string) =>
-                  h.length > 8 ? `${h.slice(0, 4)}…${h.slice(-4)}` : h;
-                const hasHashLine = c.chunkId || c.sha256;
-                const inner = (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className="text-[10px] font-mono rounded-full px-2 py-0.5"
-                        style={{
-                          background: `${KB_COLORS[c.kbType] ?? '#888'}22`,
-                          color: KB_COLORS[c.kbType] ?? '#888',
-                          border: `1px solid ${KB_COLORS[c.kbType] ?? '#888'}44`,
-                        }}
-                      >
-                        {c.kbType}
-                      </span>
-                      <span className="text-[12px] text-white/70 font-medium truncate">
-                        {c.displayName ?? citationFileName(c.s3Uri)}
+            <div className="flex flex-col gap-3">
+              {(message.knowledgeBaseId
+                ? [{ label: message.knowledgeBaseLabel ?? 'Sources', citations: message.citations }]
+                : groupCitations(message.citations)
+              ).map((group, groupIndex) => (
+                <div key={group.label} className="flex flex-col gap-2">
+                  {!message.knowledgeBaseId && (
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.62)' }}>
+                        {group.label}
+                      </p>
+                      <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                        {group.citations.length}
                       </span>
                     </div>
-                    {hasHashLine && (
-                      <p className="font-mono text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                        {c.chunkId && (
-                          <span title={c.chunkId}>chunk {truncHash(c.chunkId)}</span>
-                        )}
-                        {c.chunkId && c.sha256 && ' · '}
-                        {c.sha256 && (
-                          <span title={c.sha256}>sha {truncHash(c.sha256)}</span>
-                        )}
-                      </p>
-                    )}
-                    <p
-                      className="text-[11px] leading-relaxed line-clamp-2"
-                      style={{ color: 'rgba(255,255,255,0.4)' }}
-                    >
-                      {c.sourceText}
-                    </p>
-                  </>
-                );
-                const cardStyle = {
-                  background: '#141414',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                };
-                return cardHref ? (
-                  <Link
-                    key={c.chunkId || i}
-                    to={cardHref}
-                    className="block rounded-lg px-3 py-2.5 hover:border-white/10 transition-colors"
-                    style={cardStyle}
-                  >
-                    {inner}
-                  </Link>
-                ) : (
-                  <div
-                    key={c.chunkId || i}
-                    className="rounded-lg px-3 py-2.5"
-                    style={cardStyle}
-                  >
-                    {inner}
-                  </div>
-                );
-              })}
+                  )}
+                  {group.citations.map((c, i) => (
+                    <CitationDisclosure
+                      key={c.chunkId || `${group.label}-${i}`}
+                      citation={c}
+                      initiallyOpen={groupIndex === 0 && i === 0}
+                    />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         )}

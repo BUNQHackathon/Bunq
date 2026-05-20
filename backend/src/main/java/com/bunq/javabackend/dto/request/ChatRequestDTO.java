@@ -12,4 +12,6 @@ public class ChatRequestDTO {
     private String chatId;
 
     private String sessionId;
+
+    private String knowledgeBaseId;
 }

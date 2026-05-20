@@ -18,6 +18,8 @@ export interface GraphRef {
 
 export interface Citation {
   kbType: KbType;
+  knowledgeBaseId?: string | null;
+  knowledgeBaseLabel?: string | null;
   chunkId: string;
   score: number;
   s3Uri: string;
@@ -67,6 +69,15 @@ export interface ChatRequest {
   query: string;
   chatId?: string;
   sessionId?: string;
+  knowledgeBaseId?: string | null;
+}
+
+export interface KnowledgeBaseOption {
+  key: string;
+  label: string;
+  knowledgeBaseId: string | null;
+  kbType: KbType | null;
+  defaultOption?: boolean;
 }
 
 // ─── History types ─────────────────────────────────────────
@@ -195,6 +206,14 @@ export async function postChatStream(
   }
 }
 
+export async function listChatKnowledgeBases(): Promise<KnowledgeBaseOption[]> {
+  const res = await fetch(`${API_BASE}/chat/knowledge-bases`, {
+    headers: { Accept: 'application/json', ...authHeader() },
+  });
+  if (!res.ok) throw new Error(`Knowledge bases fetch failed: ${res.status}`);
+  return res.json() as Promise<KnowledgeBaseOption[]>;
+}
+
 // ─── Non-streaming RAG ────────────────────────────────────
 export interface SimpleCitation {
   text: string;
@@ -233,6 +252,8 @@ export function simpleCitationToCitation(s: SimpleCitation): Citation {
   const s3Uri = hashIdx !== -1 ? s.source.slice(0, hashIdx) : s.source;
   return {
     kbType,
+    knowledgeBaseId: null,
+    knowledgeBaseLabel: kbType,
     chunkId,
     score: 0,
     s3Uri,

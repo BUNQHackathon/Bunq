@@ -74,7 +74,7 @@ export interface DocumentPresignResponse {
   expiresInSeconds: number;
 }
 
-export type DocumentKind = 'regulation' | 'policy' | 'brief' | 'evidence' | 'audio' | 'other';
+export type DocumentKind = 'regulation' | 'policy' | 'control';
 
 export interface DocumentFinalizeRequest {
   incomingKey: string;

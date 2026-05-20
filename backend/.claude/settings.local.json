@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.vixio.com)",
+      "WebFetch(domain:www.regulation-dora.eu)",
+      "WebFetch(domain:www.silenteight.com)",
+      "WebFetch(domain:www.metricstream.com)",
+      "WebFetch(domain:matproof.com)",
+      "WebFetch(domain:fintech.global)",
+      "WebFetch(domain:www.compliance.ai)",
+      "WebFetch(domain:www.corlytics.com)",
+      "WebFetch(domain:cube.global)",
+      "WebFetch(domain:www.v-comply.com)",
+      "WebFetch(domain:www.360factors.com)"
+    ]
+  }
+}

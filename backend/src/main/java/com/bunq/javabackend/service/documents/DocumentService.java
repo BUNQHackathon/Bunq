@@ -10,8 +10,13 @@ import com.bunq.javabackend.dto.response.DocumentSummaryDTO;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.helper.S3PresignHelper;
 import com.bunq.javabackend.model.document.Document;
+import com.bunq.javabackend.model.control.Control;
+import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.repository.DocJurisdictionRepository;
 import com.bunq.javabackend.repository.DocumentRepository;
+import com.bunq.javabackend.repository.ControlRepository;
+import com.bunq.javabackend.repository.ObligationRepository;
+import com.bunq.javabackend.repository.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,18 +46,24 @@ import java.util.Set;
 @Slf4j
 public class DocumentService {
 
+    private static final Set<String> ALLOWED_KINDS = Set.of("regulation", "policy", "control");
+
     private final DocumentRepository documentRepository;
     private final DocJurisdictionRepository docJurisdictionRepository;
+    private final SessionRepository sessionRepository;
+    private final ObligationRepository obligationRepository;
+    private final ControlRepository controlRepository;
     private final S3PresignHelper s3PresignHelper;
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
+    private final KnowledgeBaseIngestionService knowledgeBaseIngestionService;
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
 
     public DocumentPresignResponse presign(DocumentPresignRequest req) {
         S3PresignHelper.DocumentPresignResult result =
-                s3PresignHelper.presignDocumentUpload(req.getFilename(), req.getContentType());
+                s3PresignHelper.presignDocumentUpload(req.getFilename(), req.getContentType(), req.getSha256());
 
         return DocumentPresignResponse.builder()
                 .incomingKey(result.incomingKey())
@@ -62,6 +73,7 @@ public class DocumentService {
     }
 
     public DocumentFinalizeResponse finalize(DocumentFinalizeRequest req) {
+        String kind = normalizeKind(req.getKind());
         HeadObjectResponse head;
         try {
             head = s3Client.headObject(HeadObjectRequest.builder()
@@ -82,15 +94,22 @@ public class DocumentService {
         byte[] hashBytes = Base64.getDecoder().decode(checksumBase64);
         String hash = HexFormat.of().formatHex(hashBytes);
 
+        Instant now = Instant.now();
+        Set<String> jurisdictions = (req.getJurisdictions() == null || req.getJurisdictions().isEmpty()) ? Set.of("EU") : req.getJurisdictions();
+
         Optional<Document> existing = documentRepository.findById(hash);
         if (existing.isPresent()) {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(uploadsBucket)
                     .key(req.getIncomingKey())
                     .build());
-            documentRepository.touchLastUsed(hash, Instant.now());
+            Document updated = documentRepository
+                    .updateUploadMetadata(hash, kind, jurisdictions, req.getDisplayName(), now)
+                    .orElse(existing.get());
+            docJurisdictionRepository.putAll(hash, jurisdictions, updated);
+            knowledgeBaseIngestionService.publish(updated, existing.get().getKind());
             return DocumentFinalizeResponse.builder()
-                    .document(toResponseDTO(existing.get()))
+                    .document(toResponseDTO(updated))
                     .deduped(true)
                     .build();
         }
@@ -115,15 +134,13 @@ public class DocumentService {
                 .key(req.getIncomingKey())
                 .build());
 
-        Instant now = Instant.now();
-        Set<String> jurisdictions = (req.getJurisdictions() == null || req.getJurisdictions().isEmpty()) ? Set.of("EU") : req.getJurisdictions();
         Document doc = Document.builder()
                 .id(hash)
                 .filename(req.getFilename())
                 .contentType(req.getContentType())
                 .sizeBytes(sizeBytes)
                 .s3Key(destKey)
-                .kind(req.getKind())
+                .kind(kind)
                 .jurisdictions(jurisdictions)
                 .firstSeenAt(now)
                 .lastUsedAt(now)
@@ -148,18 +165,32 @@ public class DocumentService {
                     log.warn("Failed to delete orphan S3 object {}: {}", destKey, ex.getMessage());
                 }
             }
+            Document updated = documentRepository
+                    .updateUploadMetadata(hash, kind, jurisdictions, req.getDisplayName(), now)
+                    .orElse(existing2);
+            docJurisdictionRepository.putAll(hash, jurisdictions, updated);
+            knowledgeBaseIngestionService.publish(updated, existing2.getKind());
             return DocumentFinalizeResponse.builder()
-                    .document(toResponseDTO(existing2))
+                    .document(toResponseDTO(updated))
                     .deduped(true)
                     .build();
         }
 
         docJurisdictionRepository.putAll(hash, doc.getJurisdictions(), doc);
+        knowledgeBaseIngestionService.publish(doc, null);
 
         return DocumentFinalizeResponse.builder()
                 .document(toResponseDTO(doc))
                 .deduped(false)
                 .build();
+    }
+
+    private static String normalizeKind(String kind) {
+        String normalized = kind == null ? "" : kind.trim().toLowerCase();
+        if (!ALLOWED_KINDS.contains(normalized)) {
+            throw new IllegalArgumentException("Unsupported document kind: " + kind);
+        }
+        return normalized;
     }
 
     public DocumentListResponse list(String kind, int limit) {
@@ -181,6 +212,38 @@ public class DocumentService {
         return documentRepository.findById(id)
                 .map(this::toResponseDTO)
                 .orElseThrow(() -> new NotFoundException("Document not found: " + id));
+    }
+
+    public void delete(String id) {
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Document not found: " + id));
+
+        deleteS3Object(uploadsBucket, document.getS3Key());
+        deleteS3Object(uploadsBucket, document.getExtractionS3Key());
+        knowledgeBaseIngestionService.delete(document);
+        docJurisdictionRepository.deleteAll(id, document.getJurisdictions());
+        sessionRepository.detachDocumentFromAll(id);
+        obligationRepository.findByDocumentId(id).stream()
+                .map(Obligation::getId)
+                .forEach(obligationRepository::deleteById);
+        controlRepository.findByDocumentId(id).stream()
+                .map(Control::getId)
+                .forEach(controlRepository::deleteById);
+        documentRepository.deleteById(id);
+    }
+
+    private void deleteS3Object(String bucket, String key) {
+        if (bucket == null || bucket.isBlank() || key == null || key.isBlank()) {
+            return;
+        }
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to delete S3 object s3://{}/{}: {}", bucket, key, ex.getMessage());
+        }
     }
 
     private DocumentResponseDTO toResponseDTO(Document doc) {

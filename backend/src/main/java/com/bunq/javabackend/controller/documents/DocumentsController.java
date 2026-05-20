@@ -40,4 +40,10 @@ public class DocumentsController {
     public ResponseEntity<DocumentResponseDTO> get(@PathVariable String id) {
         return ResponseEntity.ok(documentService.get(id));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        documentService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 }

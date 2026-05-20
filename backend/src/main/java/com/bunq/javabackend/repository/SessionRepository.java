@@ -158,6 +158,21 @@ public class SessionRepository {
         }
     }
 
+    public void detachDocumentFromAll(String documentId) {
+        for (Session session : scanAll()) {
+            List<String> documentIds = session.getDocumentIds();
+            if (documentIds == null || !documentIds.contains(documentId)) {
+                continue;
+            }
+            List<String> updated = new java.util.ArrayList<>(documentIds);
+            if (updated.remove(documentId)) {
+                session.setDocumentIds(updated);
+                session.setUpdatedAt(Instant.now().toString());
+                save(session);
+            }
+        }
+    }
+
     private boolean hasCompletedStage(String sessionId, String stageName) {
         return findById(sessionId)
                 .map(Session::getCompletedStages)

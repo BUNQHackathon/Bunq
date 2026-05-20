@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -14,6 +16,7 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.AdaptiveRetryStrategy;
 import software.amazon.awssdk.services.bedrock.BedrockClient;
+import software.amazon.awssdk.services.bedrockagent.BedrockAgentClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -33,10 +36,14 @@ public class AwsConfig {
     @Value("${aws.bedrock.region}")
     private String bedrockRegion;
 
+    @Value("${aws.profile:}")
+    private String profile;
+
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
                 .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
                 .build();
     }
 
@@ -44,6 +51,7 @@ public class AwsConfig {
     public S3Presigner s3Presigner() {
         return S3Presigner.builder()
                 .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
                 .build();
     }
 
@@ -51,6 +59,7 @@ public class AwsConfig {
     public DynamoDbClient dynamoDbClient() {
         return DynamoDbClient.builder()
                 .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
                 .build();
     }
 
@@ -63,6 +72,7 @@ public class AwsConfig {
     public BedrockRuntimeClient bedrockRuntimeClient() {
         return BedrockRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
                 .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(ApacheHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
@@ -74,6 +84,7 @@ public class AwsConfig {
     public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient() {
         return BedrockRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
                 .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(NettyNioAsyncHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
@@ -85,6 +96,16 @@ public class AwsConfig {
     public BedrockClient bedrockClient() {
         return BedrockClient.builder()
                 .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
+                .overrideConfiguration(bedrockOverrideConfig())
+                .build();
+    }
+
+    @Bean
+    public BedrockAgentClient bedrockAgentClient() {
+        return BedrockAgentClient.builder()
+                .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
                 .overrideConfiguration(bedrockOverrideConfig())
                 .build();
     }
@@ -93,6 +114,7 @@ public class AwsConfig {
     public BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
         return BedrockAgentRuntimeClient.builder()
                 .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
                 .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(ApacheHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
@@ -104,6 +126,7 @@ public class AwsConfig {
     public BedrockAgentRuntimeAsyncClient bedrockAgentRuntimeAsyncClient() {
         return BedrockAgentRuntimeAsyncClient.builder()
                 .region(Region.of(bedrockRegion))
+                .credentialsProvider(credentialsProvider())
                 .overrideConfiguration(bedrockOverrideConfig())
                 .httpClientBuilder(NettyNioAsyncHttpClient.builder()
                         .connectionTimeout(Duration.ofSeconds(10))
@@ -123,6 +146,7 @@ public class AwsConfig {
     public TextractClient textractClient() {
         return TextractClient.builder()
                 .region(Region.of(region))
+                .credentialsProvider(credentialsProvider())
                 .build();
     }
 
@@ -130,7 +154,7 @@ public class AwsConfig {
     public TranscribeClient transcribeClient() {
         return TranscribeClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .credentialsProvider(credentialsProvider())
                 .build();
     }
 
@@ -140,5 +164,12 @@ public class AwsConfig {
                 .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
         return WebClient.builder().exchangeStrategies(strategies);
+    }
+
+    private AwsCredentialsProvider credentialsProvider() {
+        if (profile != null && !profile.isBlank()) {
+            return ProfileCredentialsProvider.create(profile);
+        }
+        return DefaultCredentialsProvider.create();
     }
 }

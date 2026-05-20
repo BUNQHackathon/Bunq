@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -70,7 +69,7 @@ public class S3PresignHelper {
 
     public record EvidencePresignResult(String s3Key, String uploadUrl, int expiresInSeconds) {}
 
-    public DocumentPresignResult presignDocumentUpload(String filename, String contentType) {
+    public DocumentPresignResult presignDocumentUpload(String filename, String contentType, String sha256Base64) {
         // Path-traversal prevention: keep only the extension and restrict to safe alphanumeric chars.
         String raw = filename.contains(".") ? filename.substring(filename.lastIndexOf('.') + 1) : "bin";
         String ext = raw.replaceAll("[^A-Za-z0-9]", "");
@@ -78,12 +77,12 @@ public class S3PresignHelper {
             ext = "bin";
         }
         String incomingKey = "documents/incoming/" + UUID.randomUUID() + "." + ext;
-        // checksumAlgorithm bakes x-amz-sdk-checksum-algorithm into SignedHeaders; client computes and sends hash at upload time
+        // Sign the concrete checksum header the browser sends during the presigned PUT.
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(uploadsBucket)
                 .key(incomingKey)
                 .contentType(contentType != null ? contentType : "application/octet-stream")
-                .checksumAlgorithm(ChecksumAlgorithm.SHA256)
+                .checksumSHA256(sha256Base64)
                 .build();
         PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(r -> r
                 .signatureDuration(Duration.ofMinutes(15))

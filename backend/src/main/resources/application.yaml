@@ -40,6 +40,38 @@ aws:
       sonnet: ${AWS_BEDROCK_MODEL_IDS_SONNET:eu.anthropic.claude-sonnet-4-6}
       haiku:  ${AWS_BEDROCK_MODEL_IDS_HAIKU:eu.anthropic.claude-haiku-4-5-20251001-v1:0}
     claude-model-id: ${WARMUP_CLAUDE_MODEL_ID:eu.anthropic.claude-haiku-4-5-20251001-v1:0}
+    kb:
+      regulations-id: ${KB_REGULATIONS_ID:kb-regulations-placeholder}
+      policies-id: ${KB_POLICIES_ID:kb-policies-placeholder}
+      controls-id: ${KB_CONTROLS_ID:kb-controls-placeholder}
+      regulations-data-source-id: ${KB_REGULATIONS_DATA_SOURCE_ID:}
+      policies-data-source-id: ${KB_POLICIES_DATA_SOURCE_ID:}
+      controls-data-source-id: ${KB_CONTROLS_DATA_SOURCE_ID:}
+      regulations-source-bucket: ${KB_REGULATIONS_SOURCE_BUCKET:}
+      policies-source-bucket: ${KB_POLICIES_SOURCE_BUCKET:}
+      controls-source-bucket: ${KB_CONTROLS_SOURCE_BUCKET:}
+      entries:
+        - key: regulations
+          label: Regulations
+          knowledge-base-id: ${KB_REGULATIONS_ID:kb-regulations-placeholder}
+          data-source-id: ${KB_REGULATIONS_DATA_SOURCE_ID:}
+          source-bucket: ${KB_REGULATIONS_SOURCE_BUCKET:}
+          kb-type: REGULATIONS
+          default: false
+        - key: policies
+          label: bunq policies
+          knowledge-base-id: ${KB_POLICIES_ID:kb-policies-placeholder}
+          data-source-id: ${KB_POLICIES_DATA_SOURCE_ID:}
+          source-bucket: ${KB_POLICIES_SOURCE_BUCKET:}
+          kb-type: POLICIES
+          default: false
+        - key: controls
+          label: Internal controls
+          knowledge-base-id: ${KB_CONTROLS_ID:kb-controls-placeholder}
+          data-source-id: ${KB_CONTROLS_DATA_SOURCE_ID:}
+          source-bucket: ${KB_CONTROLS_SOURCE_BUCKET:}
+          kb-type: CONTROLS
+          default: false
 
 management:
   endpoints:

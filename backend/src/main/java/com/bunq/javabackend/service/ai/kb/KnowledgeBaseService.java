@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,6 +32,8 @@ public class KnowledgeBaseService {
 
     public record RetrievedChunk(
             KbType kbType,
+            String knowledgeBaseId,
+            String knowledgeBaseLabel,
             String chunkId,
             double score,
             String s3Uri,
@@ -39,13 +42,22 @@ public class KnowledgeBaseService {
     ) {}
 
     public CompletableFuture<List<RetrievedChunk>> retrieveControls(String query, int topK) {
-        return retrieve(knowledgeBaseConfig.getControlsId(), query, topK, KbType.CONTROLS);
+        KnowledgeBaseConfig.Entry entry = knowledgeBaseConfig.findByKbType(KbType.CONTROLS)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getControlsId(), "Internal controls", KbType.CONTROLS));
+        return retrieve(entry.getKnowledgeBaseId(), query, topK, entry.getKbType(), entry.getLabel());
     }
 
     public CompletableFuture<List<RetrievedChunk>> retrieveAll(String query, int perKbTopK, int topNMerged) {
-        CompletableFuture<List<RetrievedChunk>> regFuture = retrieve(knowledgeBaseConfig.getRegulationsId(), query, perKbTopK, KbType.REGULATIONS);
-        CompletableFuture<List<RetrievedChunk>> polFuture = retrieve(knowledgeBaseConfig.getPoliciesId(), query, perKbTopK, KbType.POLICIES);
-        CompletableFuture<List<RetrievedChunk>> conFuture = retrieve(knowledgeBaseConfig.getControlsId(), query, perKbTopK, KbType.CONTROLS);
+        KnowledgeBaseConfig.Entry regulations = knowledgeBaseConfig.findByKbType(KbType.REGULATIONS)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getRegulationsId(), "Regulations", KbType.REGULATIONS));
+        KnowledgeBaseConfig.Entry policies = knowledgeBaseConfig.findByKbType(KbType.POLICIES)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getPoliciesId(), "bunq policies", KbType.POLICIES));
+        KnowledgeBaseConfig.Entry controls = knowledgeBaseConfig.findByKbType(KbType.CONTROLS)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getControlsId(), "Internal controls", KbType.CONTROLS));
+
+        CompletableFuture<List<RetrievedChunk>> regFuture = retrieve(regulations.getKnowledgeBaseId(), query, perKbTopK, regulations.getKbType(), regulations.getLabel());
+        CompletableFuture<List<RetrievedChunk>> polFuture = retrieve(policies.getKnowledgeBaseId(), query, perKbTopK, policies.getKbType(), policies.getLabel());
+        CompletableFuture<List<RetrievedChunk>> conFuture = retrieve(controls.getKnowledgeBaseId(), query, perKbTopK, controls.getKbType(), controls.getLabel());
 
         return CompletableFuture.allOf(regFuture, polFuture, conFuture)
                 .thenApply(v -> {
@@ -80,30 +92,24 @@ public class KnowledgeBaseService {
     public CompletableFuture<List<RetrievedChunk>> retrieveAllWithFilter(
             String query, int perKbTopK, int topNMerged, List<String> jurisdictionFilter) {
 
-        if (jurisdictionFilter == null || jurisdictionFilter.isEmpty()) {
+        RetrievalFilter filter = buildJurisdictionFilter(jurisdictionFilter);
+        if (filter == null) {
             return retrieveAll(query, perKbTopK, topNMerged);
         }
 
-        // Build an OR filter: doc.jurisdictions must contain at least one of the requested codes.
-        List<RetrievalFilter> clauses = jurisdictionFilter.stream()
-                .map(code -> RetrievalFilter.builder()
-                        .listContains(FilterAttribute.builder()
-                                .key("jurisdictions")
-                                .value(Document.fromString(code))
-                                .build())
-                        .build())
-                .toList();
-
-        RetrievalFilter filter = clauses.size() == 1
-                ? clauses.get(0)
-                : RetrievalFilter.builder().orAll(clauses).build();
+        KnowledgeBaseConfig.Entry regulations = knowledgeBaseConfig.findByKbType(KbType.REGULATIONS)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getRegulationsId(), "Regulations", KbType.REGULATIONS));
+        KnowledgeBaseConfig.Entry policies = knowledgeBaseConfig.findByKbType(KbType.POLICIES)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getPoliciesId(), "bunq policies", KbType.POLICIES));
+        KnowledgeBaseConfig.Entry controls = knowledgeBaseConfig.findByKbType(KbType.CONTROLS)
+                .orElseGet(() -> entry(knowledgeBaseConfig.getControlsId(), "Internal controls", KbType.CONTROLS));
 
         CompletableFuture<List<RetrievedChunk>> regFuture =
-                retrieveWithFilter(knowledgeBaseConfig.getRegulationsId(), query, perKbTopK, KbType.REGULATIONS, filter);
+                retrieveWithFilter(regulations.getKnowledgeBaseId(), query, perKbTopK, regulations.getKbType(), regulations.getLabel(), filter);
         CompletableFuture<List<RetrievedChunk>> polFuture =
-                retrieveWithFilter(knowledgeBaseConfig.getPoliciesId(), query, perKbTopK, KbType.POLICIES, filter);
+                retrieveWithFilter(policies.getKnowledgeBaseId(), query, perKbTopK, policies.getKbType(), policies.getLabel(), filter);
         CompletableFuture<List<RetrievedChunk>> conFuture =
-                retrieveWithFilter(knowledgeBaseConfig.getControlsId(), query, perKbTopK, KbType.CONTROLS, filter);
+                retrieveWithFilter(controls.getKnowledgeBaseId(), query, perKbTopK, controls.getKbType(), controls.getLabel(), filter);
 
         return CompletableFuture.allOf(regFuture, polFuture, conFuture)
                 .thenApply(v -> {
@@ -120,8 +126,18 @@ public class KnowledgeBaseService {
                 });
     }
 
+    public CompletableFuture<List<RetrievedChunk>> retrieveKnowledgeBaseWithFilter(
+            KnowledgeBaseConfig.Entry entry, String query, int topK, List<String> jurisdictionFilter) {
+
+        RetrievalFilter filter = buildJurisdictionFilter(jurisdictionFilter);
+        if (filter == null) {
+            return retrieve(entry.getKnowledgeBaseId(), query, topK, entry.getKbType(), entry.getLabel());
+        }
+        return retrieveWithFilter(entry.getKnowledgeBaseId(), query, topK, entry.getKbType(), entry.getLabel(), filter);
+    }
+
     private CompletableFuture<List<RetrievedChunk>> retrieveWithFilter(
-            String kbId, String query, int topK, KbType kbType, RetrievalFilter filter) {
+            String kbId, String query, int topK, KbType kbType, String kbLabel, RetrievalFilter filter) {
         RetrieveRequest request = RetrieveRequest.builder()
                 .knowledgeBaseId(kbId)
                 .retrievalQuery(q -> q.text(query))
@@ -131,14 +147,14 @@ public class KnowledgeBaseService {
                 .build();
 
         return bedrockAgentRuntimeAsyncClient.retrieve(request)
-                .thenApply(response -> mapResults(response, kbType))
+                .thenApply(response -> mapResults(response, kbType, kbId, kbLabel))
                 .exceptionally(ex -> {
                     log.warn("KB filtered retrieval failed for {} kb {}: {}", kbType, kbId, ex.getMessage());
                     return List.of();
                 });
     }
 
-    private CompletableFuture<List<RetrievedChunk>> retrieve(String kbId, String query, int topK, KbType kbType) {
+    private CompletableFuture<List<RetrievedChunk>> retrieve(String kbId, String query, int topK, KbType kbType, String kbLabel) {
         RetrieveRequest request = RetrieveRequest.builder()
                 .knowledgeBaseId(kbId)
                 .retrievalQuery(q -> q.text(query))
@@ -146,21 +162,46 @@ public class KnowledgeBaseService {
                 .build();
 
         return bedrockAgentRuntimeAsyncClient.retrieve(request)
-                .thenApply(response -> mapResults(response, kbType))
+                .thenApply(response -> mapResults(response, kbType, kbId, kbLabel))
                 .exceptionally(ex -> {
                     log.warn("KB retrieval failed for {} kb {}: {}", kbType, kbId, ex.getMessage());
                     return List.of();
                 });
     }
 
-    private List<RetrievedChunk> mapResults(RetrieveResponse response, KbType kbType) {
+    private RetrievalFilter buildJurisdictionFilter(List<String> jurisdictionFilter) {
+        if (jurisdictionFilter == null || jurisdictionFilter.isEmpty()) {
+            return null;
+        }
+
+        // Build an OR filter: doc.jurisdictions must contain at least one of the requested codes.
+        List<RetrievalFilter> clauses = jurisdictionFilter.stream()
+                .filter(Objects::nonNull)
+                .filter(code -> !code.isBlank())
+                .map(code -> RetrievalFilter.builder()
+                        .listContains(FilterAttribute.builder()
+                                .key("jurisdictions")
+                                .value(Document.fromString(code))
+                                .build())
+                        .build())
+                .toList();
+
+        if (clauses.isEmpty()) {
+            return null;
+        }
+        return clauses.size() == 1
+                ? clauses.get(0)
+                : RetrievalFilter.builder().orAll(clauses).build();
+    }
+
+    private List<RetrievedChunk> mapResults(RetrieveResponse response, KbType kbType, String kbId, String kbLabel) {
         return response.retrievalResults().stream()
-                .map(r -> toChunk(r, kbType))
+                .map(r -> toChunk(r, kbType, kbId, kbLabel))
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    private RetrievedChunk toChunk(KnowledgeBaseRetrievalResult result, KbType kbType) {
+    private RetrievedChunk toChunk(KnowledgeBaseRetrievalResult result, KbType kbType, String kbId, String kbLabel) {
         try {
             String s3Uri = null;
             if (result.location() != null && result.location().s3Location() != null) {
@@ -175,14 +216,44 @@ public class KnowledgeBaseService {
             Map<String, String> metadata = new HashMap<>();
             if (result.metadata() != null) {
                 result.metadata().forEach((k, v) -> {
-                    if (v != null) metadata.put(k, v.toString());
+                    if (v != null) metadata.put(k, documentValueToString(v));
                 });
             }
 
-            return new RetrievedChunk(kbType, chunkId, score, s3Uri, result.content().text(), metadata);
+            return new RetrievedChunk(kbType, kbId, kbLabel, chunkId, score, s3Uri, result.content().text(), metadata);
         } catch (Exception ex) {
             log.warn("Failed to map KB result for {}: {}", kbType, ex.getMessage());
             return null;
         }
+    }
+
+    private static String documentValueToString(Document value) {
+        if (value == null || value.isNull()) {
+            return "";
+        }
+        if (value.isString()) {
+            return value.asString();
+        }
+        if (value.isNumber()) {
+            return value.asNumber().stringValue();
+        }
+        if (value.isBoolean()) {
+            return Boolean.toString(value.asBoolean());
+        }
+        if (value.isList()) {
+            return value.asList().stream()
+                    .map(KnowledgeBaseService::documentValueToString)
+                    .collect(Collectors.joining(","));
+        }
+        return value.toString();
+    }
+
+    private static KnowledgeBaseConfig.Entry entry(String kbId, String label, KbType kbType) {
+        KnowledgeBaseConfig.Entry entry = new KnowledgeBaseConfig.Entry();
+        entry.setKnowledgeBaseId(kbId);
+        entry.setLabel(label);
+        entry.setKbType(kbType);
+        entry.setKey(kbType.name().toLowerCase());
+        return entry;
     }
 }

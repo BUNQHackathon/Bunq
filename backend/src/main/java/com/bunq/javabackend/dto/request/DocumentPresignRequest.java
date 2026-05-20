@@ -15,5 +15,6 @@ public class DocumentPresignRequest {
     private String filename;
     @NotBlank(message = "contentType is required")
     private String contentType;
+    @NotBlank(message = "sha256 is required")
     private String sha256;
 }

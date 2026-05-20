@@ -3,6 +3,7 @@ package com.bunq.javabackend.controller.chat;
 import com.bunq.javabackend.dto.request.ChatRequestDTO;
 import com.bunq.javabackend.dto.response.ChatHistoryResponseDTO;
 import com.bunq.javabackend.dto.response.ChatSummaryResponseDTO;
+import com.bunq.javabackend.dto.response.KnowledgeBaseOptionDTO;
 import com.bunq.javabackend.service.chat.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,11 @@ public class ChatController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startChat(@Valid @RequestBody ChatRequestDTO req) {
         return chatService.startChat(req);
+    }
+
+    @GetMapping("/knowledge-bases")
+    public ResponseEntity<List<KnowledgeBaseOptionDTO>> knowledgeBases() {
+        return ResponseEntity.ok(chatService.listKnowledgeBases());
     }
 
     @GetMapping("/{chatId}/history")
