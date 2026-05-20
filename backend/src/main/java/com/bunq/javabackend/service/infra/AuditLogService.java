@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -39,93 +41,101 @@ public class AuditLogService {
     private final DynamoDbEnhancedClient enhancedClient;
     private final ObjectMapper mapper;
 
+    private final ConcurrentHashMap<String, ReentrantLock> sessionLocks = new ConcurrentHashMap<>();
+
     public AuditLogEntry append(String sessionId, String mappingId, String action,
                                 String actor, Map<String, Object> payload) throws Exception {
-        for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-            if (attempt > 0) {
-                Thread.sleep(BACKOFF_MS[attempt - 1]);
-                log.debug("Retrying audit append for session {} (attempt {})", sessionId, attempt + 1);
-            }
-
-            Optional<AuditChainTail> currentTail = chainTailRepo.findBySessionId(sessionId);
-            String prevHash = currentTail.map(AuditChainTail::getTailHash).orElse("GENESIS");
-
-            String payloadJson = mapper.writeValueAsString(payload == null ? Map.of() : payload);
-            Instant now = Instant.now();
-            String id = UUID.randomUUID().toString();
-
-            String canonical = "action=" + nullSafe(action)
-                    + "|actor=" + nullSafe(actor)
-                    + "|id=" + id
-                    + "|mappingId=" + nullSafe(mappingId)
-                    + "|payload=" + payloadJson
-                    + "|prevHash=" + prevHash
-                    + "|sessionId=" + sessionId
-                    + "|timestamp=" + now;
-            String entryHash = sha256Hex(canonical);
-
-            AuditLogEntry entry = AuditLogEntry.builder()
-                    .id(id).sessionId(sessionId).mappingId(mappingId)
-                    .action(action).actor(actor).timestamp(now)
-                    .payloadJson(payloadJson).prevHash(prevHash).entryHash(entryHash)
-                    .build();
-
-            AuditChainTail newTail = AuditChainTail.builder()
-                    .sessionId(sessionId)
-                    .tailHash(entryHash)
-                    .tailEntryId(id)
-                    .updatedAt(now)
-                    .build();
-
-            // Condition on the tail record: either it doesn't exist yet (new session)
-            // or the current tail_hash matches what we read (no concurrent writer won).
-            Expression tailCondition;
-            if (currentTail.isEmpty()) {
-                tailCondition = Expression.builder()
-                        .expression("attribute_not_exists(session_id)")
-                        .build();
-            } else {
-                tailCondition = Expression.builder()
-                        .expression("tail_hash = :expectedPrev")
-                        .expressionValues(Map.of(
-                                ":expectedPrev", AttributeValue.fromS(prevHash)))
-                        .build();
-            }
-
-            TransactPutItemEnhancedRequest<AuditLogEntry> entryPut =
-                    TransactPutItemEnhancedRequest.builder(AuditLogEntry.class)
-                            .item(entry)
-                            .conditionExpression(Expression.builder()
-                                    .expression("attribute_not_exists(id)")
-                                    .build())
-                            .build();
-
-            TransactPutItemEnhancedRequest<AuditChainTail> tailPut =
-                    TransactPutItemEnhancedRequest.builder(AuditChainTail.class)
-                            .item(newTail)
-                            .conditionExpression(tailCondition)
-                            .build();
-
-            TransactWriteItemsEnhancedRequest txRequest =
-                    TransactWriteItemsEnhancedRequest.builder()
-                            .addPutItem(repo.getTable(), entryPut)
-                            .addPutItem(chainTailRepo.getTable(), tailPut)
-                            .build();
-
-            try {
-                enhancedClient.transactWriteItems(txRequest);
-                return entry;
-            } catch (TransactionCanceledException ex) {
-                if (isRetryableTransactionFailure(ex) && attempt < MAX_RETRIES) {
-                    log.debug("Retryable transaction failure on audit append for session {}, attempt {}, will retry", sessionId, attempt + 1);
-                    continue;
+        ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                if (attempt > 0) {
+                    Thread.sleep(BACKOFF_MS[attempt - 1]);
+                    log.debug("Retrying audit append for session {} (attempt {})", sessionId, attempt + 1);
                 }
-                throw new RuntimeException(
-                        "Failed to append audit entry after " + (attempt + 1) + " attempts for session " + sessionId, ex);
-            }
-        }
 
-        throw new RuntimeException("Failed to append audit entry after retries for session " + sessionId);
+                Optional<AuditChainTail> currentTail = chainTailRepo.findBySessionId(sessionId);
+                String prevHash = currentTail.map(AuditChainTail::getTailHash).orElse("GENESIS");
+
+                String payloadJson = mapper.writeValueAsString(payload == null ? Map.of() : payload);
+                Instant now = Instant.now();
+                String id = UUID.randomUUID().toString();
+
+                String canonical = "action=" + nullSafe(action)
+                        + "|actor=" + nullSafe(actor)
+                        + "|id=" + id
+                        + "|mappingId=" + nullSafe(mappingId)
+                        + "|payload=" + payloadJson
+                        + "|prevHash=" + prevHash
+                        + "|sessionId=" + sessionId
+                        + "|timestamp=" + now;
+                String entryHash = sha256Hex(canonical);
+
+                AuditLogEntry entry = AuditLogEntry.builder()
+                        .id(id).sessionId(sessionId).mappingId(mappingId)
+                        .action(action).actor(actor).timestamp(now)
+                        .payloadJson(payloadJson).prevHash(prevHash).entryHash(entryHash)
+                        .build();
+
+                AuditChainTail newTail = AuditChainTail.builder()
+                        .sessionId(sessionId)
+                        .tailHash(entryHash)
+                        .tailEntryId(id)
+                        .updatedAt(now)
+                        .build();
+
+                // Condition on the tail record: either it doesn't exist yet (new session)
+                // or the current tail_hash matches what we read (no concurrent writer won).
+                Expression tailCondition;
+                if (currentTail.isEmpty()) {
+                    tailCondition = Expression.builder()
+                            .expression("attribute_not_exists(session_id)")
+                            .build();
+                } else {
+                    tailCondition = Expression.builder()
+                            .expression("tail_hash = :expectedPrev")
+                            .expressionValues(Map.of(
+                                    ":expectedPrev", AttributeValue.fromS(prevHash)))
+                            .build();
+                }
+
+                TransactPutItemEnhancedRequest<AuditLogEntry> entryPut =
+                        TransactPutItemEnhancedRequest.builder(AuditLogEntry.class)
+                                .item(entry)
+                                .conditionExpression(Expression.builder()
+                                        .expression("attribute_not_exists(id)")
+                                        .build())
+                                .build();
+
+                TransactPutItemEnhancedRequest<AuditChainTail> tailPut =
+                        TransactPutItemEnhancedRequest.builder(AuditChainTail.class)
+                                .item(newTail)
+                                .conditionExpression(tailCondition)
+                                .build();
+
+                TransactWriteItemsEnhancedRequest txRequest =
+                        TransactWriteItemsEnhancedRequest.builder()
+                                .addPutItem(repo.getTable(), entryPut)
+                                .addPutItem(chainTailRepo.getTable(), tailPut)
+                                .build();
+
+                try {
+                    enhancedClient.transactWriteItems(txRequest);
+                    return entry;
+                } catch (TransactionCanceledException ex) {
+                    if (isRetryableTransactionFailure(ex) && attempt < MAX_RETRIES) {
+                        log.debug("Retryable transaction failure on audit append for session {}, attempt {}, will retry", sessionId, attempt + 1);
+                        continue;
+                    }
+                    throw new RuntimeException(
+                            "Failed to append audit entry after " + (attempt + 1) + " attempts for session " + sessionId, ex);
+                }
+            }
+
+            throw new RuntimeException("Failed to append audit entry after retries for session " + sessionId);
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

@@ -31,23 +31,42 @@ public class BearerTokenAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ") && !adminToken.isBlank()) {
+            // Header path — preferred.
             String provided = header.substring(7);
-            // Hash both sides to fixed 32-byte digests before constant-time compare,
-            // eliminating the length-leak timing oracle.
             try {
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] providedHash = digest.digest(provided.getBytes(StandardCharsets.UTF_8));
-                digest.reset();
-                byte[] expectedHash = digest.digest(adminToken.getBytes(StandardCharsets.UTF_8));
-                if (MessageDigest.isEqual(providedHash, expectedHash)) {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            "admin", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+                authenticateIfMatch(provided);
             } catch (NoSuchAlgorithmException e) {
                 throw new ServletException("SHA-256 not available", e);
             }
+        } else if (!adminToken.isBlank()) {
+            // Query-parameter fallback for clients that cannot set headers (e.g. native EventSource).
+            String provided = request.getParameter("token");
+            if (provided != null && !provided.isBlank()) {
+                try {
+                    authenticateIfMatch(provided);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new ServletException("SHA-256 not available", e);
+                }
+            }
         }
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Hash-and-compare {@code provided} against {@link #adminToken} using a constant-time
+     * SHA-256 digest comparison. Sets ROLE_ADMIN into the SecurityContext on match.
+     */
+    private void authenticateIfMatch(String provided) throws NoSuchAlgorithmException {
+        // Hash both sides to fixed 32-byte digests before constant-time compare,
+        // eliminating the length-leak timing oracle.
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] providedHash = digest.digest(provided.getBytes(StandardCharsets.UTF_8));
+        digest.reset();
+        byte[] expectedHash = digest.digest(adminToken.getBytes(StandardCharsets.UTF_8));
+        if (MessageDigest.isEqual(providedHash, expectedHash)) {
+            var auth = new UsernamePasswordAuthenticationToken(
+                    "admin", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
     }
 }

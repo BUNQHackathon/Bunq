@@ -1,4 +1,5 @@
-import { API_BASE, getJson, postJson } from './client';
+import { API_BASE, getJson, postJson, deleteJson } from './client';
+import { getAuthToken } from '../auth/useAuth';
 
 /**
  * Thrown by downloadProofPack when the pipeline is still running and the
@@ -133,7 +134,12 @@ export function getProofPackUrl(launchId: string, code: string): string {
 export async function downloadProofPack(launchId: string, code: string): Promise<void> {
   const url = getProofPackUrl(launchId, code);
   try {
-    const res = await fetch(url, { headers: { Accept: 'application/zip' } });
+    const token = getAuthToken();
+    const headers: Record<string, string> = { Accept: 'application/zip' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await fetch(url, { headers });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
@@ -154,7 +160,9 @@ export async function downloadProofPack(launchId: string, code: string): Promise
 }
 
 export function jurisdictionSseUrl(launchId: string, code: string): string {
-  return `${API_BASE}/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/stream`;
+  const base = `${API_BASE}/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/stream`;
+  const token = getAuthToken();
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
 export const JURISDICTION_CATALOG: Array<{ code: string; name: string; flag: string }> = [
@@ -171,10 +179,7 @@ export const JURISDICTION_CATALOG: Array<{ code: string; name: string; flag: str
 ];
 
 export async function deleteLaunch(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/launches/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error(`/launches/${id} failed: ${res.status}`);
+  await deleteJson<void>(`/launches/${encodeURIComponent(id)}`);
 }
 
 export async function rerunFailedJurisdictions(launchId: string): Promise<JurisdictionRun[]> {

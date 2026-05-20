@@ -56,3 +56,14 @@ export async function postJson<T>(path: string, body?: unknown): Promise<T> {
   const text = await res.text();
   return (text ? JSON.parse(text) : {}) as T;
 }
+
+export async function deleteJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json', ...authHeaders() },
+  });
+  if (res.status === 401) { if (getAuthToken()) clearAuthAndRedirect(); throw new Error(`${path} failed: 401`); }
+  if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
+  const text = await res.text();
+  return (text ? JSON.parse(text) : {}) as T;
+}

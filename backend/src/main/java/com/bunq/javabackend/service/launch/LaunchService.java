@@ -2,6 +2,7 @@ package com.bunq.javabackend.service.launch;
 
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
 import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
+import com.bunq.javabackend.dto.response.CounterpartyDTO;
 import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
@@ -261,7 +262,7 @@ public class LaunchService {
     }
 
     private JurisdictionRun provisionJurisdiction(String launchId, String code) {
-        launchRepository.findById(launchId)
+        Launch launch = launchRepository.findById(launchId)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
         jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code).ifPresent(existing -> {
             throw new EntityAlreadyExistsException(
@@ -291,7 +292,7 @@ public class LaunchService {
         sessionRepository.save(session);
 
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
-                .counterparties(List.of())
+                .counterparties(toCounterpartyDtos(launch.getCounterparties()))
                 .launchId(launchId)
                 .jurisdictionCode(code)
                 .build();
@@ -301,6 +302,8 @@ public class LaunchService {
     }
 
     public JurisdictionRun runJurisdiction(String launchId, String code) {
+        Launch launch = launchRepository.findById(launchId)
+                .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
         JurisdictionRun run = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code)
                 .orElseThrow(() -> new NotFoundException(
                         "JurisdictionRun not found: launch=" + launchId + " code=" + code));
@@ -335,7 +338,7 @@ public class LaunchService {
                 .orElse(null);
 
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
-                .counterparties(List.of())
+                .counterparties(toCounterpartyDtos(launch.getCounterparties()))
                 .launchId(launchId)
                 .jurisdictionCode(code)
                 .regulation(regulationText)
@@ -441,5 +444,13 @@ public class LaunchService {
         if (allUnknown)
             return "UNKNOWN";
         return null;
+    }
+
+    private List<CounterpartyDTO> toCounterpartyDtos(List<String> names) {
+        if (names == null || names.isEmpty()) return List.of();
+        return names.stream()
+                .filter(n -> n != null && !n.isBlank())
+                .map(n -> CounterpartyDTO.builder().name(n).build())
+                .toList();
     }
 }

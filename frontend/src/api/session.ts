@@ -1,4 +1,4 @@
-import { API_BASE, getJson, postJson } from './client';
+import { API_BASE, getJson, postJson, deleteJson } from './client';
 
 // --- Types ---
 
@@ -355,11 +355,7 @@ export function attachDocument(sessionId: string, documentId: string): Promise<A
 }
 
 export async function detachDocument(sessionId: string, documentId: string): Promise<void> {
-  const res = await fetch(
-    `${API_BASE}/sessions/${encodeURIComponent(sessionId)}/documents/${encodeURIComponent(documentId)}`,
-    { method: 'DELETE' }
-  );
-  if (!res.ok) throw new Error(`Detach failed: ${res.status}`);
+  await deleteJson<void>(`/sessions/${encodeURIComponent(sessionId)}/documents/${encodeURIComponent(documentId)}`);
 }
 
 export function listLibraryDocuments(kind?: string, limit: number = 50): Promise<DocumentListResponse> {

@@ -55,15 +55,24 @@ public class SidecarClient {
     }
 
     public List<SanctionHit> screenSanctions(String sessionId, List<Counterparty> counterparties, String briefText) {
-        Map<String, Object> body = Map.of(
-                "session_id", sessionId,
-                "counterparties", counterparties.stream().map(cp -> Map.of(
-                        "name", cp.getName() != null ? cp.getName() : "",
-                        "country", cp.getCountry() != null ? cp.getCountry() : "",
-                        "type", cp.getType() != null ? cp.getType().name() : ""
-                )).toList(),
-                "brief_text", briefText != null ? briefText : ""
-        );
+        List<Map<String, Object>> cps = counterparties.stream().map(cp -> {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("name", cp.getName() != null ? cp.getName() : "");
+            if (cp.getCountry() != null && !cp.getCountry().isBlank()) {
+                m.put("country", cp.getCountry());
+            }
+            if (cp.getType() != null) {
+                m.put("type", cp.getType().name().toLowerCase());
+            }
+            return m;
+        }).toList();
+
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("session_id", sessionId);
+        body.put("counterparties", cps);
+        if (briefText != null && !briefText.isBlank()) {
+            body.put("brief_text", briefText);
+        }
 
         try {
             JsonNode response = webClient.post()

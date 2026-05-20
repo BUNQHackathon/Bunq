@@ -461,6 +461,8 @@ public class BedrockService {
                         // If extended-cache-ttl is not yet active on Bedrock, this field is silently
                         // ignored and the default TTL applies. Re-evaluate when Bedrock publishes
                         // support for anthropic-beta: extended-cache-ttl-2025-04-11.
+                        String userContentBlocks = objectMapper.writeValueAsString(
+                                List.of(Map.of("type", "text", "text", userText)));
                         String requestJson = """
                                 {
                                   "anthropic_version": "bedrock-2023-05-31",
@@ -485,7 +487,7 @@ public class BedrockService {
                                 """.formatted(
                                 objectMapper.writeValueAsString(systemPrompt),
                                 cachedToolJson,
-                                userText);
+                                userContentBlocks);
 
                         InvokeModelRequest request = InvokeModelRequest.builder()
                                 .modelId(currentModel)
