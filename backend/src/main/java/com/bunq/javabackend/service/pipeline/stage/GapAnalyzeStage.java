@@ -71,6 +71,11 @@ public class GapAnalyzeStage implements Stage {
                     .map(Mapping::getObligationId)
                     .collect(Collectors.toSet());
 
+            Set<String> mappedObligationIds = mappings.stream()
+                    .map(Mapping::getObligationId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+
             List<Obligation> uncovered = obligations.stream()
                     .filter(o -> !coveredObligationIds.contains(o.getId()))
                     .toList();
@@ -83,6 +88,10 @@ public class GapAnalyzeStage implements Stage {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             for (CompletableFuture<Gap> f : futures) {
                 Gap gap = f.join();
+                if (mappedObligationIds.contains(gap.getObligationId())) {
+                    gap.setGapType(GapType.control_weak);
+                    gap.setGapStatus(GapStatus.partial);
+                }
                 gapRepository.save(gap);
                 ctx.getGaps().add(gap);
                 ctx.getSseEmitterService().send(ctx.getSessionId(), "gap.identified",
