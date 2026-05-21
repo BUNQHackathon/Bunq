@@ -118,6 +118,8 @@ interface SearchBarProps {
 }
 
 function SearchBar({ query, setQuery, onSubmit, disabled, placeholder, kbOptions, selectedKbId, onKbChange }: SearchBarProps) {
+  const isActive = !disabled && !!query.trim();
+
   return (
     <form onSubmit={onSubmit} className="w-full" style={{ maxWidth: '820px', margin: '0 auto' }}>
       <div
@@ -147,9 +149,11 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder, kbOptions
             background: '#ef6a2a',
             color: '#3a1a0a',
             border: 'none',
-            boxShadow: '0 8px 24px -8px rgba(239,106,42,0.6)',
+            boxShadow: isActive
+              ? '0 8px 24px -8px rgba(239,106,42,0.65), 0 0 18px rgba(239,106,42,0.4), 0 0 40px rgba(239,106,42,0.22)'
+              : '0 8px 24px -8px rgba(239,106,42,0.6)',
             opacity: (disabled || !query.trim()) ? 0.5 : 1,
-            transition: 'background 120ms ease',
+            transition: 'background 120ms ease, box-shadow 260ms ease, opacity 200ms ease',
           }}
           aria-label="Send"
         >
