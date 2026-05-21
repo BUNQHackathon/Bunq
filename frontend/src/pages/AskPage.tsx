@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -169,11 +170,19 @@ interface SourceSelectorProps {
 function SourceSelector({ options, selectedId, onChange, disabled }: SourceSelectorProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; bottom: number; minWidth: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        (triggerRef.current && triggerRef.current.contains(target)) ||
+        (popoverRef.current && popoverRef.current.contains(target))
+      ) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDown);
@@ -184,6 +193,26 @@ function SourceSelector({ options, selectedId, onChange, disabled }: SourceSelec
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) { setPos(null); return; }
+    const compute = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 10,
+        minWidth: Math.max(rect.width, 240),
+      });
+    };
+    compute();
+    window.addEventListener('scroll', compute, { capture: true });
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute, { capture: true });
+      window.removeEventListener('resize', compute);
+    };
+  }, [open]);
+
   const selected = options.find(o => o.knowledgeBaseId === selectedId)
     ?? options.find(o => o.knowledgeBaseId === null)
     ?? options[0];
@@ -191,19 +220,23 @@ function SourceSelector({ options, selectedId, onChange, disabled }: SourceSelec
 
   return (
     <div ref={wrapRef} className="relative shrink-0">
-      {open && (
+      {open && pos && createPortal(
         <div
+          ref={popoverRef}
           role="listbox"
-          className="absolute left-0 min-w-[240px] p-1.5"
+          className="p-1.5"
           style={{
-            bottom: 'calc(100% + 10px)',
+            position: 'fixed',
+            left: pos.left,
+            bottom: pos.bottom,
+            minWidth: pos.minWidth,
             background: 'rgba(20,20,20,0.8)',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 10,
             boxShadow: '0 24px 50px -16px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.4)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            zIndex: 20,
+            zIndex: 1000,
             animation: 'askaltSourceIn 120ms ease-out',
           }}
         >
@@ -247,9 +280,11 @@ function SourceSelector({ options, selectedId, onChange, disabled }: SourceSelec
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setOpen(v => !v)}
         disabled={disabled}
