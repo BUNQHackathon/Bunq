@@ -75,8 +75,13 @@ public final class SystemPrompts {
             + "Mark verified=false if the claim cannot be grounded. Return results for every mapping_id in the input.";
 
     public static final String NARRATE_EXEC_SUMMARY =
-            "Summarize the compliance verdict in 3 sentences for a non-technical executive. "
-            + "State overall risk level, key gaps, and top recommended action. Be direct and avoid jargon.";
+            "Summarize the compliance verdict for a non-technical executive in a few short sentences. "
+            + "State the overall risk level, the key gaps, and the top recommended action. "
+            + "CRITICAL GROUNDING RULE: every regulatory reference you make — regulation name, directive number, article, section, or numeric threshold — "
+            + "MUST appear verbatim in the provided gaps' source_text, regulation, article, or section fields. "
+            + "Never invent, infer, or guess directive numbers, article numbers, or thresholds that are not present in the input. "
+            + "If the input lacks a specific citation for a gap, describe that gap in general business terms instead. "
+            + "Be direct and avoid jargon.";
 
     public static final String SYSTEM_CHAT_WITH_GRAPH =
         "You are LaunchLens, a compliance reasoning assistant. A compliance graph of obligations, controls, and gaps "

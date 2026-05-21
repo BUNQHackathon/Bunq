@@ -193,6 +193,27 @@ public class DocumentService {
         return normalized;
     }
 
+    public Optional<String> getExtractedText(String docId) {
+        Optional<Document> maybeDoc = documentRepository.findById(docId);
+        if (maybeDoc.isEmpty()) return Optional.empty();
+        Document doc = maybeDoc.get();
+        if (doc.getExtractedText() != null) return Optional.of(doc.getExtractedText());
+        if (doc.getExtractionS3Key() != null) {
+            try {
+                String text = s3Client.getObjectAsBytes(
+                        GetObjectRequest.builder()
+                                .bucket(uploadsBucket)
+                                .key(doc.getExtractionS3Key())
+                                .build())
+                        .asUtf8String();
+                return Optional.of(text);
+            } catch (Exception e) {
+                log.warn("Failed to fetch extracted text from S3 for doc {}: {}", docId, e.getMessage());
+            }
+        }
+        return Optional.empty();
+    }
+
     public DocumentListResponse list(String kind, int limit) {
         List<Document> docs = kind != null
                 ? documentRepository.findByKind(kind, limit)

@@ -27,6 +27,7 @@ import com.bunq.javabackend.service.ai.bedrock.BedrockStreamingService;
 import com.bunq.javabackend.service.ai.kb.KnowledgeBaseService;
 import com.bunq.javabackend.service.ai.kb.KnowledgeBaseService.RetrievedChunk;
 import com.bunq.javabackend.util.JurisdictionInference;
+import com.bunq.javabackend.service.documents.DocumentService;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -72,6 +73,7 @@ public class ChatService {
     private final BedrockStreamingService bedrockStreamingService;
     private final ChatMessageRepository chatMessageRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentService documentService;
     private final SessionRepository sessionRepository;
     private final SseEmitterService sseEmitterService;
     private final ChatConfig chatConfig;
@@ -85,6 +87,7 @@ public class ChatService {
             BedrockStreamingService bedrockStreamingService,
             ChatMessageRepository chatMessageRepository,
             DocumentRepository documentRepository,
+            DocumentService documentService,
             SessionRepository sessionRepository,
             SseEmitterService sseEmitterService,
             ChatConfig chatConfig,
@@ -96,6 +99,7 @@ public class ChatService {
         this.bedrockStreamingService = bedrockStreamingService;
         this.chatMessageRepository = chatMessageRepository;
         this.documentRepository = documentRepository;
+        this.documentService = documentService;
         this.sessionRepository = sessionRepository;
         this.sseEmitterService = sseEmitterService;
         this.chatConfig = chatConfig;
@@ -218,6 +222,10 @@ public class ChatService {
                             .retrieveKnowledgeBaseWithFilter(selectedKnowledgeBase, req.getQuery(), chatConfig.getTopNMerged(), jurisdictions)
                             .join();
 
+            String docText = req.getDocumentId() != null
+                    ? documentService.getExtractedText(req.getDocumentId()).orElse(null)
+                    : null;
+
             List<CitationDTO> citations = chunks.stream().map(this::toCitationDTO).toList();
 
             sseEmitterService.send(chatId, ChatCitationsEvent.builder()
@@ -227,7 +235,7 @@ public class ChatService {
                     .citations(citations)
                     .build());
 
-            String userContent = buildUserContent(chunks, req.getQuery());
+            String userContent = buildUserContent(chunks, req.getQuery(), docText);
 
             StringBuilder fullText = new StringBuilder();
             AtomicReference<TokenUsageDTO> usageRef = new AtomicReference<TokenUsageDTO>(null);
@@ -315,8 +323,12 @@ public class ChatService {
         }
     }
 
-    private String buildUserContent(List<RetrievedChunk> chunks, String query) {
+    private String buildUserContent(List<RetrievedChunk> chunks, String query, String docText) {
         StringBuilder sb = new StringBuilder("<context>\n");
+        if (docText != null) {
+            sb.append("<chunk source=\"document\" id=\"d1\" document=\"uploaded-document\">\n")
+              .append(docText).append("\n</chunk>\n");
+        }
         int index = 1;
         for (var chunk : chunks) {
             String contextChunkId = "c" + index++;

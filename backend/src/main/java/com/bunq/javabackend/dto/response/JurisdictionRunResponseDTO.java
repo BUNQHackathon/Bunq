@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JurisdictionRunResponseDTO {
+    private List<KeyGapDTO> keyGaps;
     private String launchId;
     private String jurisdictionCode;
     private String currentSessionId;

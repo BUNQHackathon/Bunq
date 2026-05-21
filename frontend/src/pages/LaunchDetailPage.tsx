@@ -11,6 +11,7 @@ import {
   jurisdictionLabel,
   type LaunchDetail,
   type JurisdictionRun,
+  type KeyGap,
   type Verdict,
   type JurisdictionStatus,
 } from '../api/launch';
@@ -1071,6 +1072,68 @@ function JurisdictionRow({ run, launchId, selectedIso3, rowRefs, refetch, naviga
   );
 }
 
+// ── Gap proof disclosure ──────────────────────────────────────────────────────
+
+function GapProofDisclosure({ gap }: { gap: KeyGap }) {
+  const src = gap.source;
+  if (!src || !src.sourceText) {
+    return (
+      <li className="fjp__detail-value" style={{ marginBottom: 2 }}>
+        {gap.text}
+      </li>
+    );
+  }
+
+  const metaParts: string[] = [];
+  if (src.article) metaParts.push(`Art. ${src.article}`);
+  if (src.section) metaParts.push(`§${src.section}`);
+  if (src.regulation) metaParts.push(src.regulation);
+  if (src.retrievedFromKbChunkId) metaParts.push(src.retrievedFromKbChunkId.slice(0, 12));
+  const metaLine = metaParts.join(' · ');
+
+  return (
+    <details
+      className="group rounded-lg overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid rgba(255,255,255,0.07)',
+      }}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03] [&::-webkit-details-marker]:hidden">
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] transition-transform group-open:rotate-90"
+          style={{ color: 'rgba(255,255,255,0.36)', border: '1px solid rgba(255,255,255,0.10)' }}
+        >
+          &gt;
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            {gap.text}
+          </div>
+          {metaLine && (
+            <p className="mt-0.5 truncate font-mono text-[10px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              {metaLine}
+            </p>
+          )}
+        </div>
+      </summary>
+      <div className="px-3 pb-3">
+        <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.48)' }}>
+          {src.sourceText}
+        </p>
+        {gap.obligationId && (
+          <Link
+            to={`/obligation/${gap.obligationId}`}
+            className="mt-2 inline-flex text-[11px] font-medium text-orange-300 hover:text-orange-200"
+          >
+            Open obligation
+          </Link>
+        )}
+      </div>
+    </details>
+  );
+}
+
 // ── Run detail section — owns its own SSE hook instance ──────────────────────
 
 function RunDetailSection({
@@ -1153,7 +1216,13 @@ function RunDetailSection({
               </ReactMarkdown>
             </div>
           )}
-          {actionItems.length > 0 ? (
+          {run.keyGaps && run.keyGaps.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {run.keyGaps.map((gap, i) => (
+                <GapProofDisclosure key={gap.gapId ?? i} gap={gap} />
+              ))}
+            </div>
+          ) : actionItems.length > 0 ? (
             <ul style={{ margin: 0, padding: '0 0 0 16px', listStyle: 'disc' }}>
               {actionItems.map((item, i) => (
                 <li key={i} className="fjp__detail-value" style={{ marginBottom: 2 }}>

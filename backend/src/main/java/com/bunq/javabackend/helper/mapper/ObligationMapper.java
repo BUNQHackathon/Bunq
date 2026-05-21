@@ -28,7 +28,7 @@ public class ObligationMapper {
                 .build();
     }
 
-    private static ObligationSourceDTO toSourceDto(ObligationSource src) {
+    public static ObligationSourceDTO toSourceDto(ObligationSource src) {
         if (src == null) return null;
         return ObligationSourceDTO.builder()
                 .regulation(src.getRegulation())

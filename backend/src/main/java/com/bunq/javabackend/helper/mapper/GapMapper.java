@@ -3,6 +3,7 @@ package com.bunq.javabackend.helper.mapper;
 import com.bunq.javabackend.dto.response.GapResponseDTO;
 import com.bunq.javabackend.dto.response.RecommendedActionDTO;
 import com.bunq.javabackend.dto.response.SeverityDimensionsDTO;
+import com.bunq.javabackend.helper.GapNarrative;
 import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.gap.RecommendedAction;
 import com.bunq.javabackend.model.gap.SeverityDimensions;
@@ -18,12 +19,18 @@ public class GapMapper {
                 .gapType(source.getGapType() != null ? source.getGapType().name() : null)
                 .gapStatus(source.getGapStatus() != null ? source.getGapStatus().name() : null)
                 .severityDimensions(toDimensionsDto(source.getSeverityDimensions()))
-                .recommendedActions(toActionDtos(source.getRecommendedActions()))
+                .recommendedActions(toActionDtos(effectiveActions(source)))
                 .remediationDeadline(source.getRemediationDeadline())
                 .escalationRequired(source.getEscalationRequired())
-                .narrative(source.getNarrative())
+                .narrative(GapNarrative.clean(source.getNarrative()))
                 .sessionId(source.getSessionId())
                 .build();
+    }
+
+    private static List<RecommendedAction> effectiveActions(Gap source) {
+        List<RecommendedAction> stored = source.getRecommendedActions();
+        if (stored != null && !stored.isEmpty()) return stored;
+        return GapNarrative.recoverActions(source.getNarrative());
     }
 
     private static SeverityDimensionsDTO toDimensionsDto(SeverityDimensions dims) {

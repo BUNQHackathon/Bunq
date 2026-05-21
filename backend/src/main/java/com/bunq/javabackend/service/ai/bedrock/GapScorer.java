@@ -1,5 +1,6 @@
 package com.bunq.javabackend.service.ai.bedrock;
 
+import com.bunq.javabackend.helper.GapNarrative;
 import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.model.gap.RecommendedAction;
 import com.bunq.javabackend.model.gap.SeverityDimensions;
@@ -46,8 +47,10 @@ public class GapScorer {
     }
 
     private GapScore buildGapScore(JsonNode toolInput) {
-        String narrative = toolInput.path("narrative").asText(null);
+        String rawNarrative = toolInput.path("narrative").asText(null);
+        String narrative = GapNarrative.clean(rawNarrative);
         boolean escalationRequired = toolInput.path("escalation_required").asBoolean(false);
+        if (!escalationRequired) { escalationRequired = GapNarrative.recoverEscalation(rawNarrative); }
 
         SeverityDimensions dims = null;
         JsonNode dimsNode = toolInput.path("severity_dimensions");
@@ -80,6 +83,7 @@ public class GapScorer {
                 actions.add(action);
             }
         }
+        if (actions.isEmpty()) { actions = new ArrayList<>(GapNarrative.recoverActions(rawNarrative)); }
 
         return new GapScore(narrative, escalationRequired, severity, likelihood, detectability,
                 blastRadius, recoverability, residualRisk, dims, actions);

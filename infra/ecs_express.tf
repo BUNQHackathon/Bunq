@@ -153,6 +153,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
       value = "https://${trimprefix(aws_ecs_express_gateway_service.sidecar.ingress_paths[0].endpoint, "https://")}"
     }
     environment {
+      name  = "SPRING_PROFILES_ACTIVE"
+      value = "prod"
+    }
+    environment {
       name  = "SERVER_PORT"
       value = "8080"
     }

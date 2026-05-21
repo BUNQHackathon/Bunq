@@ -14,4 +14,6 @@ public class ChatRequestDTO {
     private String sessionId;
 
     private String knowledgeBaseId;
+
+    private String documentId;
 }

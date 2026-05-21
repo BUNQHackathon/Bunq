@@ -70,6 +70,7 @@ export interface ChatRequest {
   chatId?: string;
   sessionId?: string;
   knowledgeBaseId?: string | null;
+  documentId?: string;
 }
 
 export interface KnowledgeBaseOption {

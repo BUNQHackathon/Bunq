@@ -1,6 +1,7 @@
 package com.bunq.javabackend.service.launch;
 
 import com.bunq.javabackend.exception.NotFoundException;
+import com.bunq.javabackend.helper.GapNarrative;
 import com.bunq.javabackend.model.audit.AuditLogEntry;
 import com.bunq.javabackend.model.control.Control;
 import com.bunq.javabackend.model.document.Document;
@@ -329,14 +330,18 @@ public class ProofPackService {
                 safePdf(doc, new Paragraph(" "));
 
                 safePdf(doc, new Paragraph("Gap type: " + (gap.getGapType() != null ? gap.getGapType().name() : "—"), normalFont));
-                if (gap.getNarrative() != null) {
-                    safePdf(doc, new Paragraph("Narrative: " + gap.getNarrative(), normalFont));
+                String narr = GapNarrative.clean(gap.getNarrative());
+                if (narr != null && !narr.isBlank()) {
+                    safePdf(doc, new Paragraph("Narrative: " + narr, normalFont));
                 }
                 safePdf(doc, new Paragraph(" "));
 
                 safePdf(doc, new Paragraph("Remediation", subFont));
                 List<RecommendedAction> actions = gap.getRecommendedActions();
-                if (actions != null && !actions.isEmpty()) {
+                if (actions == null || actions.isEmpty()) {
+                    actions = GapNarrative.recoverActions(gap.getNarrative());
+                }
+                if (!actions.isEmpty()) {
                     for (var a : actions) safePdf(doc, new Paragraph("• " + safeStr(a.getAction()), normalFont));
                 } else {
                     safePdf(doc, new Paragraph("TBD", normalFont));
@@ -456,7 +461,7 @@ public class ProofPackService {
     }
 
     private String fmt(Double d) {
-        return d != null ? String.format("%.2f", d) : "—";
+        return d != null ? String.format(java.util.Locale.ROOT, "%.2f", d) : "—";
     }
 
     private String verdictEmoji(String verdict) {

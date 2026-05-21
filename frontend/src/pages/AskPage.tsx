@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import PrismCanvas from '../components/PrismCanvas';
@@ -236,6 +236,9 @@ async function hydrateMessageCitationNames(messages: ChatMessage[]): Promise<Cha
 
 export default function AskPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const documentId = searchParams.get('documentId') ?? undefined;
+  const documentName = searchParams.get('documentName') ?? undefined;
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -382,7 +385,7 @@ export default function AskPage() {
     setLoading(true);
 
     postChatStream(
-      { query: trimmed, chatId: currentChatId, knowledgeBaseId: requestKnowledgeBase.knowledgeBaseId },
+      { query: trimmed, chatId: currentChatId, knowledgeBaseId: requestKnowledgeBase.knowledgeBaseId, documentId },
       {
         onStarted: (ev) => setCurrentChatId(ev.chatId),
         onDelta: (d) => updateLastAssistant((m) => ({ ...m, content: m.content + d })),
@@ -490,6 +493,12 @@ export default function AskPage() {
           )}
 
           <div className="w-full flex flex-col items-center mt-2">
+            {documentName && (
+              <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1">
+                <span className="font-mono text-[11px] text-[#ef6a2a]">Asking about:</span>
+                <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
+              </div>
+            )}
             <KnowledgeBaseSelector
               options={knowledgeBaseOptions}
               selectedId={selectedKnowledgeBaseId}
@@ -597,6 +606,12 @@ export default function AskPage() {
           background: 'linear-gradient(to top, rgba(8,8,10,0.95) 60%, rgba(8,8,10,0))',
         }}
       >
+        {documentName && (
+          <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1 w-fit">
+            <span className="font-mono text-[11px] text-[#ef6a2a]">Asking about:</span>
+            <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
+          </div>
+        )}
         <KnowledgeBaseSelector
           options={knowledgeBaseOptions}
           selectedId={selectedKnowledgeBaseId}

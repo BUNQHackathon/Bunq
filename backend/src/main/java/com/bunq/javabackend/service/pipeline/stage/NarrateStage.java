@@ -3,6 +3,7 @@ package com.bunq.javabackend.service.pipeline.stage;
 import com.bunq.javabackend.dto.response.ExecutiveSummaryDTO;
 import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.mapping.Mapping;
+import com.bunq.javabackend.model.obligation.ObligationSource;
 import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.repository.GapRepository;
 import com.bunq.javabackend.repository.MappingRepository;
@@ -127,11 +128,23 @@ public class NarrateStage implements Stage {
             userInput.put("gap_count", gaps.size());
             userInput.put("mapping_count", mappings.size());
             userInput.put("top_gaps", gaps.stream().limit(3)
-                    .map(g -> Map.of(
-                            "obligation_id", g.getObligationId() != null ? g.getObligationId() : "",
-                            "narrative", g.getNarrative() != null ? g.getNarrative() : "",
-                            "escalation", g.getEscalationRequired() != null && g.getEscalationRequired()
-                    )).toList());
+                    .map(g -> {
+                        HashMap<String, Object> entry = new HashMap<>();
+                        entry.put("obligation_id", g.getObligationId() != null ? g.getObligationId() : "");
+                        entry.put("narrative", g.getNarrative() != null ? g.getNarrative() : "");
+                        entry.put("escalation", g.getEscalationRequired() != null && g.getEscalationRequired());
+                        obligationRepository.findById(g.getObligationId() != null ? g.getObligationId() : "")
+                                .ifPresent(obl -> {
+                                    ObligationSource src = obl.getSource();
+                                    if (src != null) {
+                                        entry.put("regulation", src.getRegulation() != null ? src.getRegulation() : "");
+                                        entry.put("article", src.getArticle() != null ? src.getArticle() : "");
+                                        entry.put("section", src.getSection() != null ? src.getSection() : "");
+                                        entry.put("source_text", src.getSourceText() != null ? src.getSourceText() : "");
+                                    }
+                                });
+                        return entry;
+                    }).toList());
 
             String requestJson = objectMapper.writeValueAsString(Map.of(
                     "anthropic_version", "bedrock-2023-05-31",

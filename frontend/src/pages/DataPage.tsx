@@ -298,7 +298,20 @@ function DocCard({ doc }: DocCardProps) {
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.04]">
         <IconArrowRight size={12} className="text-white/40" />
-        <IconExternal size={10} className="text-white/30" />
+        <div className="flex items-center gap-2">
+          {isLibrary(doc) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/ask?documentId=${doc.id}&documentName=${encodeURIComponent(doc.displayName ?? doc.filename)}`);
+              }}
+              className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/[0.15] text-white/50 hover:text-white/90 hover:border-[rgba(239,106,42,0.5)] hover:bg-[rgba(239,106,42,0.08)] transition-colors"
+            >
+              Ask
+            </button>
+          )}
+          <IconExternal size={10} className="text-white/30" />
+        </div>
       </div>
     </>
   );

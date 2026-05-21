@@ -41,6 +41,22 @@ export interface Launch {
   jurisdictions?: LaunchJurisdictionSummary[];
 }
 
+export interface ObligationSource {
+  regulation?: string;
+  article?: string;
+  section?: string;
+  paragraph?: number;
+  sourceText?: string;
+  retrievedFromKbChunkId?: string;
+}
+
+export interface KeyGap {
+  text: string;
+  gapId?: string;
+  obligationId?: string;
+  source?: ObligationSource | null;
+}
+
 export interface JurisdictionRun {
   launchId: string;
   jurisdictionCode: string;
@@ -60,6 +76,7 @@ export interface JurisdictionRun {
   requiredChanges?: string[];
   blockers?: string[];
   proofPackAvailable?: boolean;
+  keyGaps?: KeyGap[];
 }
 
 export interface LaunchDetail {
@@ -124,6 +141,10 @@ export function normalizeRun(r: Partial<JurisdictionRun> & { verdict?: Verdict |
     requiredChanges: r.requiredChanges,
     blockers: r.blockers,
     proofPackAvailable: r.proofPackAvailable,
+    keyGaps: r.keyGaps,
+    obligationsCount: r.obligationsCount,
+    controlsCount: r.controlsCount,
+    regulationsCovered: r.regulationsCovered,
   };
 }
 

@@ -1,0 +1,136 @@
+# External regulations (14)
+regulations:
+  - id: mica
+    filename: MiCA-Regulation-2023-1114.pdf
+    title: "Markets in Crypto-Assets Regulation"
+    jurisdictions: [EU]
+    kind: regulation
+  - id: dora
+    filename: DORA-Regulation-2022-2554.pdf
+    title: "Digital Operational Resilience Act"
+    jurisdictions: [EU]
+    kind: regulation
+  - id: gdpr
+    filename: GDPR-Regulation-2016-679.pdf
+    title: "General Data Protection Regulation"
+    jurisdictions: [EU, UK]
+    kind: regulation
+  - id: psd2
+    filename: PSD2-Directive-2015-2366.pdf
+    title: "Payment Services Directive 2"
+    jurisdictions: [EU]
+    kind: regulation
+  - id: dnb-wwft
+    filename: DNB-Wwft-Implementation-2024.pdf
+    title: "Wet ter voorkoming van witwassen en financieren van terrorisme"
+    jurisdictions: [NL]
+    kind: regulation
+  - id: bafin-gwg
+    filename: BaFin-GwG-Section10.pdf
+    title: "German Money Laundering Act §10"
+    jurisdictions: [DE]
+    kind: regulation
+  - id: acpr-cmf-l561
+    filename: ACPR-CMF-L561-2.pdf
+    title: "Code Monétaire et Financier L561-2"
+    jurisdictions: [FR]
+    kind: regulation
+  - id: fca-emi
+    filename: FCA-EMI-Approach-Document.pdf
+    title: "FCA Approach to Electronic Money Issuers"
+    jurisdictions: [UK]
+    kind: regulation
+  - id: fca-crypto
+    filename: FCA-Crypto-Asset-Guidance.pdf
+    title: "FCA Cryptoasset Guidance"
+    jurisdictions: [UK]
+    kind: regulation
+  - id: uk-mlr-2017
+    filename: UK-MLR-2017.pdf
+    title: "UK Money Laundering Regulations 2017"
+    jurisdictions: [UK]
+    kind: regulation
+  - id: bsa-fincen
+    filename: FinCEN-BSA-Guidance.pdf
+    title: "Bank Secrecy Act / FinCEN Guidance"
+    jurisdictions: [US]
+    kind: regulation
+  - id: occ-1170
+    filename: OCC-Interpretive-Letter-1170.pdf
+    title: "OCC Interpretive Letter 1170"
+    jurisdictions: [US]
+    kind: regulation
+  - id: nydfs-bitlicense
+    filename: NYDFS-BitLicense-Part200.pdf
+    title: "NYDFS BitLicense (23 NYCRR Part 200)"
+    jurisdictions: [US]
+    kind: regulation
+  - id: cbi-fintech
+    filename: CBI-Fintech-Authorisation-Guidance.pdf
+    title: "Central Bank of Ireland Fintech Authorisation Guidance"
+    jurisdictions: [IE]
+    kind: regulation
+  - id: ie-cja-2010
+    filename: Irish-CJA-2010-AML.pdf
+    title: "Criminal Justice (Money Laundering and Terrorist Financing) Act 2010"
+    jurisdictions: [IE]
+    kind: regulation
+
+# Internal bunq policies (5) — apply to all 6 jurisdictions
+policies:
+  - id: bunq-toc-5-3
+    filename: bunq-ToC-Section-5-3-Sanctions.pdf
+    title: "bunq Terms & Conditions §5.3 — Sanctions Screening"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: policy
+  - id: bunq-privacy
+    filename: bunq-Privacy-Policy.pdf
+    title: "bunq Privacy Policy"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: policy
+  - id: bunq-kyc-sop
+    filename: bunq-KYC-SOP.pdf
+    title: "bunq KYC Standard Operating Procedure"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: policy
+  - id: bunq-cdd
+    filename: bunq-CDD-Procedure.pdf
+    title: "bunq Customer Due Diligence Procedure"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: policy
+  - id: bunq-tx-monitoring
+    filename: bunq-Transaction-Monitoring-Policy.pdf
+    title: "bunq Transaction Monitoring Policy"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: policy
+
+# Internal controls (5)
+controls:
+  - id: ctrl-sanctions-screening
+    filename: bunq-Control-Sanctions-Screening-v2.pdf
+    title: "Sanctions Screening Control"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: control
+  - id: ctrl-aml-cft
+    filename: bunq-Control-AML-CFT-Framework.pdf
+    title: "AML/CFT Framework Control"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: control
+  - id: ctrl-kyc-onboarding
+    filename: bunq-Control-KYC-Onboarding.pdf
+    title: "KYC Onboarding Control"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: control
+  - id: ctrl-data-retention
+    filename: bunq-Control-Data-Retention.pdf
+    title: "Data Retention Control"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: control
+  - id: ctrl-incident-response
+    filename: bunq-Control-Incident-Response.pdf
+    title: "Incident Response Control"
+    jurisdictions: [NL, DE, FR, UK, US, IE]
+    kind: control
+
+# Supporting / national guidance — added later if time permits
+supporting: []

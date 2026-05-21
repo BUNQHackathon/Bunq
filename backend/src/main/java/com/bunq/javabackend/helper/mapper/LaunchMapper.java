@@ -1,6 +1,7 @@
 package com.bunq.javabackend.helper.mapper;
 
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
+import com.bunq.javabackend.dto.response.KeyGapDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO.JurisdictionSummary;
@@ -62,7 +63,8 @@ public class LaunchMapper {
     }
 
     public static JurisdictionRunResponseDTO toDto(JurisdictionRun r, String verdict, String summary,
-            List<String> requiredChanges, List<String> blockers, boolean proofPackAvailable,
+            List<String> requiredChanges, List<String> blockers, List<KeyGapDTO> keyGaps,
+            boolean proofPackAvailable,
             Integer regulationsCovered, Integer obligationsCount, Integer controlsCount) {
         return JurisdictionRunResponseDTO.builder()
                 .launchId(r.getLaunchId())
@@ -79,6 +81,7 @@ public class LaunchMapper {
                 .summary(summary)
                 .requiredChanges(requiredChanges)
                 .blockers(blockers)
+                .keyGaps(keyGaps)
                 .proofPackAvailable(proofPackAvailable)
                 .regulationsCovered(regulationsCovered)
                 .obligationsCount(obligationsCount)

@@ -5,9 +5,12 @@ import com.bunq.javabackend.dto.request.PipelineStartRequestDTO;
 import com.bunq.javabackend.dto.response.CounterpartyDTO;
 import com.bunq.javabackend.dto.response.sidecar.GraphDAG;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
+import com.bunq.javabackend.dto.response.KeyGapDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO;
 import com.bunq.javabackend.dto.response.LaunchSummaryDTO.JurisdictionSummary;
+import com.bunq.javabackend.dto.response.ObligationSourceDTO;
+import com.bunq.javabackend.helper.mapper.ObligationMapper;
 import com.bunq.javabackend.exception.EntityAlreadyExistsException;
 import com.bunq.javabackend.exception.NotFoundException;
 import com.bunq.javabackend.model.document.Document;
@@ -186,12 +189,14 @@ public class LaunchService {
             String summary;
             List<String> requiredChanges;
             List<String> blockers;
+            List<KeyGapDTO> keyGaps;
 
             if (regulationsCovered == 0) {
                 verdict = "UNKNOWN";
                 summary = "No regulations found for this jurisdiction";
                 requiredChanges = List.of();
                 blockers = List.of();
+                keyGaps = List.of();
             } else {
                 verdict = run.getVerdict();
                 String persistedSummary = session != null && session.getExecutiveSummary() != null
@@ -200,43 +205,62 @@ public class LaunchService {
                     summary = persistedSummary != null ? persistedSummary : "Can ship as-is";
                     requiredChanges = List.of();
                     blockers = List.of();
+                    keyGaps = List.of();
                 } else if ("AMBER".equals(verdict)) {
                     summary = persistedSummary != null ? persistedSummary : "Requires changes";
                     List<Gap> gaps = run.getCurrentSessionId() != null
                             ? gapRepository.findBySessionId(run.getCurrentSessionId())
                             : List.of();
-                    requiredChanges = gaps.stream()
-                            .flatMap(g -> g.getRecommendedActions() == null ? java.util.stream.Stream.empty()
-                                    : g.getRecommendedActions().stream())
-                            .map(RecommendedAction::getAction)
-                            .filter(a -> a != null && !a.isBlank())
-                            .map(a -> trimToHeadline(a))
-                            .distinct()
-                            .limit(10)
-                            .toList();
+                    LinkedHashMap<String, KeyGapDTO> amberSeen = new LinkedHashMap<>();
+                    for (Gap g : gaps) {
+                        if (g.getRecommendedActions() == null) continue;
+                        ObligationSourceDTO gapSource = sourceFor(g.getObligationId());
+                        for (RecommendedAction ra : g.getRecommendedActions()) {
+                            if (ra.getAction() == null || ra.getAction().isBlank()) continue;
+                            String headline = trimToHeadline(ra.getAction());
+                            if (!amberSeen.containsKey(headline)) {
+                                amberSeen.put(headline, KeyGapDTO.builder()
+                                        .text(headline)
+                                        .gapId(g.getId())
+                                        .obligationId(g.getObligationId())
+                                        .source(gapSource)
+                                        .build());
+                            }
+                            if (amberSeen.size() == 10) break;
+                        }
+                        if (amberSeen.size() == 10) break;
+                    }
+                    keyGaps = new ArrayList<>(amberSeen.values());
+                    requiredChanges = keyGaps.stream().map(KeyGapDTO::getText).toList();
                     blockers = List.of();
                 } else if ("RED".equals(verdict)) {
                     summary = persistedSummary != null ? persistedSummary : "Blocked";
                     List<Gap> gaps = run.getCurrentSessionId() != null
                             ? gapRepository.findBySessionId(run.getCurrentSessionId())
                             : List.of();
-                    blockers = gaps.stream()
+                    keyGaps = gaps.stream()
                             .filter(g -> g.getResidualRisk() != null)
                             .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
                             .limit(3)
-                            .map(Gap::getNarrative)
-                            .filter(n -> n != null)
-                            .map(n -> trimToHeadline(n))
+                            .filter(g -> g.getNarrative() != null)
+                            .map(g -> KeyGapDTO.builder()
+                                    .text(trimToHeadline(g.getNarrative()))
+                                    .gapId(g.getId())
+                                    .obligationId(g.getObligationId())
+                                    .source(sourceFor(g.getObligationId()))
+                                    .build())
                             .toList();
+                    blockers = keyGaps.stream().map(KeyGapDTO::getText).toList();
                     requiredChanges = List.of();
                 } else {
                     summary = "Analysis in progress";
                     requiredChanges = List.of();
                     blockers = List.of();
+                    keyGaps = List.of();
                 }
             }
 
-            result.add(toDto(run, verdict, summary, requiredChanges, blockers, proofPackAvailable,
+            result.add(toDto(run, verdict, summary, requiredChanges, blockers, keyGaps, proofPackAvailable,
                     regulationsCovered, obligationsCount, controlsCount));
         }
         return result;
@@ -248,6 +272,13 @@ public class LaunchService {
         String firstSentence = dot >= 0 ? text.substring(0, dot + 1) : text;
         if (firstSentence.length() <= 140) return firstSentence;
         return text.substring(0, 140) + "…";
+    }
+
+    private ObligationSourceDTO sourceFor(String obligationId) {
+        if (obligationId == null || obligationId.isBlank()) return null;
+        return obligationRepository.findById(obligationId)
+                .map(obl -> obl.getSource() == null ? null : ObligationMapper.toSourceDto(obl.getSource()))
+                .orElse(null);
     }
 
     private String displayedVerdict(JurisdictionRun run) {
