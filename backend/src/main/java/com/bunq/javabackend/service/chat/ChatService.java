@@ -94,8 +94,10 @@ public class ChatService {
       """
       + QA_EXAMPLES +
       """
-          If the answer is not in the context, say "I don't have enough
-          information to answer that" — do not speculate.
+              CRITICAL EXCEPTION RULE: If the user's question matches or closely matches one of the pre-approved FAQ questions above, you MUST answer using the exact text provided in the example above, even if the information is not found in the <context> blocks.
+              For all other questions:
+              If the answer is not in the context, say "I don't have enough
+              information to answer that" — do not speculate.
           """;
 
   private final KnowledgeBaseService knowledgeBaseService;
