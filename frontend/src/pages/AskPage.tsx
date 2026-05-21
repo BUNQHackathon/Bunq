@@ -389,6 +389,8 @@ export default function AskPage() {
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [atTop, setAtTop] = useState(true);
 
   const { activeChatId, resetToken } = useChatNav();
 
@@ -440,6 +442,8 @@ export default function AskPage() {
     return () => { cancelled = true; };
   }, [isAuthenticated]);
 
+  const hasConversation = messages.length > 0;
+
   // Auto-scroll only when a brand-new message is appended (user submit / new assistant bubble).
   // No scrolling during streaming, citations, or graphRefs updates — let the user read at their own pace.
   useEffect(() => {
@@ -449,6 +453,23 @@ export default function AskPage() {
       }
     });
   }, [messages.length]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setAtBottom(distance <= 8);
+      setAtTop(el.scrollTop <= 8);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [messages.length, hasConversation]);
 
   // Load a prior chat from the rail.
   useEffect(() => {
@@ -593,7 +614,6 @@ export default function AskPage() {
     setCurrentChatId(undefined);
   }
 
-  const hasConversation = messages.length > 0;
   const showHero = !hasConversation && !loading && !error;
 
   // ── Single return: PrismCanvas hoisted above branch switch ──────────────────
@@ -606,26 +626,20 @@ export default function AskPage() {
           className="flex flex-col w-full"
           style={{ height: '100%' }}
         >
-          {/* Top bar: New chat */}
-          <div
-            className="relative shrink-0 flex justify-end px-6 py-3"
-            style={{ zIndex: 10 }}
-          >
-            <button
-              onClick={handleReset}
-              className="text-[12px] font-mono text-white/40 hover:text-white/80 transition uppercase tracking-[0.12em]"
-            >
-              + New chat
-            </button>
-          </div>
-
           {/* Transcript */}
           <div
             ref={scrollerRef}
             className="relative flex-1 min-h-0 overflow-y-auto px-4 md:px-6"
-            style={{ zIndex: 10 }}
+            style={{
+              zIndex: 10,
+              ['--bottom-fade' as any]: atBottom ? '0px' : '96px',
+              ['--top-fade' as any]: atTop ? '0px' : '128px',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
+              transition: '--bottom-fade 320ms cubic-bezier(0.22, 1, 0.36, 1), --top-fade 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
           >
-            <div className="w-full mx-auto flex flex-col gap-4 pb-6" style={{ maxWidth: 820 }}>
+            <div className="w-full mx-auto flex flex-col gap-4 pt-6 pb-6" style={{ maxWidth: 820 }}>
               {messages.map((m) => (
                 <ChatBubble
                   key={m.id}
