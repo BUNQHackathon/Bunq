@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -71,9 +71,21 @@ export function BackdropMesh() {
 
   const smoothed = useRef(new THREE.Vector2());
   const goal = useRef(new THREE.Vector2());
+  const ndcPointer = useRef(new THREE.Vector2());
 
-  useFrame(({ clock, pointer }) => {
-    goal.current.set(pointer.x * POINTER_EXTENT, pointer.y * POINTER_EXTENT);
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      ndcPointer.current.set(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -((e.clientY / window.innerHeight) * 2 - 1),
+      );
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, []);
+
+  useFrame(({ clock }) => {
+    goal.current.set(ndcPointer.current.x * POINTER_EXTENT, ndcPointer.current.y * POINTER_EXTENT);
     smoothed.current.lerp(goal.current, POINTER_SMOOTHING);
 
     if (meshRef.current) {
