@@ -42,22 +42,38 @@ const citationDocumentFetches = new Map<string, Promise<string | null>>();
 
 // ─── Local icon components ────────────────────────────────────────────────────
 
-function IconSend({ disabled }: { disabled?: boolean }) {
+function IconSend() {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      style={{ opacity: disabled ? 0.5 : 1 }}
-    >
-      <path
-        d="M2 8l12-6-6 12V9L2 8z"
-        fill="#ef6a2a"
-        stroke="#ef6a2a"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 19V5" />
+      <path d="M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
+function IconStack({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l9 5-9 5-9-5 9-5z" />
+      <path d="M3 13l9 5 9-5" />
+      <path d="M3 18l9 5 9-5" />
+    </svg>
+  );
+}
+
+function IconChevron({ size = 11, dir = 'down' }: { size?: number; dir?: 'up' | 'down' }) {
+  const d = dir === 'up' ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7';
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12l5 5 9-11" />
     </svg>
   );
 }
@@ -95,9 +111,12 @@ interface SearchBarProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   disabled?: boolean;
   placeholder?: string;
+  kbOptions: KnowledgeBaseOption[];
+  selectedKbId: string | null;
+  onKbChange: (knowledgeBaseId: string | null) => void;
 }
 
-function SearchBar({ query, setQuery, onSubmit, disabled, placeholder }: SearchBarProps) {
+function SearchBar({ query, setQuery, onSubmit, disabled, placeholder, kbOptions, selectedKbId, onKbChange }: SearchBarProps) {
   return (
     <form onSubmit={onSubmit} className="w-full" style={{ maxWidth: '820px', margin: '0 auto' }}>
       <div
@@ -109,6 +128,7 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder }: SearchB
           boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
         }}
       >
+        <SourceSelector options={kbOptions} selectedId={selectedKbId} onChange={onKbChange} disabled={disabled} />
         <input
           type="text"
           value={query}
@@ -121,50 +141,136 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder }: SearchB
         <button
           type="submit"
           disabled={disabled || !query.trim()}
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors hover:[background:#ff7a3a]"
           style={{
-            background: 'rgba(239,106,42,0.10)',
-            border: '1px solid rgba(239,106,42,0.3)',
+            background: '#ef6a2a',
+            color: '#3a1a0a',
+            border: 'none',
+            boxShadow: '0 8px 24px -8px rgba(239,106,42,0.6)',
             opacity: (disabled || !query.trim()) ? 0.5 : 1,
+            transition: 'background 120ms ease',
           }}
           aria-label="Send"
         >
-          <IconSend disabled={disabled || !query.trim()} />
+          <IconSend />
         </button>
       </div>
     </form>
   );
 }
 
-interface KnowledgeBaseSelectorProps {
+interface SourceSelectorProps {
   options: KnowledgeBaseOption[];
   selectedId: string | null;
   onChange: (knowledgeBaseId: string | null) => void;
   disabled?: boolean;
 }
 
-function KnowledgeBaseSelector({ options, selectedId, onChange, disabled }: KnowledgeBaseSelectorProps) {
+function SourceSelector({ options, selectedId, onChange, disabled }: SourceSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const selected = options.find(o => o.knowledgeBaseId === selectedId)
+    ?? options.find(o => o.knowledgeBaseId === null)
+    ?? options[0];
+  const label = selected?.label ?? 'All sources';
+
   return (
-    <div className="w-full" style={{ maxWidth: 820, margin: '0 auto 8px' }}>
-      <select
-        value={selectedId ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
+    <div ref={wrapRef} className="relative shrink-0">
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-0 min-w-[240px] p-1.5"
+          style={{
+            bottom: 'calc(100% + 10px)',
+            background: 'rgba(20,20,20,0.8)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 10,
+            boxShadow: '0 24px 50px -16px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            zIndex: 20,
+            animation: 'askaltSourceIn 120ms ease-out',
+          }}
+        >
+          <div
+            className="flex items-center justify-start px-2 pt-1.5 pb-2 mb-1"
+            style={{ borderBottom: '1px solid rgba(246,241,234,0.08)' }}
+          >
+            <span className="font-mono uppercase tracking-[0.18em] text-[10px]" style={{ color: 'rgba(246,241,234,0.5)' }}>SOURCES</span>
+          </div>
+          {options.map((opt) => {
+            const checked = (opt.knowledgeBaseId ?? null) === (selectedId ?? null);
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                role="option"
+                aria-selected={checked}
+                onClick={() => { onChange(opt.knowledgeBaseId); setOpen(false); }}
+                className="flex items-center gap-2.5 w-full px-2 py-2 text-left rounded-md transition-colors hover:bg-[rgba(246,241,234,0.06)]"
+                style={{
+                  color: checked ? '#f6f1ea' : 'rgba(246,241,234,0.85)',
+                  font: '500 13px/1 inherit',
+                  background: 'transparent',
+                  border: 'none',
+                }}
+              >
+                <span
+                  className="inline-flex items-center justify-center shrink-0"
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 4,
+                    border: `1px solid ${checked ? '#ef6a2a' : 'rgba(246,241,234,0.22)'}`,
+                    background: checked ? '#ef6a2a' : 'rgba(0,0,0,0.4)',
+                    color: '#fff',
+                  }}
+                >
+                  {checked && <IconCheck size={11} />}
+                </span>
+                <span className="flex-1 text-[13px]">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen(v => !v)}
         disabled={disabled}
-        className="h-9 max-w-full rounded-lg border px-3 text-[12px] font-medium outline-none transition"
+        aria-expanded={open}
+        title="Choose which sources to search"
+        className="inline-flex items-center gap-1.5 h-8 px-[11px] rounded-full transition-colors"
         style={{
-          color: 'rgba(255,255,255,0.82)',
-          background: 'rgba(20,20,20,0.82)',
-          borderColor: 'rgba(255,255,255,0.10)',
-          opacity: disabled ? 0.65 : 1,
+          background: open ? 'rgba(0,0,0,0.25)' : 'transparent',
+          border: `1px solid ${open ? 'rgba(246,241,234,0.16)' : 'rgba(246,241,234,0.08)'}`,
+          color: open ? 'rgba(246,241,234,0.85)' : 'rgba(246,241,234,0.55)',
+          font: '500 12.5px/1 inherit',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer',
         }}
-        aria-label="Knowledge base"
       >
-        {options.map((option) => (
-          <option key={option.key} value={option.knowledgeBaseId ?? ''}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <span style={{ color: open ? '#ef6a2a' : 'rgba(246,241,234,0.4)' }}><IconStack size={14} /></span>
+        <span className="whitespace-nowrap">{label}</span>
+        <IconChevron size={11} dir={open ? 'up' : 'down'} />
+      </button>
     </div>
   );
 }
@@ -333,7 +439,7 @@ export default function AskPage() {
         .then((hydrated) => {
           if (!cancelled) setMessages(hydrated);
         })
-        .catch(() => {});
+        .catch(() => { });
     }).catch(() => { });
     return () => { cancelled = true; };
   }, [activeChatId]);
@@ -405,7 +511,7 @@ export default function AskPage() {
           updateLastAssistant((m) => ({ ...m, citations: cits }));
           hydrateCitationDocumentNames(cits)
             .then((hydrated) => updateLastAssistant((m) => ({ ...m, citations: hydrated })))
-            .catch(() => {});
+            .catch(() => { });
         },
         onGraphRefs: (refs) => updateLastAssistant((m) => ({ ...m, graphRefs: refs })),
         onCompleted: () => {
@@ -521,18 +627,15 @@ export default function AskPage() {
                 <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
               </div>
             )}
-            <KnowledgeBaseSelector
-              options={knowledgeBaseOptions}
-              selectedId={selectedKnowledgeBaseId}
-              onChange={setSelectedKnowledgeBaseId}
-              disabled={loading}
-            />
             <SearchBar
               query={query}
               setQuery={setQuery}
               onSubmit={handleSubmit}
               disabled={loading}
               placeholder="Ask a follow-up…"
+              kbOptions={knowledgeBaseOptions}
+              selectedKbId={selectedKnowledgeBaseId}
+              onKbChange={setSelectedKnowledgeBaseId}
             />
           </div>
           {judgesModal}
@@ -591,23 +694,15 @@ export default function AskPage() {
                   <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
                 </div>
               )}
-              <KnowledgeBaseSelector
-                options={knowledgeBaseOptions}
-                selectedId={selectedKnowledgeBaseId}
-                onChange={setSelectedKnowledgeBaseId}
-                disabled={loading}
-              />
               <SearchBar
                 query={query}
                 setQuery={setQuery}
                 onSubmit={handleSubmit}
                 disabled={loading}
+                kbOptions={knowledgeBaseOptions}
+                selectedKbId={selectedKnowledgeBaseId}
+                onKbChange={setSelectedKnowledgeBaseId}
               />
-              {showHero && selectedKnowledgeBase.knowledgeBaseId === null && (
-                <p className="mt-3 text-[12px] text-white/35">
-                  Currently searching all sources. Use the selector above to narrow.
-                </p>
-              )}
             </div>
 
             {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
