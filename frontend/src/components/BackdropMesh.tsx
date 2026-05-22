@@ -93,7 +93,7 @@ export function BackdropMesh() {
       meshRef.current.position.y = smoothed.current.y * 2.8;
 
       const progress = Math.min(clock.getElapsedTime() / EASE_IN_SECONDS, 1.0);
-      const eased = progress * progress * progress;
+      const eased = 1 - Math.pow(1 - progress, 3);
       const d = Math.sqrt(smoothed.current.x ** 2 + smoothed.current.y ** 2);
       const boost = d * 0.75;
       const prev = meshRef.current.scale.x;

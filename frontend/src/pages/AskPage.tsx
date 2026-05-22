@@ -81,30 +81,6 @@ function IconCheck({ size = 11 }: { size?: number }) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  { label: 'PRIVACY', color: '#8ee06b' },
-  { label: 'AML', color: '#5fd6c6' },
-  { label: 'LICENSING', color: '#6ab8ff' },
-  { label: 'TERMS', color: '#5a90d4' },
-  { label: 'SANCTIONS', color: '#4a8fe8' },
-  { label: 'REPORTS', color: '#e03a3a' },
-];
-
-function CategoryRow() {
-  return (
-    <div className="ask__categories flex flex-nowrap sm:flex-wrap sm:justify-center items-center gap-x-4 gap-y-2 md:gap-7 mb-5 px-2 overflow-x-auto" style={{ scrollbarWidth: 'none', opacity: 0.9, pointerEvents: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}>
-      {CATEGORIES.map((cat) => (
-        <span
-          key={cat.label}
-          className="font-mono uppercase tracking-[0.2em] text-[11px]"
-          style={{ color: cat.color }}
-        >
-          {cat.label}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 interface SearchBarProps {
   query: string;
@@ -398,6 +374,27 @@ export default function AskPage() {
 
   const { activeChatId, resetToken } = useChatNav();
 
+  type ViewPhase = 'hero' | 'enteringChat' | 'chat' | 'enteringHero';
+  const [viewPhase, setViewPhase] = useState<ViewPhase>(
+    () => (messages.length > 0 || activeChatId !== null) ? 'chat' : 'hero'
+  );
+
+  useEffect(() => {
+    const intent: ViewPhase = (messages.length > 0 || activeChatId !== null) ? 'chat' : 'hero';
+    if (viewPhase === intent) return;
+    if (viewPhase === 'enteringChat' && intent === 'chat') return;
+    if (viewPhase === 'enteringHero' && intent === 'hero') return;
+    if (intent === 'chat') {
+      setViewPhase('enteringChat');
+      const id = window.setTimeout(() => setViewPhase('chat'), 600);
+      return () => window.clearTimeout(id);
+    } else {
+      setViewPhase('enteringHero');
+      const id = window.setTimeout(() => setViewPhase('hero'), 600);
+      return () => window.clearTimeout(id);
+    }
+  }, [messages.length, activeChatId, viewPhase]);
+
   const [sceneState, setSceneState] = useState<'visible' | 'fadingOut' | 'hidden'>(
     () => (messages.length === 0 && activeChatId === null ? 'visible' : 'hidden'),
   );
@@ -621,128 +618,171 @@ export default function AskPage() {
   const showHero = !hasConversation && !loading && !error;
 
   // ── Single return: PrismCanvas hoisted above branch switch ──────────────────
+  const showHeroBranch = viewPhase === 'hero' || viewPhase === 'enteringChat' || viewPhase === 'enteringHero';
+  const showChatBranch = viewPhase === 'chat' || viewPhase === 'enteringChat' || viewPhase === 'enteringHero';
+
+  const heroAnimation =
+    viewPhase === 'enteringChat' ? 'askContentFadeOut 380ms cubic-bezier(0.22, 1, 0.36, 1) both' :
+    viewPhase === 'enteringHero' ? 'askContentFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both' :
+    'none';
+
+  const chatAnimation =
+    viewPhase === 'enteringChat' ? 'askContentFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both' :
+    viewPhase === 'enteringHero' ? 'askContentFadeOut 380ms cubic-bezier(0.22, 1, 0.36, 1) both' :
+    'none';
+
   return (
     <div className="relative w-full" style={{ height: '100%' }}>
       <PrismCanvas phase={sceneState} onFadeOutComplete={() => setSceneState('hidden')} />
-      {hasConversation ? (
-        // ── CONVERSATION STATE: scrollable transcript + sticky input ──────────
-        <div
-          className="flex flex-col w-full"
-          style={{ height: '100%' }}
-        >
-          {/* Transcript */}
+
+      {showHeroBranch && (
+        <div style={{ position: 'absolute', inset: 0, opacity: 1, animation: heroAnimation }}>
+          {/* ── EMPTY STATE: hero + centered search ───────────────────────────────*/}
           <div
-            ref={scrollerRef}
-            className="relative flex-1 min-h-0 overflow-y-auto px-4 md:px-6"
-            style={{
-              zIndex: 10,
-              ['--bottom-fade' as any]: atBottom ? '0px' : '96px',
-              ['--top-fade' as any]: atTop ? '0px' : '128px',
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
-              transition: '--bottom-fade 320ms cubic-bezier(0.22, 1, 0.36, 1), --top-fade 320ms cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
+            className="flex w-full px-4 md:px-6 items-center justify-center"
+            style={{ minHeight: '100%' }}
           >
-            <div className="w-full mx-auto flex flex-col gap-4 pt-6 pb-6" style={{ maxWidth: 820 }}>
-              {messages.map((m) => (
-                <ChatBubble
-                  key={m.id}
-                  message={m}
-                  loading={loading && m.role === 'assistant' && m.pending === true}
-                  onOpenGraph={handleOpenGraph}
+            <div
+              className="relative w-full text-center"
+              style={{ zIndex: 10, maxWidth: '1100px', margin: '0 auto' }}
+            >
+              {showHero && (
+                <>
+                  <h1
+                    className="font-serif font-normal text-white leading-[0.95] tracking-tight"
+                    style={{
+                      fontSize: 'clamp(40px, 9vw, 124px)',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      opacity: 0.95,
+                      paddingBottom: '0.35em',
+                      WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                      maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                    }}
+                  >
+                    Split every policy
+                  </h1>
+                  <h1
+                    className="font-serif font-normal italic text-white leading-[0.95] tracking-tight"
+                    style={{
+                      fontSize: 'clamp(40px, 9vw, 124px)',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
+                      opacity: 0.95,
+                      paddingBottom: '0.35em',
+                      marginTop: 'calc(0.25rem - 0.35em)',
+                      WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                      maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                    }}
+                  >
+                    into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
+                  </h1>
+                </>
+              )}
+
+              <div className="w-full flex flex-col items-center mt-2">
+                {documentName && (
+                  <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1">
+                    <span className="font-mono text-[11px] text-[#ef6a2a]">Asking about:</span>
+                    <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
+                  </div>
+                )}
+                <SearchBar
+                  query={query}
+                  setQuery={setQuery}
+                  onSubmit={handleSubmit}
+                  disabled={loading}
+                  kbOptions={knowledgeBaseOptions}
+                  selectedKbId={selectedKnowledgeBaseId}
+                  onKbChange={setSelectedKnowledgeBaseId}
                 />
-              ))}
+              </div>
+
+              {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
+
+              {loading && (
+                <div className="mt-8 text-white/50 text-[14px] font-mono tracking-wider animate-pulse">
+                  Searching…
+                </div>
+              )}
+
               {error && (
                 <div
-                  className="rounded-xl px-5 py-4 text-left"
+                  className="mt-8 rounded-xl px-5 py-4 text-left"
                   style={{
                     background: 'rgba(224,80,80,0.1)',
                     border: '1px solid rgba(224,80,80,0.3)',
+                    maxWidth: 820,
+                    margin: '32px auto 0',
                   }}
                 >
                   <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
+                  <button onClick={handleReset} className="mt-3 text-[12px] font-medium" style={{ color: '#FF9F55' }}>
+                    Try again →
+                  </button>
                 </div>
               )}
             </div>
+            {judgesModal}
           </div>
-
-          {/* Input — pinned at bottom */}
-          <div
-            className="relative shrink-0 px-4 md:px-6 pt-3 pb-4"
-            style={{
-              zIndex: 10,
-              background: 'linear-gradient(to top, rgba(8,8,10,0.95) 60%, rgba(8,8,10,0))',
-            }}
-          >
-            {documentName && (
-              <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1 w-fit">
-                <span className="font-mono text-[11px] text-[#ef6a2a]">Asking about:</span>
-                <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
-              </div>
-            )}
-            <SearchBar
-              query={query}
-              setQuery={setQuery}
-              onSubmit={handleSubmit}
-              disabled={loading}
-              placeholder="Ask a follow-up…"
-              kbOptions={knowledgeBaseOptions}
-              selectedKbId={selectedKnowledgeBaseId}
-              onKbChange={setSelectedKnowledgeBaseId}
-            />
-          </div>
-          {judgesModal}
         </div>
-      ) : (
-        // ── EMPTY STATE: hero + centered search ───────────────────────────────
-        <div
-          className="flex w-full px-4 md:px-6 items-center justify-center"
-          style={{ minHeight: '100%' }}
-        >
-          <div
-            className="relative w-full text-center"
-            style={{ zIndex: 10, maxWidth: '1100px', margin: '0 auto' }}
-          >
-            {showHero && <CategoryRow />}
-            {showHero && (
-              <>
-                <h1
-                  className="font-serif font-normal text-white leading-[0.95] tracking-tight"
-                  style={{
-                    fontSize: 'clamp(40px, 9vw, 124px)',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    opacity: 0.95,
-                    paddingBottom: '0.35em',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
-                    maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
-                  }}
-                >
-                  Split every policy
-                </h1>
-                <h1
-                  className="font-serif font-normal italic text-white leading-[0.95] tracking-tight"
-                  style={{
-                    fontSize: 'clamp(40px, 9vw, 124px)',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    opacity: 0.95,
-                    paddingBottom: '0.35em',
-                    marginTop: 'calc(0.25rem - 0.35em)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
-                    maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
-                  }}
-                >
-                  into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
-                </h1>
-              </>
-            )}
+      )}
 
-            <div className="w-full flex flex-col items-center mt-2">
+      {showChatBranch && (
+        <div style={{ position: 'absolute', inset: 0, opacity: 1, animation: chatAnimation }}>
+          {/* ── CONVERSATION STATE: scrollable transcript + sticky input ──────────*/}
+          <div
+            className="flex flex-col w-full"
+            style={{ height: '100%' }}
+          >
+            {/* Transcript */}
+            <div
+              ref={scrollerRef}
+              className="relative flex-1 min-h-0 overflow-y-auto px-4 md:px-6"
+              style={{
+                zIndex: 10,
+                ['--bottom-fade' as any]: atBottom ? '0px' : '96px',
+                ['--top-fade' as any]: atTop ? '0px' : '128px',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, transparent 0, rgba(0,0,0,0.386) calc(var(--top-fade) * 0.15), rgba(0,0,0,0.657) calc(var(--top-fade) * 0.30), rgba(0,0,0,0.834) calc(var(--top-fade) * 0.45), rgba(0,0,0,0.936) calc(var(--top-fade) * 0.60), rgba(0,0,0,0.984) calc(var(--top-fade) * 0.75), rgba(0,0,0,0.998) calc(var(--top-fade) * 0.88), black var(--top-fade), black calc(100% - var(--bottom-fade)), rgba(0,0,0,0.939) calc(100% - var(--bottom-fade) * 0.85), rgba(0,0,0,0.784) calc(100% - var(--bottom-fade) * 0.70), rgba(0,0,0,0.5) calc(100% - var(--bottom-fade) * 0.50), rgba(0,0,0,0.216) calc(100% - var(--bottom-fade) * 0.30), rgba(0,0,0,0.061) calc(100% - var(--bottom-fade) * 0.15), transparent 100%)',
+                transition: '--bottom-fade 320ms cubic-bezier(0.22, 1, 0.36, 1), --top-fade 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              <div className="w-full mx-auto flex flex-col gap-4 pt-6 pb-6" style={{ maxWidth: 820 }}>
+                {messages.map((m) => (
+                  <ChatBubble
+                    key={m.id}
+                    message={m}
+                    loading={loading && m.role === 'assistant' && m.pending === true}
+                    onOpenGraph={handleOpenGraph}
+                  />
+                ))}
+                {error && (
+                  <div
+                    className="rounded-xl px-5 py-4 text-left"
+                    style={{
+                      background: 'rgba(224,80,80,0.1)',
+                      border: '1px solid rgba(224,80,80,0.3)',
+                    }}
+                  >
+                    <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Input — pinned at bottom */}
+            <div
+              className="relative shrink-0 px-4 md:px-6 pt-3 pb-4"
+              style={{
+                zIndex: 10,
+                background: 'linear-gradient(to top, rgba(8,8,10,0.95) 60%, rgba(8,8,10,0))',
+              }}
+            >
               {documentName && (
-                <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1">
+                <div className="mb-2 flex items-center gap-2 rounded-full border border-[rgba(239,106,42,0.3)] bg-[rgba(239,106,42,0.08)] px-3 py-1 w-fit">
                   <span className="font-mono text-[11px] text-[#ef6a2a]">Asking about:</span>
                   <span className="font-mono text-[11px] text-white/70 truncate max-w-[260px]">{documentName}</span>
                 </div>
@@ -752,38 +792,14 @@ export default function AskPage() {
                 setQuery={setQuery}
                 onSubmit={handleSubmit}
                 disabled={loading}
+                placeholder="Ask a follow-up…"
                 kbOptions={knowledgeBaseOptions}
                 selectedKbId={selectedKnowledgeBaseId}
                 onKbChange={setSelectedKnowledgeBaseId}
               />
             </div>
-
-            {showHero && <TryAsking onSelect={(q) => setQuery(q)} />}
-
-            {loading && (
-              <div className="mt-8 text-white/50 text-[14px] font-mono tracking-wider animate-pulse">
-                Searching…
-              </div>
-            )}
-
-            {error && (
-              <div
-                className="mt-8 rounded-xl px-5 py-4 text-left"
-                style={{
-                  background: 'rgba(224,80,80,0.1)',
-                  border: '1px solid rgba(224,80,80,0.3)',
-                  maxWidth: 820,
-                  margin: '32px auto 0',
-                }}
-              >
-                <p className="text-[13px]" style={{ color: '#E05050' }}>{error}</p>
-                <button onClick={handleReset} className="mt-3 text-[12px] font-medium" style={{ color: '#FF9F55' }}>
-                  Try again →
-                </button>
-              </div>
-            )}
+            {judgesModal}
           </div>
-          {judgesModal}
         </div>
       )}
     </div>
