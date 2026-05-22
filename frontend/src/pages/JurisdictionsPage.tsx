@@ -8,7 +8,7 @@ import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import HeroGradient from '../components/HeroGradient';
 import { IconSearch, IconChevron } from '../components/icons';
-import { ISO2_TO_ISO3, ISO3_TO_ISO2, MOCK_COUNTRY_COLOR, MOCK_COUNTRY_LABEL, BUNQ_GRADIENT_COLOR } from '../api/mockCountries';
+import { ISO2_TO_ISO3, ISO3_TO_ISO2 } from '../api/countries';
 
 const VALID_CODES = new Set(JURISDICTION_CATALOG.map(j => j.code));
 
@@ -392,7 +392,6 @@ export default function JurisdictionsPage() {
   // ── Build map data (ISO-3 → color) using semantic tokens ─────────────────
   const mapData = useMemo(() => {
     const m = new Map<string, { color: string; label?: string }>();
-    // 1. Real backend data
     (overview ?? []).forEach((o) => {
       const iso3 = ISO2_TO_ISO3[o.code] ?? o.code;
       m.set(iso3, {
@@ -400,22 +399,6 @@ export default function JurisdictionsPage() {
         label: jurisdictionLabel(o.code),
       });
     });
-    // 2. Demo overlay — colors the rest of the world
-    for (const [iso3, color] of Object.entries(MOCK_COUNTRY_COLOR)) {
-      const existing = m.get(iso3);
-      m.set(iso3, {
-        color,
-        label: existing?.label ?? MOCK_COUNTRY_LABEL[iso3] ?? iso3,
-      });
-    }
-    // 3. BUNQ gradient — markets where BUNQ operates always win, in brand colors
-    for (const [iso3, color] of Object.entries(BUNQ_GRADIENT_COLOR)) {
-      const existing = m.get(iso3);
-      m.set(iso3, {
-        color,
-        label: existing?.label ?? MOCK_COUNTRY_LABEL[iso3] ?? iso3,
-      });
-    }
     return m;
   }, [overview]);
 

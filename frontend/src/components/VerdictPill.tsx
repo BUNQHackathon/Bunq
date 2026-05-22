@@ -2,10 +2,8 @@ import type { Verdict } from '../api/launch';
 
 interface Props { verdict: Verdict; showEmoji?: boolean; className?: string; }
 
-// Hex values mirror the C2 warm palette used for map country fills
-// (see MOCK_COUNTRY_COLOR in api/mockCountries.ts). Single source of
-// truth for verdict colours across pills, legend dots, filter chips,
-// and row-status pills.
+// Hex values mirror the C2 warm palette used for verdict-driven map fills.
+// Keep these aligned with map legends, filter chips, and row-status pills.
 const CONFIG: Record<Verdict, { hex: string; bg: string; border: string; emoji: string; label: string }> = {
   GREEN: { hex: '#cfb275', bg: 'rgba(207,178,117,0.12)', border: '1px solid rgba(207,178,117,0.3)', emoji: '🟢', label: 'Compliant' },
   AMBER: { hex: '#b87538', bg: 'rgba(184,117,56,0.12)', border: '1px solid rgba(184,117,56,0.3)', emoji: '🟡', label: 'Needs review' },

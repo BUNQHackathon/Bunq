@@ -21,7 +21,7 @@ import WorldMapD3 from '../components/WorldMapD3';
 import WorldMapGlobe from '../components/WorldMapGlobe';
 import { verdictToHex, FAILED_COLOR } from '../components/VerdictPill';
 import HeroGradient from '../components/HeroGradient';
-import { ISO2_TO_ISO3, ISO3_TO_ISO2, MOCK_COUNTRY_COLOR, MOCK_COUNTRY_LABEL } from '../api/mockCountries';
+import { ISO2_TO_ISO3, ISO3_TO_ISO2 } from '../api/countries';
 
 // ── Aggregate verdict (worst of children) ────────────────────────────────────
 const VERDICT_RANK: Record<Verdict, number> = { GREEN: 0, AMBER: 1, RED: 2, PENDING: -1, UNKNOWN: -1 };
@@ -599,12 +599,6 @@ export default function LaunchDetailPage() {
   // ── Map data ────────────────────────────────────────────────────────────────
   const mapData = useMemo(() => {
     const m = new Map<string, { color: string; label?: string }>();
-    // 1. Demo overlay first — keeps the globe alive even when this launch
-    //    only covers a few countries.
-    for (const [iso3, color] of Object.entries(MOCK_COUNTRY_COLOR)) {
-      m.set(iso3, { color, label: MOCK_COUNTRY_LABEL[iso3] ?? iso3 });
-    }
-    // 2. Real launch verdicts overwrite the overlay where present.
     detail?.jurisdictions.forEach((r) => {
       const iso3 = ISO2_TO_ISO3[r.jurisdictionCode] ?? r.jurisdictionCode;
       // Grey-state routing:
