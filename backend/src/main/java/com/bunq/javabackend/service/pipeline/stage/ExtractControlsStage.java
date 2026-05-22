@@ -109,32 +109,13 @@ public class ExtractControlsStage implements Stage {
                             return;
                         }
 
-                        if (doc.isControlsExtracted()) {
-                            // Cache hit — clone existing controls into this session
-                            List<Control> originals = controlRepository.findByDocumentId(doc.getId());
-                            log.info("Cache hit for document {} ({} controls); cloning into session {}",
-                                    doc.getId(), originals.size(), ctx.getSessionId());
-
-                            for (Control original : originals) {
-                                Control clone = cloneControl(original, ctx.getSessionId());
-                                controlRepository.save(clone);
-                                collectedControls.add(clone);
-                                ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
-                                        ControlMapper.toDto(clone));
-                            }
-
-                            ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
-                                    Map.of("documentId", doc.getId(), "kind", "policy",
-                                            "recordsReused", originals.size()));
-                        } else {
-                            // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
-                            String loaded = loadExtractedText(doc);
-                            String textToExtract = (loaded != null && !loaded.isBlank())
-                                    ? loaded
-                                    : policyText;
-                            log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
-                            runBedrockExtraction(ctx, textToExtract, doc, collectedControls);
-                        }
+                        // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
+                        String loaded = loadExtractedText(doc);
+                        String textToExtract = (loaded != null && !loaded.isBlank())
+                                ? loaded
+                                : policyText;
+                        log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
+                        runBedrockExtraction(ctx, textToExtract, doc, collectedControls);
                     }, pipelineExecutor))
                     .toList();
 
@@ -187,27 +168,6 @@ public class ExtractControlsStage implements Stage {
                 extracted.size(), ctx.getSessionId(), documentId);
     }
 
-    private Control cloneControl(Control original, String sessionId) {
-        Control clone = new Control();
-        clone.setId(original.getId());  // preserve content-addressable ID
-        clone.setSessionId(sessionId);
-        clone.setDocumentId(original.getDocumentId());
-        clone.setControlType(original.getControlType());
-        clone.setCategory(original.getCategory());
-        clone.setDescription(original.getDescription());
-        clone.setOwner(original.getOwner());
-        clone.setTestingCadence(original.getTestingCadence());
-        clone.setEvidenceType(original.getEvidenceType());
-        clone.setLastTested(original.getLastTested());
-        clone.setTestingStatus(original.getTestingStatus());
-        clone.setImplementationStatus(original.getImplementationStatus());
-        clone.setMappedStandards(original.getMappedStandards());
-        clone.setLinkedTools(original.getLinkedTools());
-        clone.setSourceDocRef(original.getSourceDocRef());
-        clone.setBankId(original.getBankId());
-        return clone;
-    }
-
     private List<Control> parseControls(PipelineContext ctx, String sourceText,
                                         JsonNode toolInput, String sessionId, String documentId) {
         List<Control> result = new ArrayList<>();
@@ -220,7 +180,7 @@ public class ExtractControlsStage implements Stage {
             try {
                 Control ctrl = new Control();
                 String ctrlDesc = node.path("description").asText(null);
-                ctrl.setId(IdGenerator.controlId(documentId, ctrlDesc));
+                ctrl.setId(IdGenerator.controlId(sessionId, documentId, ctrlDesc));
                 ctrl.setSessionId(sessionId);
                 ctrl.setDocumentId(documentId);
                 ctrl.setDescription(ctrlDesc);

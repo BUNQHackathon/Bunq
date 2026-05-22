@@ -20,9 +20,9 @@ locals {
 # Fallback mapping — tainting null_resource.bedrock_kb requires manually refreshing these from the create-knowledge-base output.
 locals {
   kb_ids_static = {
-    regulations = "YIBSPZAPVL"
-    policies    = "PJSPTYAB1N"
-    controls    = "MVGWGRJRJW"
+    regulations = "40GQ6CHJKY"
+    policies    = "JXRDTTIVJE"
+    controls    = "52XMQS5BBK"
   }
 }
 

@@ -9,25 +9,26 @@ public final class IdGenerator {
 
     private IdGenerator() {}
 
-    // ── Content-addressable IDs ──────────────────────────────────────────────
-    // Same content from the same document always produces the same ID, so the
-    // mapping cache (saveIfNotExists) hits correctly on re-runs.
+    // ── Session-scoped content-addressable IDs ───────────────────────────────
+    // IDs are scoped to a session: same content in different sessions produces
+    // different IDs, so each session owns its own physical DynamoDB rows.
+    // Cross-session mapping cache will no longer hit — this is intentional.
 
     /**
-     * Deterministic obligation ID based on document + deontic subject + action.
+     * Session-scoped obligation ID based on session + document + deontic subject + action.
      * Prefix "OBL-" distinguishes it from legacy random IDs ("obl-").
      */
-    public static String obligationId(String documentId, String subject, String action) {
-        String key = nullToEmpty(documentId) + "\u0000" + nullToEmpty(subject) + "\u0000" + nullToEmpty(action);
+    public static String obligationId(String sessionId, String documentId, String subject, String action) {
+        String key = nullToEmpty(sessionId) + " " + nullToEmpty(documentId) + " " + nullToEmpty(subject) + " " + nullToEmpty(action);
         return "OBL-" + sha256Hex(key).substring(0, 24);
     }
 
     /**
-     * Deterministic control ID based on document + description.
+     * Session-scoped control ID based on session + document + description.
      * Prefix "CTRL-" distinguishes it from legacy random IDs ("ctrl-").
      */
-    public static String controlId(String documentId, String description) {
-        String key = nullToEmpty(documentId) + "\u0000" + nullToEmpty(description);
+    public static String controlId(String sessionId, String documentId, String description) {
+        String key = nullToEmpty(sessionId) + " " + nullToEmpty(documentId) + " " + nullToEmpty(description);
         return "CTRL-" + sha256Hex(key).substring(0, 24);
     }
 
@@ -82,4 +83,4 @@ public final class IdGenerator {
             throw new IllegalStateException("SHA-256 unavailable", e);
         }
     }
-}
+}

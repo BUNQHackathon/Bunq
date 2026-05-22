@@ -114,32 +114,13 @@ public class ExtractObligationsStage implements Stage {
                         return;
                     }
 
-                    if (doc.isObligationsExtracted()) {
-                        // Cache hit — clone existing obligations into this session
-                        List<Obligation> originals = obligationRepository.findByDocumentId(doc.getId());
-                        log.info("Cache hit for document {} ({} obligations); cloning into session {}",
-                                doc.getId(), originals.size(), ctx.getSessionId());
-
-                        for (Obligation original : originals) {
-                            Obligation clone = cloneObligation(original, ctx.getSessionId());
-                            obligationRepository.save(clone);
-                            parallelBuffer.add(clone);
-                            ctx.getSseEmitterService().send(ctx.getSessionId(), "obligation.extracted",
-                                    ObligationMapper.toDto(clone));
-                        }
-
-                        ctx.getSseEmitterService().send(ctx.getSessionId(), "document.cached",
-                                Map.of("documentId", doc.getId(), "kind", "regulation",
-                                        "recordsReused", originals.size()));
-                    } else {
-                        // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getRegulation()
-                        String loaded = loadExtractedText(doc);
-                        String textToExtract = (loaded != null && !loaded.isBlank())
-                                ? loaded
-                                : regulation;
-                        log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
-                        runBedrockExtraction(ctx, textToExtract, doc, parallelBuffer);
-                    }
+                    // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getRegulation()
+                    String loaded = loadExtractedText(doc);
+                    String textToExtract = (loaded != null && !loaded.isBlank())
+                            ? loaded
+                            : regulation;
+                    log.info("Cold extraction for document {} in session {}", doc.getId(), ctx.getSessionId());
+                    runBedrockExtraction(ctx, textToExtract, doc, parallelBuffer);
                 }, pipelineExecutor));
             }
 
@@ -227,28 +208,6 @@ public class ExtractObligationsStage implements Stage {
         return parseObligations(ctx, chunkText, toolInput, ctx.getSessionId(), documentId, regulationName);
     }
 
-    private Obligation cloneObligation(Obligation original, String sessionId) {
-        Obligation clone = new Obligation();
-        clone.setId(original.getId());  // preserve content-addressable ID so mapping cache works
-        clone.setSessionId(sessionId);
-        clone.setDocumentId(original.getDocumentId());
-        clone.setDeontic(original.getDeontic());
-        clone.setSubject(original.getSubject());
-        clone.setAction(original.getAction());
-        clone.setRiskCategory(original.getRiskCategory());
-        clone.setExtractionConfidence(original.getExtractionConfidence());
-        clone.setExtractedAt(Instant.now());
-        clone.setConditions(original.getConditions());
-        clone.setSource(original.getSource());
-        clone.setObligationType(original.getObligationType());
-        clone.setApplicableJurisdictions(original.getApplicableJurisdictions());
-        clone.setApplicableEntities(original.getApplicableEntities());
-        clone.setSeverity(original.getSeverity());
-        clone.setRegulatoryPenaltyRange(original.getRegulatoryPenaltyRange());
-        clone.setRegulationId(original.getRegulationId());
-        return clone;
-    }
-
     private static String blankToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
     }
@@ -273,7 +232,7 @@ public class ExtractObligationsStage implements Stage {
                 Obligation obl = new Obligation();
                 String oblSubject = node.path("subject").asText(null);
                 String oblAction  = node.path("action").asText(null);
-                obl.setId(IdGenerator.obligationId(documentId, oblSubject, oblAction));
+                obl.setId(IdGenerator.obligationId(sessionId, documentId, oblSubject, oblAction));
                 obl.setSessionId(sessionId);
                 obl.setDocumentId(documentId);
                 obl.setDeontic(parseEnum(node.path("deontic").asText()));
