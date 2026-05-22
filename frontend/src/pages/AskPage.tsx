@@ -24,10 +24,10 @@ import { getLibraryDocument } from '../api/session';
 // ─── Local data ───────────────────────────────────────────────────────────────
 
 const suggestedQuestions = [
-  'What are our AML obligations in Germany?',
-  'Can we offer crypto custody under MiCA?',
+  'What is our privacy policy?',
+  'What is the DPOs email?',
   'GDPR retention rules for transaction data',
-  'EMI passporting requirements for France',
+  'EMI passporting requirements for Netherlands',
 ];
 
 const ALL_SOURCES_OPTION: KnowledgeBaseOption = {
@@ -623,13 +623,13 @@ export default function AskPage() {
 
   const heroAnimation =
     viewPhase === 'enteringChat' ? 'askContentFadeOut 380ms cubic-bezier(0.22, 1, 0.36, 1) both' :
-    viewPhase === 'enteringHero' ? 'askContentFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both' :
-    'none';
+      viewPhase === 'enteringHero' ? 'askContentFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both' :
+        'none';
 
   const chatAnimation =
     viewPhase === 'enteringChat' ? 'askContentFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both' :
-    viewPhase === 'enteringHero' ? 'askContentFadeOut 380ms cubic-bezier(0.22, 1, 0.36, 1) both' :
-    'none';
+      viewPhase === 'enteringHero' ? 'askContentFadeOut 380ms cubic-bezier(0.22, 1, 0.36, 1) both' :
+        'none';
 
   return (
     <div className="relative w-full" style={{ height: '100%' }}>
