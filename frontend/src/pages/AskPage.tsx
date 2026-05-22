@@ -908,7 +908,7 @@ interface CitationDisclosureProps {
 
 function CitationDisclosure({ citation, initiallyOpen }: CitationDisclosureProps) {
   const targetDocId = citationDocumentId(citation);
-  const cardHref = targetDocId ? `/doc/${targetDocId}` : undefined;
+  const cardHref = targetDocId ? `/library/${targetDocId}` : undefined;
   const sourceName = sourceDisplayName(citation);
   const chunk = chunkLabel(citation);
   const sha = citation.sha256 ? `sha ${truncHash(citation.sha256)}` : null;
