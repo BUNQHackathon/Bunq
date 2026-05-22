@@ -65,7 +65,7 @@ export default function PrismCanvas({ phase, onFadeOutComplete }: PrismCanvasPro
       style={{
         zIndex: 0,
         opacity: phase === 'fadingOut' ? 0 : 1,
-        transition: phase === 'fadingOut' ? 'opacity 600ms ease-out 200ms' : 'none',
+        transition: phase === 'fadingOut' ? 'opacity 600ms cubic-bezier(0.22, 1, 0.36, 1) 200ms' : 'none',
       }}
     >
       <Canvas
