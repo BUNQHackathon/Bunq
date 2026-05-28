@@ -25,6 +25,8 @@ public class ObligationMapper {
                 .extractionConfidence(source.getExtractionConfidence())
                 .sessionId(source.getSessionId())
                 .regulationId(source.getRegulationId())
+                .relevanceScore(source.getRelevanceScore())
+                .relevanceReason(source.getRelevanceReason())
                 .build();
     }
 

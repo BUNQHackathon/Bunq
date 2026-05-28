@@ -31,4 +31,6 @@ public class JurisdictionRunResponseDTO {
     private Integer regulationsCovered;
     private Integer obligationsCount;
     private Integer controlsCount;
+    private Integer obligationsExtracted;
+    private Integer obligationsRelevant;
 }

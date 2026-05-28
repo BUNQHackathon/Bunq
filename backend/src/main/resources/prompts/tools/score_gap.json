@@ -4,6 +4,10 @@
   "input_schema": {
     "type": "object",
     "properties": {
+      "reasoning": {
+        "type": "string",
+        "description": "One-sentence justification per residual axis, referencing the risk type, before the numbers."
+      },
       "severity_dimensions": {
         "type": "object",
         "properties": {

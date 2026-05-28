@@ -1,0 +1,34 @@
+{
+  "name": "match_obligations_batch",
+  "description": "Given a batch of obligations and their candidate controls, return for each obligation a list of control matches with scores (0-100) and reasons. Only emit controls that semantically address the obligation. Missing = gap. Call this tool exactly once with structured matches for all obligations in the batch.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "obligations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "obligation_id": {"type": "string"},
+            "matches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reasoning": {"type": "string", "description": "One-sentence justification grounded in the prior analysis, before the score."},
+                  "control_id": {"type": "string"},
+                  "match_score": {"type": "number", "minimum": 0, "maximum": 100},
+                  "mapping_type": {"type": "string", "enum": ["direct", "partial", "requires_multiple"]},
+                  "reason": {"type": "string"}
+                },
+                "required": ["reasoning", "control_id", "match_score", "reason"]
+              }
+            }
+          },
+          "required": ["obligation_id", "matches"]
+        }
+      }
+    },
+    "required": ["obligations"]
+  }
+}

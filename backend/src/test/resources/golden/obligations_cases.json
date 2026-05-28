@@ -1,0 +1,78 @@
+[
+  {
+    "id": "obl-1",
+    "regulation_text": "Obligated entities shall verify the identity of the customer prior to establishing a business relationship. Where the customer is a natural person, verification shall be based on documents, data or information obtained from a reliable and independent source.",
+    "expected": [
+      {
+        "subject_kw": "obligated entities",
+        "action_kw": "verify the identity",
+        "deontic": "[O]"
+      }
+    ]
+  },
+  {
+    "id": "obl-2",
+    "regulation_text": "Credit institutions shall retain copies of documents and records obtained during the customer due diligence process for a minimum period of five years following the end of the business relationship. Such records shall be made available to competent authorities upon request.",
+    "expected": [
+      {
+        "subject_kw": "credit institutions",
+        "action_kw": "retain copies",
+        "deontic": "[O]"
+      }
+    ]
+  },
+  {
+    "id": "obl-3",
+    "regulation_text": "Obligated entities shall not maintain anonymous accounts or anonymous passbooks. The existence of such accounts or passbooks is hereby prohibited, and entities must close or convert any such accounts to identified accounts without delay.",
+    "expected": [
+      {
+        "subject_kw": "obligated entities",
+        "action_kw": "maintain anonymous accounts",
+        "deontic": "[F]"
+      }
+    ]
+  },
+  {
+    "id": "obl-4",
+    "regulation_text": "Where an obligated entity suspects that funds are the proceeds of criminal activity, it shall submit a suspicious activity report to the Financial Intelligence Unit as soon as practicable. The report shall include all available information on the transaction and the parties involved.",
+    "expected": [
+      {
+        "subject_kw": "obligated entity",
+        "action_kw": "submit a suspicious activity report",
+        "deontic": "[O]"
+      }
+    ]
+  },
+  {
+    "id": "obl-5",
+    "regulation_text": "Obligated entities may apply simplified due diligence measures where a customer or product has been assessed as presenting a low degree of risk. The simplified measures shall nonetheless ensure that the customer relationship is adequately monitored.",
+    "expected": [
+      {
+        "subject_kw": "obligated entities",
+        "action_kw": "apply simplified due diligence",
+        "deontic": "[P]"
+      }
+    ]
+  },
+  {
+    "id": "obl-6",
+    "regulation_text": "For the purposes of this Directive, 'beneficial owner' means any natural person who ultimately owns or controls a customer or on whose behalf a transaction or activity is being conducted. This definition encompasses persons who exercise control through other means.",
+    "expected": []
+  },
+  {
+    "id": "obl-7",
+    "regulation_text": "In accordance with the risk-based approach, obligated entities shall identify and assess the money laundering and terrorist financing risks to which they are exposed. Enhanced customer due diligence measures shall be applied in all cases of higher-risk relationships.",
+    "expected": [
+      {
+        "subject_kw": "obligated entities",
+        "action_kw": "identify and assess",
+        "deontic": "[O]"
+      },
+      {
+        "subject_kw": "obligated entities",
+        "action_kw": "enhanced customer due diligence",
+        "deontic": "[O]"
+      }
+    ]
+  }
+]

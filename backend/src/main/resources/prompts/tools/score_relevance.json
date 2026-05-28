@@ -1,0 +1,18 @@
+{
+  "name": "score_relevance",
+  "description": "Given a product description and a regulatory obligation, score how directly the obligation applies to the product. Call this tool exactly once with the relevance score and reason.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "relevance_score": {
+        "type": "number",
+        "description": "How directly the obligation applies to the product (0.0 = entirely unrelated, 1.0 = directly governs this product). Obligations that could plausibly apply score at least 0.4."
+      },
+      "relevance_reason": {
+        "type": "string",
+        "description": "A concise explanation of why this score was assigned, referencing the product and obligation."
+      }
+    },
+    "required": ["relevance_score", "relevance_reason"]
+  }
+}

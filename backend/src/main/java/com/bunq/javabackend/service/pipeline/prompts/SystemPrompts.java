@@ -5,13 +5,68 @@ public final class SystemPrompts {
   public static final String EXTRACT_OBLIGATIONS = "You are a legal compliance expert. Extract all legal obligations from the provided regulation text. "
       + "Each obligation must be a concrete, testable duty, prohibition, or permission for an identified subject. "
       + "Use DDL deontic operators: [O] obligation, [F] forbidden, [P] permitted. "
-      + "Only emit obligations you can ground in the provided text.";
+      + "Only emit obligations you can ground in the provided text.\n"
+      + "\n"
+      + "Use ONLY the provided text. Never rely on prior knowledge of any law/policy. Never invent article numbers, thresholds, names, or duties not present in the text. "
+      + "If the text contains no concrete testable item, return an empty list — do NOT fabricate borderline items.\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Article 3(1): Obliged entities shall apply customer due diligence measures when establishing a business relationship.\"\n"
+      + "→ [O] subject=obliged entities action=apply customer due diligence measures when establishing a business relationship — grounded in Article 3(1).\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Article 7: Obliged entities shall not enter into or continue a correspondent relationship with a shell bank.\"\n"
+      + "→ [F] subject=obliged entities action=enter into or continue a correspondent relationship with a shell bank — grounded in Article 7.\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Article 12(2): Obliged entities may rely on third parties to carry out CDD measures, subject to conditions set in Article 13.\"\n"
+      + "→ [P] subject=obliged entities action=rely on third parties to carry out CDD measures — grounded in Article 12(2).\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Recital 18: Member States recognise that effective AML frameworks are essential to protect the integrity of financial markets.\"\n"
+      + "→ EMPTY LIST. Recital states policy rationale only; no concrete duty, prohibition, or permission is imposed on any identified subject.\n"
+      + "</example>";
 
   public static final String EXTRACT_CONTROLS = "You are a compliance controls expert. Extract all internal controls from the provided policy text. "
       + "Each control must describe a concrete process, technical safeguard, or governance measure. "
-      + "Identify the control type (preventive, detective, corrective, directive) and category.";
+      + "Identify the control type (preventive, detective, corrective, directive) and category.\n"
+      + "\n"
+      + "Use ONLY the provided text. Never rely on prior knowledge of any law/policy. Never invent article numbers, thresholds, names, or duties not present in the text. "
+      + "If the text contains no concrete testable item, return an empty list — do NOT fabricate borderline items.\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"All wire transfers above EUR 1 000 are automatically screened against the sanctions list before execution.\"\n"
+      + "→ PREVENTIVE technical control: automated sanctions screening on outbound wire transfers exceeding EUR 1 000 — grounded in provided text.\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Compliance generates a monthly report of accounts with no CDD refresh in 24 months, reviewed by the MLRO.\"\n"
+      + "→ DETECTIVE organizational control: monthly CDD-staleness report reviewed by MLRO — grounded in provided text.\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Accounts flagged by transaction monitoring are suspended pending a 5-day compliance review before reinstatement.\"\n"
+      + "→ CORRECTIVE procedural control: account suspension and mandatory compliance review before reinstatement — grounded in provided text.\n"
+      + "</example>\n"
+      + "\n"
+      + "<example>\n"
+      + "TEXT: \"Management is aware of the importance of AML and supports a strong compliance culture.\"\n"
+      + "→ EMPTY LIST. Statement describes management attitude; no concrete process, safeguard, or governance measure is described.\n"
+      + "</example>";
 
-  public static final String MATCH_OBLIGATIONS_TO_CONTROLS = "You are a compliance mapping expert. For each obligation, identify which controls address it. "
+  public static final String MATCH_REASONING = "You are a compliance mapping analyst. "
+      + "For each candidate control, quote the part of its description that relates to the obligation, "
+      + "then reason whether it fully addresses / partially addresses / does not address the obligation. "
+      + "Use ONLY the provided texts; never invent controls or standards. "
+      + "If no candidate addresses the obligation, say so explicitly. "
+      + "Output your analysis inside <analysis> tags.";
+
+  public static final String MATCH_OBLIGATIONS_TO_CONTROLS = "You are a compliance mapping expert. "
+      + "You are given a prior <analysis>. Convert it into structured matches. "
+      + "Scores (0-100) must follow the analysis; do not introduce controls or claims absent from it. "
       + "Score each match 0-100 based on semantic alignment. "
       + "Classify the mapping type: direct, partial, indirect, or none.";
 
@@ -25,6 +80,7 @@ public final class SystemPrompts {
       + "blast_radius (breadth of impact; 0=one user, 1=whole org), "
       + "recoverability (cost to recover; 0=trivial rollback, 1=unrecoverable). "
       + "Provide recommended remediation actions and a narrative.\n"
+      + "First, in the reasoning field, justify each of the 5 residual axes in one sentence referencing the risk type; only then assign the numbers.\n"
       + "\n"
       + "### Calibration anchors (reference scale, do not copy verbatim)\n"
       + "\n"
@@ -56,6 +112,12 @@ public final class SystemPrompts {
       + "- 0.9 — largely unrecoverable (e.g., correspondent-bank relationship terminated after AML enforcement action; reputational harm permanent)\n"
       + "\n"
       + "Use these anchors as your scale; never quote them as evidence.";
+
+  public static final String RELEVANCE_SCORER =
+      "You are a product compliance analyst. Given a product description and a regulatory obligation, " +
+      "score how directly the obligation applies to this specific product. " +
+      "Score 0.0 if it is entirely unrelated, 1.0 if it directly governs this product. " +
+      "Be conservative: obligations that could plausibly apply score at least 0.4.";
 
   public static final String GROUND_CHECK = "You are a citation verifier. For each mapping, verify that the semantic reason cited actually appears "
       + "in the source text. If the claim cannot be grounded in the provided text, mark verified=false.";

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "nar-1",
+    "gaps": [
+      {
+        "obligation_id": "o1",
+        "narrative": "The institution lacks a formalised procedure for submitting suspicious activity reports to the Financial Intelligence Unit, creating a material gap against reporting obligations.",
+        "regulation": "AMLD5",
+        "article": "Article 33",
+        "source_text": "Obligated entities shall report suspicious transactions to the Financial Intelligence Unit without delay."
+      }
+    ],
+    "forbidden_strings": ["Article 47", "Article 13", "EUR 50000", "Article 20"]
+  },
+  {
+    "id": "nar-2",
+    "gaps": [
+      {
+        "obligation_id": "o2",
+        "narrative": "Customer identification records are not retained beyond three years, falling short of the mandatory five-year minimum retention period following the end of the business relationship.",
+        "regulation": "AMLD5",
+        "article": "Article 40",
+        "source_text": "Member States shall require obligated entities to retain documents and information for a minimum of five years after the end of the business relationship."
+      }
+    ],
+    "forbidden_strings": ["Article 33", "ten years", "EUR 100000", "Article 18"]
+  },
+  {
+    "id": "nar-3",
+    "gaps": [
+      {
+        "obligation_id": "o3",
+        "narrative": "No enhanced due diligence measures are applied to customers identified as politically exposed persons, representing a significant gap in the institution's high-risk customer management framework.",
+        "regulation": "AMLD5",
+        "article": "Article 20",
+        "source_text": "Obligated entities shall apply enhanced customer due diligence measures in respect of transactions or business relationships with politically exposed persons."
+      },
+      {
+        "obligation_id": "o4",
+        "narrative": "The business risk assessment has not been updated in the past 24 months and does not reflect current typologies, leaving the institution without an adequate basis for calibrating its controls.",
+        "regulation": "AMLD5",
+        "article": "Article 6",
+        "source_text": "Each Member State shall take appropriate steps to identify, assess, understand and mitigate the risks of money laundering and terrorist financing affecting it."
+      }
+    ],
+    "forbidden_strings": ["Article 33", "Article 40", "EUR 25000", "Article 45", "Article 13"]
+  },
+  {
+    "id": "nar-4",
+    "gaps": [
+      {
+        "obligation_id": "o5",
+        "narrative": "The transaction monitoring system does not cover intra-group transfers, resulting in a blind spot for patterns of structuring activity conducted across affiliated entities.",
+        "regulation": "AMLD5",
+        "article": "Article 35",
+        "source_text": "Obligated entities shall examine, as far as reasonably possible, the background and purpose of all transactions that are complex, unusually large, or conducted in an unusual pattern."
+      }
+    ],
+    "forbidden_strings": ["Article 20", "EUR 75000", "Article 14", "Article 33", "ten business days"]
+  }
+]

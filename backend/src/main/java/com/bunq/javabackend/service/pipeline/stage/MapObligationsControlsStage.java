@@ -18,6 +18,7 @@ import com.bunq.javabackend.service.ai.bedrock.MatchResult;
 import com.bunq.javabackend.service.ai.bedrock.MatchableControl;
 import com.bunq.javabackend.service.ai.bedrock.MatchableObligation;
 import com.bunq.javabackend.service.ai.bedrock.ObligationControlMatcher;
+import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
@@ -42,6 +43,7 @@ import java.util.concurrent.Executor;
 public class MapObligationsControlsStage implements Stage {
 
     private static final int BATCH_SIZE = 10;
+    private static final int BATCH_GROUP_SIZE = 3;
     private static final int MAX_CANDIDATE_CONTROLS = 20;
     private static final int KB_TOP_K = 20;  // fetch more from KB; reranker narrows to RERANK_TOP_N
     private static final int RERANK_TOP_N = 5;
@@ -127,31 +129,188 @@ public class MapObligationsControlsStage implements Stage {
 
     private record BatchResult(List<Mapping> mappings, int computed, int reused) {}
 
+    /** Holds per-obligation candidate data ready for Bedrock (uncached controls only). */
+    private record ObligationCandidate(
+            Obligation obligation,
+            MatchableObligation matchable,
+            List<MatchableControl> uncachedMatchable,
+            List<Mapping> cachedMappings,
+            int reusedCount) {}
+
     private BatchResult processBatch(List<Obligation> batch, List<Control> allControls,
                                      PipelineContext ctx, List<String> evidenceHashes) {
-        List<CompletableFuture<ObligationResult>> futures = new ArrayList<>(batch.size());
-        for (Obligation obl : batch) {
-            futures.add(CompletableFuture.supplyAsync(
-                    () -> processObligation(obl, allControls, ctx, evidenceHashes), pipelineExecutor));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        List<Mapping> results = new ArrayList<>();
-        int computed = 0;
-        int reused = 0;
-        for (CompletableFuture<ObligationResult> f : futures) {
-            ObligationResult r = f.join();
-            results.addAll(r.mappings);
-            computed += r.computed;
-            reused += r.reused;
+        // Step 1: compute candidates and split cached/uncached per obligation (can parallelise)
+        List<CompletableFuture<ObligationCandidate>> prepFutures = new ArrayList<>(batch.size());
+        for (Obligation obl : batch) {
+            prepFutures.add(CompletableFuture.supplyAsync(
+                    () -> prepareObligation(obl, allControls), pipelineExecutor));
         }
-        return new BatchResult(results, computed, reused);
+        CompletableFuture.allOf(prepFutures.toArray(new CompletableFuture[0])).join();
+
+        List<ObligationCandidate> toProcess = new ArrayList<>();
+        List<Mapping> allMappings = new ArrayList<>();
+        int totalReused = 0;
+
+        for (CompletableFuture<ObligationCandidate> f : prepFutures) {
+            ObligationCandidate oc = f.join();
+            allMappings.addAll(oc.cachedMappings());
+            totalReused += oc.reusedCount();
+            if (!oc.uncachedMatchable().isEmpty()) {
+                toProcess.add(oc);
+            }
+        }
+
+        if (toProcess.isEmpty()) {
+            return new BatchResult(allMappings, 0, totalReused);
+        }
+
+        // Step 2: group toProcess into groups of BATCH_GROUP_SIZE; dispatch each group in parallel
+        List<List<ObligationCandidate>> groups = new ArrayList<>();
+        for (int i = 0; i < toProcess.size(); i += BATCH_GROUP_SIZE) {
+            groups.add(toProcess.subList(i, Math.min(i + BATCH_GROUP_SIZE, toProcess.size())));
+        }
+
+        List<CompletableFuture<GroupResult>> groupFutures = new ArrayList<>(groups.size());
+        for (List<ObligationCandidate> group : groups) {
+            groupFutures.add(CompletableFuture.supplyAsync(
+                    () -> processGroup(group, ctx, evidenceHashes), pipelineExecutor));
+        }
+        CompletableFuture.allOf(groupFutures.toArray(new CompletableFuture[0])).join();
+
+        int totalComputed = 0;
+        for (CompletableFuture<GroupResult> f : groupFutures) {
+            GroupResult gr = f.join();
+            allMappings.addAll(gr.mappings());
+            totalComputed += gr.computed();
+        }
+
+        return new BatchResult(allMappings, totalComputed, totalReused);
     }
 
-    private static class ObligationResult {
-        final List<Mapping> mappings = new ArrayList<>();
+    private record GroupResult(List<Mapping> mappings, int computed) {}
+
+    /** Phase-1+2 batched call for a group; fallback to single-call for any missing obligation_id. */
+    private GroupResult processGroup(List<ObligationCandidate> group,
+                                     PipelineContext ctx, List<String> evidenceHashes) {
+        List<MatchableObligation> matchableObls = group.stream()
+                .map(ObligationCandidate::matchable).toList();
+        Map<String, List<MatchableControl>> candidatesById = new HashMap<>();
+        for (ObligationCandidate oc : group) {
+            candidatesById.put(oc.obligation().getId(), oc.uncachedMatchable());
+        }
+
+        Map<String, List<MatchResult>> batchResults;
+        try {
+            batchResults = matcher.matchBatch(
+                    ctx.getSessionId(), "map_obligations_controls",
+                    matchableObls, candidatesById, BedrockModel.SONNET);
+        } catch (Exception e) {
+            log.warn("matchBatch failed for group of {} obligations, falling back to single calls: {}",
+                    group.size(), e.getMessage());
+            batchResults = new HashMap<>();
+        }
+
+        List<Mapping> mappings = new ArrayList<>();
         int computed = 0;
-        int reused = 0;
+
+        for (ObligationCandidate oc : group) {
+            String oblId = oc.obligation().getId();
+            List<MatchResult> matchResults = batchResults.get(oblId);
+
+            if (matchResults == null) {
+                // Fallback: obligation_id missing from batch response — use single call
+                log.warn("obligation_id {} missing from matchBatch response, falling back to single match", oblId);
+                try {
+                    matchResults = matcher.match(ctx.getSessionId(), "map_obligations_controls",
+                            oc.matchable(), oc.uncachedMatchable(), BedrockModel.SONNET);
+                } catch (Exception e) {
+                    log.warn("Single-match fallback also failed for obligation {}: {}", oblId, e.getMessage());
+                    matchResults = List.of();
+                }
+            }
+
+            for (MatchResult result : matchResults) {
+                String controlId = result.controlId();
+                if (controlId == null) continue;
+                String id = deterministic(oblId, controlId);
+                Mapping mapping = new Mapping();
+                mapping.setId(id);
+                mapping.setSessionId(ctx.getSessionId());
+                mapping.setObligationId(oblId);
+                mapping.setControlId(controlId);
+                mapping.setMappingConfidence(result.confidence());
+                mapping.setSemanticReason(result.reason());
+                String typeStr = result.mappingType();
+                try { mapping.setMappingType(MappingType.valueOf(typeStr.toLowerCase())); }
+                catch (Exception ignored) { mapping.setMappingType(MappingType.partial); }
+                double score = mapping.getMappingConfidence() != null ? mapping.getMappingConfidence() : 0;
+                mapping.setGapStatus(score >= 50 ? GapStatus.satisfied : GapStatus.partial);
+                Map<String, String> meta = new HashMap<>();
+                meta.put("route", "llm");
+                mapping.setMetadata(meta);
+                mappingRepository.saveIfNotExists(mapping);
+                try {
+                    auditLogService.append(ctx.getSessionId(), mapping.getId(),
+                            "mapping_created", "pipeline:map-obligations-controls",
+                            Map.of("obligation_id", mapping.getObligationId(),
+                                    "control_id", mapping.getControlId(),
+                                    "confidence", mapping.getMappingConfidence(),
+                                    "evidence_sha256s", evidenceHashes));
+                } catch (Exception e) {
+                    log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
+                }
+                mappings.add(mapping);
+                computed++;
+            }
+        }
+        return new GroupResult(mappings, computed);
+    }
+
+    /** Computes KB candidates, splits cached vs uncached controls, returns an ObligationCandidate. */
+    private ObligationCandidate prepareObligation(Obligation obl, List<Control> allControls) {
+        List<Control> candidates = kbCandidates(obl, allControls);
+        if (candidates.isEmpty()) {
+            candidates = structuralFilter(obl, allControls);
+        }
+        if (candidates.isEmpty() && !allControls.isEmpty()) {
+            candidates = allControls.stream().limit(MAX_CANDIDATE_CONTROLS).toList();
+        }
+
+        List<Mapping> cachedMappings = new ArrayList<>();
+        int reusedCount = 0;
+        List<Control> uncached = new ArrayList<>();
+
+        for (Control ctrl : candidates) {
+            String mappingId = deterministic(obl.getId(), ctrl.getId());
+            Optional<Mapping> existing = mappingRepository.findById(mappingId);
+            if (existing.isPresent()) {
+                Mapping cached = existing.get();
+                if (cached.getMetadata() == null || !cached.getMetadata().containsKey("route")) {
+                    Map<String, String> meta = cached.getMetadata() != null
+                            ? new HashMap<>(cached.getMetadata()) : new HashMap<>();
+                    meta.put("route", "cached");
+                    cached.setMetadata(meta);
+                    mappingRepository.save(cached);
+                }
+                cachedMappings.add(cached);
+                reusedCount++;
+            } else {
+                uncached.add(ctrl);
+            }
+        }
+
+        MatchableObligation matchable = new MatchableObligation(
+                obl.getId(), obl.getSubject(), obl.getAction(),
+                obl.getRiskCategory(), obl.getRegulatoryPenaltyRange());
+        List<MatchableControl> uncachedMatchable = uncached.stream()
+                .map(c -> new MatchableControl(
+                        c.getId(), c.getDescription(),
+                        c.getCategory() != null ? c.getCategory().name() : null,
+                        c.getMappedStandards()))
+                .toList();
+
+        return new ObligationCandidate(obl, matchable, uncachedMatchable, cachedMappings, reusedCount);
     }
 
     private List<Control> kbCandidates(Obligation obl, List<Control> allControls) {
@@ -218,91 +377,6 @@ public class MapObligationsControlsStage implements Stage {
             log.warn("KB candidate retrieval failed for obligation {}: {}", obl.getId(), e.getMessage());
             return List.of();
         }
-    }
-
-    private ObligationResult processObligation(Obligation obl, List<Control> allControls,
-                                               PipelineContext ctx, List<String> evidenceHashes) {
-        ObligationResult out = new ObligationResult();
-        List<Control> candidates = kbCandidates(obl, allControls);
-        if (candidates.isEmpty()) {
-            candidates = structuralFilter(obl, allControls);
-        }
-        if (candidates.isEmpty() && !allControls.isEmpty()) {
-            candidates = allControls.stream().limit(MAX_CANDIDATE_CONTROLS).toList();
-        }
-        if (candidates.isEmpty()) {
-            return out;
-        }
-
-        // Split candidates: cached (skip Bedrock) vs uncached (single batched matcher call)
-        List<Control> uncached = new ArrayList<>();
-        for (Control ctrl : candidates) {
-            String mappingId = deterministic(obl.getId(), ctrl.getId());
-            Optional<Mapping> existing = mappingRepository.findById(mappingId);
-            if (existing.isPresent()) {
-                Mapping cached = existing.get();
-                if (cached.getMetadata() == null || !cached.getMetadata().containsKey("route")) {
-                    Map<String, String> meta = cached.getMetadata() != null
-                            ? new HashMap<>(cached.getMetadata()) : new HashMap<>();
-                    meta.put("route", "cached");
-                    cached.setMetadata(meta);
-                    mappingRepository.save(cached);
-                }
-                out.mappings.add(cached);
-                out.reused++;
-            } else {
-                uncached.add(ctrl);
-            }
-        }
-
-        if (uncached.isEmpty()) return out;
-
-        MatchableObligation matchableObl = new MatchableObligation(
-                obl.getId(), obl.getSubject(), obl.getAction(),
-                obl.getRiskCategory(), obl.getRegulatoryPenaltyRange());
-        List<MatchableControl> matchableControls = uncached.stream()
-                .map(c -> new MatchableControl(
-                        c.getId(), c.getDescription(),
-                        c.getCategory() != null ? c.getCategory().name() : null,
-                        c.getMappedStandards()))
-                .toList();
-        List<MatchResult> matchResults = matcher.match(ctx.getSessionId(), "map_obligations_controls",
-                matchableObl, matchableControls);
-
-        for (MatchResult result : matchResults) {
-            String controlId = result.controlId();
-            if (controlId == null) continue;
-            String id = deterministic(obl.getId(), controlId);
-            Mapping mapping = new Mapping();
-            mapping.setId(id);
-            mapping.setSessionId(ctx.getSessionId());
-            mapping.setObligationId(obl.getId());
-            mapping.setControlId(controlId);
-            mapping.setMappingConfidence(result.confidence());
-            mapping.setSemanticReason(result.reason());
-            String typeStr = result.mappingType();
-            try { mapping.setMappingType(MappingType.valueOf(typeStr.toLowerCase())); }
-            catch (Exception ignored) { mapping.setMappingType(MappingType.partial); }
-            double score = mapping.getMappingConfidence() != null ? mapping.getMappingConfidence() : 0;
-            mapping.setGapStatus(score >= 50 ? GapStatus.satisfied : GapStatus.partial);
-            Map<String, String> meta = new HashMap<>();
-            meta.put("route", "llm");
-            mapping.setMetadata(meta);
-            mappingRepository.saveIfNotExists(mapping);
-            try {
-                auditLogService.append(ctx.getSessionId(), mapping.getId(),
-                        "mapping_created", "pipeline:map-obligations-controls",
-                        Map.of("obligation_id", mapping.getObligationId(),
-                                "control_id", mapping.getControlId(),
-                                "confidence", mapping.getMappingConfidence(),
-                                "evidence_sha256s", evidenceHashes));
-            } catch (Exception e) {
-                log.warn("Failed to append audit log for mapping {}: {}", mapping.getId(), e.getMessage());
-            }
-            out.mappings.add(mapping);
-            out.computed++;
-        }
-        return out;
     }
 
     private List<Control> structuralFilter(Obligation obl, List<Control> controls) {

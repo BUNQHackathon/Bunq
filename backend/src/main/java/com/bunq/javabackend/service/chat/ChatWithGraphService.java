@@ -154,7 +154,7 @@ public class ChatWithGraphService {
             // Step 5: Matching fan-out
             Set<String> coveredObligationIds = new HashSet<>();
             for (MatchableObligation obl : matchableObligations) {
-                List<MatchResult> results = matcher.match(chatId, "chat", obl, matchableControls);
+                List<MatchResult> results = matcher.match(chatId, "chat", obl, matchableControls, BedrockModel.SONNET);
                 boolean hasSatisfactoryMatch = false;
                 for (MatchResult result : results) {
                     if (result.confidence() >= 30) {

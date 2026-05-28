@@ -21,6 +21,7 @@ import com.bunq.javabackend.service.pipeline.stage.ExtractObligationsStage;
 import com.bunq.javabackend.service.pipeline.stage.GapAnalyzeStage;
 import com.bunq.javabackend.service.pipeline.stage.GroundCheckStage;
 import com.bunq.javabackend.service.pipeline.stage.IngestStage;
+import com.bunq.javabackend.service.pipeline.stage.FilterObligationsStage;
 import com.bunq.javabackend.service.pipeline.stage.MapObligationsControlsStage;
 import com.bunq.javabackend.service.pipeline.stage.NarrateStage;
 import com.bunq.javabackend.service.pipeline.stage.SanctionsScreenStage;
@@ -48,6 +49,7 @@ public class PipelineOrchestrator {
     private final ExtractControlsStage extractControlsStage;
     private final SanctionsScreenStage sanctionsScreenStage;
     private final MapObligationsControlsStage mapObligationsControlsStage;
+    private final FilterObligationsStage filterObligationsStage;
     private final GapAnalyzeStage gapAnalyzeStage;
     private final GroundCheckStage groundCheckStage;
     private final NarrateStage narrateStage;
@@ -84,6 +86,9 @@ public class PipelineOrchestrator {
             CompletableFuture<Void> oblFuture = runStageAsyncWithCheckpoint(ctx, extractObligationsStage);
             CompletableFuture<Void> ctrlFuture = runStageAsyncWithCheckpoint(ctx, extractControlsStage);
             CompletableFuture.allOf(oblFuture, ctrlFuture).join();
+
+            // Stage: Filter obligations by relevance (no-op if no brief)
+            runStageWithCheckpoint(ctx, filterObligationsStage);
 
             // EXTRACTING -> MAPPING
             sessionService.updateState(sessionId, SessionState.MAPPING);

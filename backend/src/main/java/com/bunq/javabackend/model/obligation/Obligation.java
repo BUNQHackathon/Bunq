@@ -67,6 +67,12 @@ public class Obligation {
     @Getter(onMethod_ = @DynamoDbAttribute("extraction_confidence"))
     private Double extractionConfidence;
 
+    @Getter(onMethod_ = @DynamoDbAttribute("relevance_score"))
+    private Double relevanceScore;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("relevance_reason"))
+    private String relevanceReason;
+
     @Getter(onMethod_ = {
         @DynamoDbAttribute("session_id"),
         @DynamoDbSecondaryPartitionKey(indexNames = "session-id-index")

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "ctrl-1",
+    "policy_text": "The transaction monitoring system automatically flags all wire transfers exceeding EUR 10,000 to jurisdictions on the FATF grey list. Flagged transactions are placed in a review queue and cannot be settled until cleared by a compliance officer.",
+    "expected": [
+      {
+        "desc_kw": "transaction monitoring",
+        "control_type": "technical",
+        "category": "detective"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-2",
+    "policy_text": "All customer-facing staff must complete annual AML awareness training. New hires are required to complete the training module within 30 days of onboarding before being granted access to customer account management functions.",
+    "expected": [
+      {
+        "desc_kw": "aml awareness training",
+        "control_type": "organizational",
+        "category": "preventive"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-3",
+    "policy_text": "The onboarding system enforces a mandatory identity verification step using electronic document checks against government-issued ID databases. No new account may be activated until the check returns a confirmed match.",
+    "expected": [
+      {
+        "desc_kw": "identity verification",
+        "control_type": "technical",
+        "category": "preventive"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-4",
+    "policy_text": "Following a confirmed suspicious activity report, the compliance team shall conduct a retrospective review of all transactions conducted by the customer within the preceding 12 months. Findings are documented and forwarded to senior management within 10 business days.",
+    "expected": [
+      {
+        "desc_kw": "retrospective review",
+        "control_type": "procedural",
+        "category": "corrective"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-5",
+    "policy_text": "The KYC system screens all new and existing customers against PEP and sanctions lists on a daily basis. Any positive match triggers an automatic account freeze and generates an alert to the compliance officer on duty.",
+    "expected": [
+      {
+        "desc_kw": "pep and sanctions",
+        "control_type": "technical",
+        "category": "detective"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-6",
+    "policy_text": "The Chief Compliance Officer chairs a quarterly AML committee attended by representatives from Operations, Legal, and IT. The committee reviews the effectiveness of existing controls and approves policy updates.",
+    "expected": [
+      {
+        "desc_kw": "aml committee",
+        "control_type": "organizational",
+        "category": "detective"
+      }
+    ]
+  },
+  {
+    "id": "ctrl-7",
+    "policy_text": "This section defines the governance structure of the compliance department. The compliance function reports directly to the Management Board and operates independently from business lines. This arrangement reflects international best practice.",
+    "expected": []
+  }
+]

@@ -2,6 +2,7 @@ package com.bunq.javabackend.controller.launch;
 
 import com.bunq.javabackend.client.SidecarClient;
 import com.bunq.javabackend.dto.request.CreateLaunchRequestDTO;
+import com.bunq.javabackend.dto.request.RunJurisdictionRequestDTO;
 import com.bunq.javabackend.dto.response.DocumentResponseDTO;
 import com.bunq.javabackend.dto.response.JurisdictionRunResponseDTO;
 import com.bunq.javabackend.dto.response.LaunchResponseDTO;
@@ -76,8 +77,10 @@ public class LaunchController {
     @PostMapping("/{id}/jurisdictions/{code}/run")
     public ResponseEntity<JurisdictionRunResponseDTO> runJurisdiction(
             @PathVariable String id,
-            @PathVariable String code) {
-        var run = launchService.runJurisdiction(id, code);
+            @PathVariable String code,
+            @RequestBody(required = false) RunJurisdictionRequestDTO body) {
+        List<String> overrideDocIds = (body != null) ? body.getDocumentIds() : null;
+        var run = launchService.runJurisdiction(id, code, overrideDocIds);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(LaunchMapper.toDto(run));
     }
 

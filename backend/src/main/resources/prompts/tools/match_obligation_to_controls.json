@@ -9,12 +9,13 @@
         "items": {
           "type": "object",
           "properties": {
+            "reasoning": {"type": "string", "description": "One-sentence justification grounded in the prior analysis, before the score."},
             "control_id": {"type": "string"},
             "match_score": {"type": "number", "minimum": 0, "maximum": 100},
             "mapping_type": {"type": "string", "enum": ["direct", "partial", "requires_multiple"]},
             "reason": {"type": "string"}
           },
-          "required": ["control_id", "match_score", "reason"]
+          "required": ["reasoning", "control_id", "match_score", "reason"]
         }
       }
     },

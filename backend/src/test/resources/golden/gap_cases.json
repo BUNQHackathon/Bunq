@@ -1,0 +1,57 @@
+[
+  {
+    "id": "gap-1",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "submit a suspicious activity report to the Financial Intelligence Unit without delay",
+      "risk_category": "suspicious_activity_reporting",
+      "regulatory_penalty": "Administrative fine and potential criminal referral for wilful non-reporting"
+    },
+    "expected_residual_range": [0.6, 1.0],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-2",
+    "obligation": {
+      "subject": "credit institutions",
+      "action": "retain KYC records for a minimum of five years",
+      "risk_category": "record_keeping",
+      "regulatory_penalty": "Written warning and requirement to remedy within 60 days"
+    },
+    "expected_residual_range": [0.1, 0.4],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-3",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "apply enhanced due diligence to all politically exposed persons",
+      "risk_category": "enhanced_due_diligence",
+      "regulatory_penalty": "Significant administrative sanction and public censure by supervisory authority"
+    },
+    "expected_residual_range": [0.5, 0.85],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-4",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "verify the identity of the customer before establishing a business relationship",
+      "risk_category": "customer_due_diligence",
+      "regulatory_penalty": "Corrective measure and administrative fine proportionate to the breach"
+    },
+    "expected_residual_range": [0.05, 0.3],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-5",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "conduct ongoing monitoring of the business relationship including scrutiny of transactions",
+      "risk_category": "transaction_monitoring",
+      "regulatory_penalty": "Suspension of business activities pending remediation and substantial periodic penalty payments"
+    },
+    "expected_residual_range": [0.65, 1.0],
+    "expect_escalation": true
+  }
+]

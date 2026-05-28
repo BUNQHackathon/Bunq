@@ -1,0 +1,132 @@
+[
+  {
+    "id": "map-1",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "verify the identity of the customer prior to establishing a business relationship",
+      "risk_category": "customer_due_diligence"
+    },
+    "candidate_controls": [
+      {
+        "control_id": "C1",
+        "description": "Onboarding system enforces electronic identity verification against government-issued ID databases before account activation.",
+        "category": "preventive",
+        "mapped_standards": ["AMLD5 Art.13", "ISO 27001 A.9"]
+      },
+      {
+        "control_id": "C2",
+        "description": "Quarterly review of firewall rules by the network security team.",
+        "category": "preventive",
+        "mapped_standards": ["ISO 27001 A.13"]
+      }
+    ],
+    "expected": [
+      { "control_id": "C1", "expected_gap_status": "satisfied" },
+      { "control_id": "C2", "expected_gap_status": "partial" }
+    ]
+  },
+  {
+    "id": "map-2",
+    "obligation": {
+      "subject": "credit institutions",
+      "action": "retain records for a minimum of five years after the end of the business relationship",
+      "risk_category": "record_keeping"
+    },
+    "candidate_controls": [
+      {
+        "control_id": "C3",
+        "description": "Automated archival system stores KYC documents and transaction records in immutable storage with a seven-year retention policy.",
+        "category": "preventive",
+        "mapped_standards": ["AMLD5 Art.40", "GDPR Art.5"]
+      },
+      {
+        "control_id": "C4",
+        "description": "Annual staff training on data handling and privacy obligations.",
+        "category": "preventive",
+        "mapped_standards": ["GDPR Art.5"]
+      }
+    ],
+    "expected": [
+      { "control_id": "C3", "expected_gap_status": "satisfied" },
+      { "control_id": "C4", "expected_gap_status": "partial" }
+    ]
+  },
+  {
+    "id": "map-3",
+    "obligation": {
+      "subject": "obligated entity",
+      "action": "submit a suspicious activity report to the Financial Intelligence Unit",
+      "risk_category": "suspicious_activity_reporting"
+    },
+    "candidate_controls": [
+      {
+        "control_id": "C5",
+        "description": "Transaction monitoring system automatically generates SAR drafts for analyst review when a rule threshold is breached.",
+        "category": "detective",
+        "mapped_standards": ["AMLD5 Art.33", "FATF R.20"]
+      },
+      {
+        "control_id": "C6",
+        "description": "Documented SAR escalation procedure specifying roles, timelines, and FIU submission steps, reviewed annually.",
+        "category": "corrective",
+        "mapped_standards": ["AMLD5 Art.33"]
+      },
+      {
+        "control_id": "C7",
+        "description": "Password complexity policy requiring a minimum of 12 characters for all user accounts.",
+        "category": "preventive",
+        "mapped_standards": ["ISO 27001 A.9.4"]
+      }
+    ],
+    "expected": [
+      { "control_id": "C5", "expected_gap_status": "satisfied" },
+      { "control_id": "C6", "expected_gap_status": "satisfied" },
+      { "control_id": "C7", "expected_gap_status": "partial" }
+    ]
+  },
+  {
+    "id": "map-4",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "apply enhanced due diligence measures for higher-risk relationships including PEP screening",
+      "risk_category": "enhanced_due_diligence"
+    },
+    "candidate_controls": [
+      {
+        "control_id": "C8",
+        "description": "Daily automated screening of all customers against PEP lists and international sanctions databases with automatic account freeze on positive match.",
+        "category": "detective",
+        "mapped_standards": ["AMLD5 Art.20", "AMLD5 Art.18"]
+      },
+      {
+        "control_id": "C9",
+        "description": "Procedure requiring senior management sign-off before onboarding any customer classified as high-risk.",
+        "category": "preventive",
+        "mapped_standards": ["AMLD5 Art.18"]
+      }
+    ],
+    "expected": [
+      { "control_id": "C8", "expected_gap_status": "satisfied" },
+      { "control_id": "C9", "expected_gap_status": "satisfied" }
+    ]
+  },
+  {
+    "id": "map-5",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "identify and assess money laundering and terrorist financing risks",
+      "risk_category": "risk_assessment"
+    },
+    "candidate_controls": [
+      {
+        "control_id": "C10",
+        "description": "Bi-annual penetration testing of the core banking application.",
+        "category": "detective",
+        "mapped_standards": ["ISO 27001 A.12.6"]
+      }
+    ],
+    "expected": [
+      { "control_id": "C10", "expected_gap_status": "partial" }
+    ]
+  }
+]

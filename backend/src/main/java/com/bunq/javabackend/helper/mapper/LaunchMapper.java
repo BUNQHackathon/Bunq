@@ -65,7 +65,8 @@ public class LaunchMapper {
     public static JurisdictionRunResponseDTO toDto(JurisdictionRun r, String verdict, String summary,
             List<String> requiredChanges, List<String> blockers, List<KeyGapDTO> keyGaps,
             boolean proofPackAvailable,
-            Integer regulationsCovered, Integer obligationsCount, Integer controlsCount) {
+            Integer regulationsCovered, Integer obligationsCount, Integer controlsCount,
+            Integer obligationsExtracted, Integer obligationsRelevant) {
         return JurisdictionRunResponseDTO.builder()
                 .launchId(r.getLaunchId())
                 .jurisdictionCode(r.getJurisdictionCode())
@@ -86,6 +87,8 @@ public class LaunchMapper {
                 .regulationsCovered(regulationsCovered)
                 .obligationsCount(obligationsCount)
                 .controlsCount(controlsCount)
+                .obligationsExtracted(obligationsExtracted)
+                .obligationsRelevant(obligationsRelevant)
                 .build();
     }
 }

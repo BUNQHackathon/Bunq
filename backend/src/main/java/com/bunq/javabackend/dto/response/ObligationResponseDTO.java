@@ -29,4 +29,6 @@ public class ObligationResponseDTO {
     private Double extractionConfidence;
     private String sessionId;
     private String regulationId;
+    private Double relevanceScore;
+    private String relevanceReason;
 }

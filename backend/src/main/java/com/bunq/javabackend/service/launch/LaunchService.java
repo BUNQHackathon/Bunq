@@ -19,6 +19,7 @@ import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.gap.RecommendedAction;
 import com.bunq.javabackend.model.launch.JurisdictionRun;
 import com.bunq.javabackend.model.launch.Launch;
+import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.model.enums.RunStatus;
 import com.bunq.javabackend.model.launch.LaunchKind;
 import com.bunq.javabackend.model.session.Session;
@@ -178,12 +179,24 @@ public class LaunchService {
                     ? (session.getDocumentIds() == null ? 0 : session.getDocumentIds().size())
                     : 0;
 
-            Integer obligationsCount = run.getCurrentSessionId() != null
-                    ? obligationRepository.findBySessionId(run.getCurrentSessionId()).size()
-                    : 0;
+            List<Obligation> sessionObligations =
+                    run.getCurrentSessionId() != null
+                            ? obligationRepository.findBySessionId(run.getCurrentSessionId())
+                            : List.of();
+            Integer obligationsCount = sessionObligations.size();
             Integer controlsCount = run.getCurrentSessionId() != null
                     ? controlRepository.findBySessionId(run.getCurrentSessionId()).size()
                     : 0;
+
+            // obligationsExtracted = total obligations for session
+            Integer obligationsExtracted = obligationsCount > 0 ? obligationsCount : null;
+            // obligationsRelevant = count with relevance_score scored (non-null score means filter ran)
+            boolean filterRan = sessionObligations.stream().anyMatch(o -> o.getRelevanceScore() != null);
+            Integer obligationsRelevant = filterRan
+                    ? (int) sessionObligations.stream()
+                            .filter(o -> o.getRelevanceScore() == null || o.getRelevanceScore() >= 0.3)
+                            .count()
+                    : null;
 
             String verdict;
             String summary;
@@ -261,7 +274,8 @@ public class LaunchService {
             }
 
             result.add(toDto(run, verdict, summary, requiredChanges, blockers, keyGaps, proofPackAvailable,
-                    regulationsCovered, obligationsCount, controlsCount));
+                    regulationsCovered, obligationsCount, controlsCount,
+                    obligationsExtracted, obligationsRelevant));
         }
         return result;
     }
@@ -332,7 +346,7 @@ public class LaunchService {
         return run;
     }
 
-    public JurisdictionRun runJurisdiction(String launchId, String code) {
+    public JurisdictionRun runJurisdiction(String launchId, String code, List<String> overrideDocIds) {
         Launch launch = launchRepository.findById(launchId)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
         JurisdictionRun run = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code)
@@ -346,27 +360,35 @@ public class LaunchService {
         run.setLastRunAt(Instant.now().toString());
         jurisdictionRunRepository.save(run);
 
-        // Attach jurisdiction-filtered docs to session (up to 10), then fire pipeline
-        // async
-        List<Document> docs = autoDocService.forJurisdiction(code);
-        List<String> docIds = docs.stream().map(Document::getId).toList();
+        // Attach docs to session, then fire pipeline async.
+        // If caller supplied explicit document IDs, use those; otherwise auto-select by jurisdiction.
+        List<String> docIds;
+        String regulationText;
+        String policyText;
+        if (overrideDocIds != null && !overrideDocIds.isEmpty()) {
+            docIds = overrideDocIds;
+            regulationText = null;
+            policyText = null;
+        } else {
+            List<Document> docs = autoDocService.forJurisdiction(code);
+            docIds = docs.stream().map(Document::getId).toList();
+            regulationText = docs.stream()
+                    .filter(d -> "regulation".equals(d.getKind()))
+                    .map(Document::getExtractedText)
+                    .filter(t -> t != null && !t.isBlank())
+                    .findFirst()
+                    .map(t -> t.substring(0, Math.min(500, t.length())))
+                    .orElse(null);
+            policyText = docs.stream()
+                    .filter(d -> "policy".equals(d.getKind()))
+                    .map(Document::getExtractedText)
+                    .filter(t -> t != null && !t.isBlank())
+                    .findFirst()
+                    .map(t -> t.substring(0, Math.min(500, t.length())))
+                    .orElse(null);
+        }
         session.setDocumentIds(docIds);
         sessionRepository.save(session);
-
-        String regulationText = docs.stream()
-                .filter(d -> "regulation".equals(d.getKind()))
-                .map(Document::getExtractedText)
-                .filter(t -> t != null && !t.isBlank())
-                .findFirst()
-                .map(t -> t.substring(0, Math.min(500, t.length())))
-                .orElse(null);
-        String policyText = docs.stream()
-                .filter(d -> "policy".equals(d.getKind()))
-                .map(Document::getExtractedText)
-                .filter(t -> t != null && !t.isBlank())
-                .findFirst()
-                .map(t -> t.substring(0, Math.min(500, t.length())))
-                .orElse(null);
 
         PipelineStartRequestDTO req = PipelineStartRequestDTO.builder()
                 .counterparties(toCounterpartyDtos(launch.getCounterparties()))
@@ -374,6 +396,7 @@ public class LaunchService {
                 .jurisdictionCode(code)
                 .regulation(regulationText)
                 .policy(policyText)
+                .briefText(launch.getBrief())
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 
@@ -402,7 +425,7 @@ public class LaunchService {
                 .toList();
 
         return failed.stream()
-                .map(r -> runJurisdiction(launchId, r.getJurisdictionCode()))
+                .map(r -> runJurisdiction(launchId, r.getJurisdictionCode(), null))
                 .toList();
     }
 
