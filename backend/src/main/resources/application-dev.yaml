@@ -1,28 +1,28 @@
 aws:
-  account-id: 431445718379
+  account-id: ${AWS_ACCOUNT_ID:}
   profile: default
   s3:
-    uploads-bucket: launchlens-uploads-431445718379
+    uploads-bucket: ${UPLOADS_BUCKET:}
   bedrock:
-    kb-data-source-id: 24C56KNFSD
+    kb-data-source-id: ${WARMUP_KB_DS_ID:}
     kb:
-      regulations-id: 40GQ6CHJKY
-      policies-id: JXRDTTIVJE
-      controls-id: 52XMQS5BBK
-      regulations-data-source-id: 24C56KNFSD
-      policies-data-source-id: MLFORO90P9
-      controls-data-source-id: BNLJKECNRP
-      regulations-source-bucket: launchlens-kb-regulations
-      policies-source-bucket: launchlens-kb-policies
-      controls-source-bucket: launchlens-kb-controls
+      regulations-id: ${KB_REGULATIONS_ID:}
+      policies-id: ${KB_POLICIES_ID:}
+      controls-id: ${KB_CONTROLS_ID:}
+      regulations-data-source-id: ${KB_REGULATIONS_DATA_SOURCE_ID:}
+      policies-data-source-id: ${KB_POLICIES_DATA_SOURCE_ID:}
+      controls-data-source-id: ${KB_CONTROLS_DATA_SOURCE_ID:}
+      regulations-source-bucket: ${KB_REGULATIONS_SOURCE_BUCKET:}
+      policies-source-bucket: ${KB_POLICIES_SOURCE_BUCKET:}
+      controls-source-bucket: ${KB_CONTROLS_SOURCE_BUCKET:}
 
 cors:
   allowed-origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
 
 app:
   admin:
-    token: demo-test-7f3a9b2c
+    token: ${ADMIN_TOKEN:dev-admin}
 
 sidecar:
   base-url: http://localhost:8001
-  token: dev
+  token: ${SIDECAR_TOKEN:dev}
