@@ -208,10 +208,15 @@ export async function rerunFailedJurisdictions(launchId: string): Promise<Jurisd
   return (Array.isArray(res) ? res : []).map(normalizeRun);
 }
 
-export async function runJurisdiction(launchId: string, code: string): Promise<JurisdictionRun> {
-  const res = await postJson<JurisdictionRun>(
-    `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`,
-  );
+export async function runJurisdiction(
+  launchId: string,
+  code: string,
+  opts?: { documentIds?: string[]; applyRelevanceFilter?: boolean },
+): Promise<JurisdictionRun> {
+  const url = `/launches/${encodeURIComponent(launchId)}/jurisdictions/${encodeURIComponent(code)}/run`;
+  const res = opts !== undefined
+    ? await postJson<JurisdictionRun>(url, opts)
+    : await postJson<JurisdictionRun>(url);
   return normalizeRun(res);
 }
 

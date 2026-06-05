@@ -80,7 +80,8 @@ public class LaunchController {
             @PathVariable String code,
             @RequestBody(required = false) RunJurisdictionRequestDTO body) {
         List<String> overrideDocIds = (body != null) ? body.getDocumentIds() : null;
-        var run = launchService.runJurisdiction(id, code, overrideDocIds);
+        Boolean applyFilter = (body != null) ? body.getApplyRelevanceFilter() : null;
+        var run = launchService.runJurisdiction(id, code, overrideDocIds, applyFilter);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(LaunchMapper.toDto(run));
     }
 

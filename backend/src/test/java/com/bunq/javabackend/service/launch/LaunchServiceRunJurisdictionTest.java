@@ -107,7 +107,7 @@ class LaunchServiceRunJurisdictionTest {
         when(sessionService.createSessionForJurisdiction(launchId, code)).thenReturn(session("sess-1"));
         doNothing().when(pipelineOrchestrator).start(any(), any());
 
-        launchService.runJurisdiction(launchId, code, overrideIds);
+        launchService.runJurisdiction(launchId, code, overrideIds, null);
 
         // autoDocService.forJurisdiction must NOT be called when overrides are provided
         verify(autoDocService, never()).forJurisdiction(any());
@@ -131,7 +131,7 @@ class LaunchServiceRunJurisdictionTest {
         when(autoDocService.forJurisdiction(code)).thenReturn(List.of(document("doc-auto-1", "regulation")));
         doNothing().when(pipelineOrchestrator).start(any(), any());
 
-        launchService.runJurisdiction(launchId, code, null);
+        launchService.runJurisdiction(launchId, code, null, null);
 
         verify(autoDocService).forJurisdiction(code);
     }
@@ -148,7 +148,7 @@ class LaunchServiceRunJurisdictionTest {
         when(autoDocService.forJurisdiction(code)).thenReturn(List.of());
         doNothing().when(pipelineOrchestrator).start(any(), any());
 
-        launchService.runJurisdiction(launchId, code, List.of());
+        launchService.runJurisdiction(launchId, code, List.of(), null);
 
         verify(autoDocService).forJurisdiction(code);
     }
@@ -166,7 +166,7 @@ class LaunchServiceRunJurisdictionTest {
         when(autoDocService.forJurisdiction(code)).thenReturn(List.of());
         doNothing().when(pipelineOrchestrator).start(any(), any());
 
-        JurisdictionRun result = launchService.runJurisdiction(launchId, code, null);
+        JurisdictionRun result = launchService.runJurisdiction(launchId, code, null, null);
 
         assertEquals(RunStatus.RUNNING, result.getStatus());
     }

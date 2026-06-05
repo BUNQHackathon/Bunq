@@ -23,6 +23,7 @@ public class PipelineContext {
     private String briefText;
     private final SseEmitterService sseEmitterService;
     private String jurisdictionCode;
+    private boolean applyRelevanceFilter = true;
 
     public PipelineContext(String sessionId, String regulation, String policy,
                            List<Counterparty> counterparties, String briefText,

@@ -13,4 +13,5 @@ import java.util.List;
 @Builder
 public class RunJurisdictionRequestDTO {
     private List<String> documentIds; // null or empty → autoDocService fallback
+    private Boolean applyRelevanceFilter; // null treated as true (default on)
 }

@@ -65,6 +65,7 @@ public class PipelineOrchestrator {
                 request.getBriefText(),
                 sseEmitterService
         );
+        ctx.setApplyRelevanceFilter(request.isApplyRelevanceFilter());
         sessionRepository.findById(sessionId)
                 .map(Session::getJurisdictionCode)
                 .ifPresent(ctx::setJurisdictionCode);

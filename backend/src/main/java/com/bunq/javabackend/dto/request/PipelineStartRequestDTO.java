@@ -23,4 +23,5 @@ public class PipelineStartRequestDTO {
     private String briefText;
     private String launchId;
     private String jurisdictionCode;
+    private boolean applyRelevanceFilter = true;
 }

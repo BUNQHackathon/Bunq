@@ -346,7 +346,7 @@ public class LaunchService {
         return run;
     }
 
-    public JurisdictionRun runJurisdiction(String launchId, String code, List<String> overrideDocIds) {
+    public JurisdictionRun runJurisdiction(String launchId, String code, List<String> overrideDocIds, Boolean applyRelevanceFilter) {
         Launch launch = launchRepository.findById(launchId)
                 .orElseThrow(() -> new NotFoundException("Launch not found: " + launchId));
         JurisdictionRun run = jurisdictionRunRepository.findByLaunchIdAndCode(launchId, code)
@@ -397,6 +397,7 @@ public class LaunchService {
                 .regulation(regulationText)
                 .policy(policyText)
                 .briefText(launch.getBrief())
+                .applyRelevanceFilter(applyRelevanceFilter == null || applyRelevanceFilter)
                 .build();
         pipelineOrchestrator.start(session.getId(), req);
 
@@ -425,7 +426,7 @@ public class LaunchService {
                 .toList();
 
         return failed.stream()
-                .map(r -> runJurisdiction(launchId, r.getJurisdictionCode(), null))
+                .map(r -> runJurisdiction(launchId, r.getJurisdictionCode(), null, null))
                 .toList();
     }
 

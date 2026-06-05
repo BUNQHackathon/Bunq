@@ -5,6 +5,7 @@ import useJudgesGate from '../auth/useJudgesGate';
 import { getGraph, type GraphNode as ApiGraphNode, type GraphLink as ApiGraphLink } from '../api/portal';
 import { getComplianceMap } from '../api/jurisdictions';
 import { getLaunch, jurisdictionFlag, jurisdictionLabel, runJurisdiction } from '../api/launch';
+import RunOptionsModal from '../components/RunOptionsModal';
 
 // ─── Compliance-map node type → resolved hex (from CSS token comments) ────────
 // Using resolved hexes keeps D3 attr() calls clean; values mirror styles.css vars.
@@ -550,8 +551,10 @@ export default function GraphPage() {
   const [loading, setLoading] = useState(isLive);
   const [error, setError] = useState<string | null>(null);
   const [launchName, setLaunchName] = useState<string>(id ?? '');
+  const [launchBrief, setLaunchBrief] = useState<string | undefined>(undefined);
   const [rerunning, setRerunning] = useState(false);
   const [rerunMsg, setRerunMsg] = useState<string | null>(null);
+  const [showRunModal, setShowRunModal] = useState(false);
 
   // Inject compliance-type colors into CAT_COLOR at runtime (once)
   useEffect(() => {
@@ -640,9 +643,12 @@ export default function GraphPage() {
       return;
     }
 
-    // Fetch launch name non-blocking (fallback to id)
+    // Fetch launch name and brief non-blocking (fallback to id)
     getLaunch(id!)
-      .then(detail => setLaunchName(detail.launch.name))
+      .then(detail => {
+        setLaunchName(detail.launch.name);
+        setLaunchBrief(detail.launch.brief || undefined);
+      })
       .catch(() => { /* keep id as fallback */ });
 
     fetchComplianceMap();
@@ -673,9 +679,33 @@ export default function GraphPage() {
   // .graph CSS grid: folders-col | canvas | rail-col.
   // We skip the folders and rail columns here — just canvas full-width.
   // Use a single-column grid (1fr) override so canvas fills the view.
+  async function handleGraphRunConfirm(opts: { documentIds?: string[]; applyRelevanceFilter?: boolean }) {
+    setShowRunModal(false);
+    setRerunning(true);
+    setRerunMsg(null);
+    try {
+      await runJurisdiction(id!, code!, opts);
+      setRerunMsg('Analysis started. This may take a minute — refreshing soon.');
+      setTimeout(() => fetchComplianceMap(), 5000);
+    } catch (err) {
+      setRerunMsg('Failed to start: ' + (err as Error).message);
+    } finally {
+      setRerunning(false);
+    }
+  }
+
   return (
     <div style={{ height: '100%', display: 'grid', gridTemplateColumns: '1fr', background: 'var(--bg-0)' }}>
       {modal}
+      {showRunModal && (
+        <RunOptionsModal
+          launchId={id!}
+          code={code!}
+          brief={launchBrief}
+          onClose={() => setShowRunModal(false)}
+          onConfirm={handleGraphRunConfirm}
+        />
+      )}
       <div className="graph__canvas" style={{ position: 'relative', overflow: 'hidden' }}>
 
         {/* Toolbar — absolute, top of canvas */}
@@ -785,19 +815,7 @@ export default function GraphPage() {
                 className="btn btn--orange-hollow btn--sm"
                 style={{ marginTop: 8, marginLeft: 8 }}
                 disabled={rerunning}
-                onClick={requireJudge(async () => {
-                  setRerunning(true);
-                  setRerunMsg(null);
-                  try {
-                    await runJurisdiction(id!, code!);
-                    setRerunMsg('Analysis started. This may take a minute — refreshing soon.');
-                    setTimeout(() => fetchComplianceMap(), 5000);
-                  } catch (err) {
-                    setRerunMsg('Failed to start: ' + (err as Error).message);
-                  } finally {
-                    setRerunning(false);
-                  }
-                })}
+                onClick={requireJudge(() => setShowRunModal(true))}
               >
                 {rerunning ? 'Starting…' : 'Rerun analysis'}
               </button>

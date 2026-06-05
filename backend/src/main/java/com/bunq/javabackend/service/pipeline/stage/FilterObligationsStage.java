@@ -46,8 +46,9 @@ public class FilterObligationsStage implements Stage {
     @Override
     public CompletableFuture<Void> execute(PipelineContext ctx) {
         String brief = ctx.getBriefText();
-        if (brief == null || brief.isBlank()) {
-            log.info("FilterObligationsStage: no brief for session {}; skipping", ctx.getSessionId());
+        if (!ctx.isApplyRelevanceFilter() || brief == null || brief.isBlank()) {
+            log.info("FilterObligationsStage: skipping for session {} (applyRelevanceFilter={}, hasBrief={})",
+                    ctx.getSessionId(), ctx.isApplyRelevanceFilter(), brief != null && !brief.isBlank());
             return CompletableFuture.completedFuture(null);
         }
 
