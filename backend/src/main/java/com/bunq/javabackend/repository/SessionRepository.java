@@ -1,6 +1,7 @@
 package com.bunq.javabackend.repository;
 
 import com.bunq.javabackend.model.session.Session;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
+@Slf4j
 @Repository
 public class SessionRepository {
 
@@ -158,17 +160,72 @@ public class SessionRepository {
         }
     }
 
+    /**
+     * Conditionally removes documentId from a session's document_ids list.
+     * Uses a read-modify-conditional-write: reads current list, computes the index,
+     * then issues a REMOVE with a condition that the list still matches.
+     * No-ops if the document is not present. Returns true if removed, false if already absent.
+     */
+    public boolean detachDocument(String sessionId, String documentId) {
+        Session session = findById(sessionId).orElse(null);
+        if (session == null) return false;
+        List<String> ids = session.getDocumentIds();
+        if (ids == null || !ids.contains(documentId)) return false;
+
+        int idx = ids.indexOf(documentId);
+        List<AttributeValue> expectedList = ids.stream()
+                .map(AttributeValue::fromS)
+                .toList();
+        try {
+            dynamoDbClient.updateItem(UpdateItemRequest.builder()
+                    .tableName(tableName)
+                    .key(Map.of("id", AttributeValue.fromS(sessionId)))
+                    .updateExpression("REMOVE document_ids[" + idx + "] SET updatedAt = :ts")
+                    .conditionExpression("document_ids = :expected")
+                    .expressionAttributeValues(Map.of(
+                            ":expected", AttributeValue.fromL(expectedList),
+                            ":ts", AttributeValue.fromS(Instant.now().toString())
+                    ))
+                    .build());
+            return true;
+        } catch (ConditionalCheckFailedException ex) {
+            // List changed concurrently — re-read and retry once
+            Session fresh = findById(sessionId).orElse(null);
+            if (fresh == null) return false;
+            List<String> freshIds = fresh.getDocumentIds();
+            if (freshIds == null || !freshIds.contains(documentId)) return false;
+            int freshIdx = freshIds.indexOf(documentId);
+            List<AttributeValue> freshExpected = freshIds.stream()
+                    .map(AttributeValue::fromS)
+                    .toList();
+            try {
+                dynamoDbClient.updateItem(UpdateItemRequest.builder()
+                        .tableName(tableName)
+                        .key(Map.of("id", AttributeValue.fromS(sessionId)))
+                        .updateExpression("REMOVE document_ids[" + freshIdx + "] SET updatedAt = :ts")
+                        .conditionExpression("document_ids = :expected")
+                        .expressionAttributeValues(Map.of(
+                                ":expected", AttributeValue.fromL(freshExpected),
+                                ":ts", AttributeValue.fromS(Instant.now().toString())
+                        ))
+                        .build());
+            } catch (ConditionalCheckFailedException ex2) {
+                log.debug("detachDocument retry lost to concurrent writer for session={} doc={}", sessionId, documentId);
+            }
+            return true;
+        }
+    }
+
     public void detachDocumentFromAll(String documentId) {
         for (Session session : scanAll()) {
             List<String> documentIds = session.getDocumentIds();
             if (documentIds == null || !documentIds.contains(documentId)) {
                 continue;
             }
-            List<String> updated = new java.util.ArrayList<>(documentIds);
-            if (updated.remove(documentId)) {
-                session.setDocumentIds(updated);
-                session.setUpdatedAt(Instant.now().toString());
-                save(session);
+            try {
+                detachDocument(session.getId(), documentId);
+            } catch (Exception ex) {
+                log.warn("Failed to detach document {} from session {}: {}", documentId, session.getId(), ex.getMessage());
             }
         }
     }

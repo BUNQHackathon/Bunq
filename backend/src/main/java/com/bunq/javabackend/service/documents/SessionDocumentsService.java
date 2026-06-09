@@ -50,17 +50,8 @@ public class SessionDocumentsService {
     }
 
     public void detach(String sessionId, String documentId) {
-        Session session = sessionRepository.findById(sessionId)
+        sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new SessionNotFoundException(sessionId));
-
-        List<String> documentIds = session.getDocumentIds() != null
-                ? new ArrayList<>(session.getDocumentIds())
-                : new ArrayList<>();
-
-        if (documentIds.remove(documentId)) {
-            session.setDocumentIds(documentIds);
-            session.setUpdatedAt(Instant.now().toString());
-            sessionRepository.save(session);
-        }
+        sessionRepository.detachDocument(sessionId, documentId);
     }
 }

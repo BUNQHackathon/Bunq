@@ -90,6 +90,11 @@ public class DocumentService {
             // Object existed before checksum support — no presign path
             throw new IllegalStateException("No SHA-256 checksum on object: " + req.getIncomingKey());
         }
+        if (checksumBase64.contains("-")) {
+            throw new IllegalStateException(
+                "Object " + req.getIncomingKey() + " has a composite multipart checksum and cannot be " +
+                "deduplicated. Please re-upload the file via the app using a single-part presigned PUT.");
+        }
 
         byte[] hashBytes = Base64.getDecoder().decode(checksumBase64);
         String hash = HexFormat.of().formatHex(hashBytes);
@@ -103,11 +108,16 @@ public class DocumentService {
                     .bucket(uploadsBucket)
                     .key(req.getIncomingKey())
                     .build());
+            Document prev = existing.get();
             Document updated = documentRepository
                     .updateUploadMetadata(hash, kind, jurisdictions, req.getDisplayName(), now)
-                    .orElse(existing.get());
+                    .orElse(prev);
             docJurisdictionRepository.putAll(hash, jurisdictions, updated);
-            knowledgeBaseIngestionService.publish(updated, existing.get().getKind());
+            boolean kindChanged = !Objects.equals(prev.getKind(), kind);
+            boolean jurisdictionsChanged = !Objects.equals(prev.getJurisdictions(), jurisdictions);
+            if (kindChanged || jurisdictionsChanged) {
+                knowledgeBaseIngestionService.publish(updated, prev.getKind());
+            }
             return DocumentFinalizeResponse.builder()
                     .document(toResponseDTO(updated))
                     .deduped(true)
@@ -154,6 +164,7 @@ public class DocumentService {
         } catch (ConditionalCheckFailedException e) {
             // Race: another request saved it first — treat as dedup
             Document existing2 = documentRepository.findById(hash).orElse(doc);
+            if (existing2 == null) existing2 = doc;
             if (existing2 != null && !Objects.equals(existing2.getS3Key(), destKey)) {
                 // Winner used a different extension — clean up our orphan copy
                 try {
@@ -169,11 +180,26 @@ public class DocumentService {
                     .updateUploadMetadata(hash, kind, jurisdictions, req.getDisplayName(), now)
                     .orElse(existing2);
             docJurisdictionRepository.putAll(hash, jurisdictions, updated);
-            knowledgeBaseIngestionService.publish(updated, existing2.getKind());
+            boolean kindChanged = !Objects.equals(existing2.getKind(), kind);
+            boolean jurisdictionsChanged = !Objects.equals(existing2.getJurisdictions(), jurisdictions);
+            if (kindChanged || jurisdictionsChanged) {
+                knowledgeBaseIngestionService.publish(updated, existing2.getKind());
+            }
             return DocumentFinalizeResponse.builder()
                     .document(toResponseDTO(updated))
                     .deduped(true)
                     .build();
+        } catch (Exception e) {
+            // Non-conditional failure after copy — delete the orphaned destKey before rethrowing
+            try {
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(uploadsBucket)
+                        .key(destKey)
+                        .build());
+            } catch (Exception ex) {
+                log.warn("Failed to delete stranded S3 object {} after save failure: {}", destKey, ex.getMessage());
+            }
+            throw e;
         }
 
         docJurisdictionRepository.putAll(hash, doc.getJurisdictions(), doc);

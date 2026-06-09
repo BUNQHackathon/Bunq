@@ -52,8 +52,9 @@ public class KbRegulationService {
                 String title = humanize(stripExt(key));
                 String ext = extensionOf(key);
                 String cat = guessCategory(key);
+                String jurisdiction = guessJurisdiction(key);
                 String updated = obj.lastModified() != null ? obj.lastModified().toString() : "";
-                return new KbRegulationSummaryDTO(id, key, title, cat, "EU", ext, obj.size(), updated);
+                return new KbRegulationSummaryDTO(id, key, title, cat, jurisdiction, ext, obj.size(), updated);
             })
             .toList();
     }
@@ -72,7 +73,7 @@ public class KbRegulationService {
         String downloadUrl = presignGetUrl(key);
         List<KbSectionDTO> sections = retrieveDocSections(title, key);
 
-        return new KbRegulationDetailDTO(id, title, cat, "EU", updated, downloadUrl, sections);
+        return new KbRegulationDetailDTO(id, title, cat, guessJurisdiction(key), updated, downloadUrl, sections);
     }
 
     private String presignGetUrl(String key) {
@@ -137,6 +138,18 @@ public class KbRegulationService {
             return "GDPR Dataset";
         }
         return s.replace('_', ' ').replace('-', ' ');
+    }
+
+    private static String guessJurisdiction(String key) {
+        String lower = key.toLowerCase();
+        if (lower.contains("gdpr") || lower.contains("celex") || lower.contains("mica")
+                || lower.contains("dnb") || lower.contains("emir") || lower.contains("mifid")
+                || lower.contains("psd") || lower.contains("dora") || lower.contains("aml5")
+                || lower.contains("aml6")) return "EU";
+        if (lower.contains("fca") || lower.contains("uk_")) return "UK";
+        if (lower.contains("finma") || lower.contains("_ch_")) return "CH";
+        if (lower.contains("sec_") || lower.contains("cfpb") || lower.contains("_us_")) return "US";
+        return "EU";
     }
 
     private static String guessCategory(String key) {

@@ -32,7 +32,8 @@ public final class SystemPrompts {
 
   public static final String EXTRACT_CONTROLS = "You are a compliance controls expert. Extract all internal controls from the provided policy text. "
       + "Each control must describe a concrete process, technical safeguard, or governance measure. "
-      + "Identify the control type (preventive, detective, corrective, directive) and category.\n"
+      + "Set control_type to one of: technical, organizational, procedural. "
+      + "Set category to one of: preventive, detective, corrective.\n"
       + "\n"
       + "Use ONLY the provided text. Never rely on prior knowledge of any law/policy. Never invent article numbers, thresholds, names, or duties not present in the text. "
       + "If the text contains no concrete testable item, return an empty list — do NOT fabricate borderline items.\n"
@@ -68,7 +69,14 @@ public final class SystemPrompts {
       + "You are given a prior <analysis>. Convert it into structured matches. "
       + "Scores (0-100) must follow the analysis; do not introduce controls or claims absent from it. "
       + "Score each match 0-100 based on semantic alignment. "
-      + "Classify the mapping type: direct, partial, indirect, or none.";
+      + "Classify the mapping type: direct, partial, or requires_multiple.\n"
+      + "\n"
+      + "### Score calibration anchors\n"
+      + "0-20: unrelated — control addresses a completely different risk or domain.\n"
+      + "21-39: tangentially related — overlapping domain but does not address the obligation's specific requirement.\n"
+      + "40-60: partially addresses — covers the obligation's intent with material gaps or only covers a sub-requirement.\n"
+      + "61-79: substantially addresses — meaningfully covers the obligation but leaves minor gaps or requires supplemental controls.\n"
+      + "80-100: directly and fully addresses — control explicitly and completely satisfies the obligation as written.";
 
   public static final String SCORE_GAP = "You are a risk and compliance analyst. For the given obligation with no or insufficient control coverage, "
       + "score the compliance gap across four legacy dimensions: regulatory urgency (0-1), penalty severity (0-1), "

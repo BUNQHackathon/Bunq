@@ -226,7 +226,7 @@ resource "aws_ecs_express_gateway_service" "sidecar" {
     }
     environment {
       name  = "DYNAMODB_SANCTIONS_ENTITIES_TABLE"
-      value = aws_dynamodb_table.this["sanctions-entities"].name
+      value = aws_dynamodb_table.sanctions_entities.name
     }
     environment {
       name  = "DYNAMODB_AUDIT_LOG_TABLE"

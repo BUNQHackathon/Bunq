@@ -55,7 +55,8 @@ class LaunchServiceRunJurisdictionTest {
                 launchRepository, jurisdictionRunRepository, gapRepository,
                 obligationRepository, controlRepository, sessionService, sessionRepository,
                 pipelineOrchestrator, autoDocService, bedrockService,
-                new ObjectMapper(), evidenceService);
+                new ObjectMapper(), evidenceService,
+                java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────

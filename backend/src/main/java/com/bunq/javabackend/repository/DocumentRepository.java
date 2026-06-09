@@ -140,4 +140,57 @@ public class DocumentRepository {
             return Optional.empty();
         }
     }
+
+    public void updateExtractionResult(String id, String extractionS3Key, Integer pageCount, Instant extractedAt) {
+        Document update = Document.builder()
+                .id(id)
+                .extractionS3Key(extractionS3Key)
+                .pageCount(pageCount)
+                .extractedAt(extractedAt)
+                .build();
+        try {
+            table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
+                    .item(update)
+                    .ignoreNulls(true)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)")
+                            .build())
+                    .build());
+        } catch (ConditionalCheckFailedException ignored) {
+        }
+    }
+
+    public void markObligationsExtracted(String id) {
+        Document update = Document.builder()
+                .id(id)
+                .obligationsExtracted(true)
+                .build();
+        try {
+            table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
+                    .item(update)
+                    .ignoreNulls(true)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)")
+                            .build())
+                    .build());
+        } catch (ConditionalCheckFailedException ignored) {
+        }
+    }
+
+    public void markControlsExtracted(String id) {
+        Document update = Document.builder()
+                .id(id)
+                .controlsExtracted(true)
+                .build();
+        try {
+            table.updateItem(UpdateItemEnhancedRequest.builder(Document.class)
+                    .item(update)
+                    .ignoreNulls(true)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)")
+                            .build())
+                    .build());
+        } catch (ConditionalCheckFailedException ignored) {
+        }
+    }
 }

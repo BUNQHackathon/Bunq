@@ -33,6 +33,7 @@ import com.bunq.javabackend.service.AutoDocService;
 import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.compliance.EvidenceService;
 import com.bunq.javabackend.service.pipeline.PipelineOrchestrator;
+import com.bunq.javabackend.service.pipeline.stage.FilterObligationsStage;
 import com.bunq.javabackend.service.session.SessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.bunq.javabackend.helper.mapper.LaunchMapper.toDto;
 import static com.bunq.javabackend.helper.mapper.LaunchMapper.toSummary;
@@ -68,6 +73,7 @@ public class LaunchService {
     private final BedrockService bedrockService;
     private final ObjectMapper objectMapper;
     private final EvidenceService evidenceService;
+    private final ExecutorService asyncExecutor;
 
     public Launch createLaunch(CreateLaunchRequestDTO req) {
         String now = Instant.now().toString();
@@ -90,6 +96,16 @@ public class LaunchService {
                     provisionJurisdiction(launch.getId(), code);
                 } catch (Exception e) {
                     log.warn("Failed to add jurisdiction {} for launch {}: {}", code, launch.getId(), e.getMessage());
+                    JurisdictionRun failedRun = JurisdictionRun.builder()
+                            .launchId(launch.getId())
+                            .jurisdictionCode(code)
+                            .status(RunStatus.FAILED)
+                            .lastError(e.getMessage())
+                            .gapsCount(0)
+                            .sanctionsHits(0)
+                            .lastRunAt(now)
+                            .build();
+                    jurisdictionRunRepository.save(failedRun);
                 }
             }
         }
@@ -167,117 +183,127 @@ public class LaunchService {
     }
 
     private List<JurisdictionRunResponseDTO> mapRunsWithSummary(List<JurisdictionRun> runs) {
-        List<JurisdictionRunResponseDTO> result = new ArrayList<>();
-        for (JurisdictionRun run : runs) {
-            boolean proofPackAvailable = run.getProofPackS3Key() != null;
+        List<CompletableFuture<JurisdictionRunResponseDTO>> futures = runs.stream()
+                .map(run -> CompletableFuture.supplyAsync(() -> mapSingleRun(run), asyncExecutor))
+                .toList();
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .toList();
+    }
 
-            Session session = run.getCurrentSessionId() != null
-                    ? sessionRepository.findById(run.getCurrentSessionId()).orElse(null)
-                    : null;
+    private JurisdictionRunResponseDTO mapSingleRun(JurisdictionRun run) {
+        boolean proofPackAvailable = run.getProofPackS3Key() != null;
 
-            Integer regulationsCovered = session != null
-                    ? (session.getDocumentIds() == null ? 0 : session.getDocumentIds().size())
-                    : 0;
+        Session session = run.getCurrentSessionId() != null
+                ? sessionRepository.findById(run.getCurrentSessionId()).orElse(null)
+                : null;
 
-            List<Obligation> sessionObligations =
-                    run.getCurrentSessionId() != null
-                            ? obligationRepository.findBySessionId(run.getCurrentSessionId())
-                            : List.of();
-            Integer obligationsCount = sessionObligations.size();
-            Integer controlsCount = run.getCurrentSessionId() != null
-                    ? controlRepository.findBySessionId(run.getCurrentSessionId()).size()
-                    : 0;
+        Integer regulationsCovered = session != null
+                ? (session.getDocumentIds() == null ? 0 : session.getDocumentIds().size())
+                : 0;
 
-            // obligationsExtracted = total obligations for session
-            Integer obligationsExtracted = obligationsCount > 0 ? obligationsCount : null;
-            // obligationsRelevant = count with relevance_score scored (non-null score means filter ran)
-            boolean filterRan = sessionObligations.stream().anyMatch(o -> o.getRelevanceScore() != null);
-            Integer obligationsRelevant = filterRan
-                    ? (int) sessionObligations.stream()
-                            .filter(o -> o.getRelevanceScore() == null || o.getRelevanceScore() >= 0.3)
-                            .count()
-                    : null;
+        List<Obligation> sessionObligations =
+                run.getCurrentSessionId() != null
+                        ? obligationRepository.findBySessionId(run.getCurrentSessionId())
+                        : List.of();
 
-            String verdict;
-            String summary;
-            List<String> requiredChanges;
-            List<String> blockers;
-            List<KeyGapDTO> keyGaps;
+        // Build obligation map once; used for per-gap source lookups below (no per-gap findById)
+        Map<String, Obligation> obligationById = sessionObligations.stream()
+                .filter(o -> o.getId() != null)
+                .collect(Collectors.toMap(Obligation::getId, Function.identity(), (a, b) -> a));
 
-            if (regulationsCovered == 0) {
-                verdict = "UNKNOWN";
-                summary = "No regulations found for this jurisdiction";
+        Integer obligationsCount = sessionObligations.size();
+        Integer controlsCount = run.getCurrentSessionId() != null
+                ? controlRepository.findBySessionId(run.getCurrentSessionId()).size()
+                : 0;
+
+        Integer obligationsExtracted = obligationsCount > 0 ? obligationsCount : null;
+        boolean filterRan = sessionObligations.stream().anyMatch(o -> o.getRelevanceScore() != null);
+        Integer obligationsRelevant = filterRan
+                ? (int) sessionObligations.stream()
+                        .filter(o -> o.getRelevanceScore() == null
+                                || o.getRelevanceScore() >= FilterObligationsStage.RELEVANCE_THRESHOLD)
+                        .count()
+                : null;
+
+        String verdict;
+        String summary;
+        List<String> requiredChanges;
+        List<String> blockers;
+        List<KeyGapDTO> keyGaps;
+
+        if (regulationsCovered == 0) {
+            verdict = "UNKNOWN";
+            summary = "No regulations found for this jurisdiction";
+            requiredChanges = List.of();
+            blockers = List.of();
+            keyGaps = List.of();
+        } else {
+            verdict = run.getVerdict();
+            String persistedSummary = session != null && session.getExecutiveSummary() != null
+                    && !session.getExecutiveSummary().isBlank() ? session.getExecutiveSummary() : null;
+            if ("GREEN".equals(verdict)) {
+                summary = persistedSummary != null ? persistedSummary : "Can ship as-is";
                 requiredChanges = List.of();
                 blockers = List.of();
                 keyGaps = List.of();
-            } else {
-                verdict = run.getVerdict();
-                String persistedSummary = session != null && session.getExecutiveSummary() != null
-                        && !session.getExecutiveSummary().isBlank() ? session.getExecutiveSummary() : null;
-                if ("GREEN".equals(verdict)) {
-                    summary = persistedSummary != null ? persistedSummary : "Can ship as-is";
-                    requiredChanges = List.of();
-                    blockers = List.of();
-                    keyGaps = List.of();
-                } else if ("AMBER".equals(verdict)) {
-                    summary = persistedSummary != null ? persistedSummary : "Requires changes";
-                    List<Gap> gaps = run.getCurrentSessionId() != null
-                            ? gapRepository.findBySessionId(run.getCurrentSessionId())
-                            : List.of();
-                    LinkedHashMap<String, KeyGapDTO> amberSeen = new LinkedHashMap<>();
-                    for (Gap g : gaps) {
-                        if (g.getRecommendedActions() == null) continue;
-                        ObligationSourceDTO gapSource = sourceFor(g.getObligationId());
-                        for (RecommendedAction ra : g.getRecommendedActions()) {
-                            if (ra.getAction() == null || ra.getAction().isBlank()) continue;
-                            String headline = trimToHeadline(ra.getAction());
-                            if (!amberSeen.containsKey(headline)) {
-                                amberSeen.put(headline, KeyGapDTO.builder()
-                                        .text(headline)
-                                        .gapId(g.getId())
-                                        .obligationId(g.getObligationId())
-                                        .source(gapSource)
-                                        .build());
-                            }
-                            if (amberSeen.size() == 10) break;
+            } else if ("AMBER".equals(verdict)) {
+                summary = persistedSummary != null ? persistedSummary : "Requires changes";
+                List<Gap> gaps = run.getCurrentSessionId() != null
+                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                        : List.of();
+                LinkedHashMap<String, KeyGapDTO> amberSeen = new LinkedHashMap<>();
+                for (Gap g : gaps) {
+                    if (g.getRecommendedActions() == null) continue;
+                    ObligationSourceDTO gapSource = sourceFromMap(g.getObligationId(), obligationById);
+                    for (RecommendedAction ra : g.getRecommendedActions()) {
+                        if (ra.getAction() == null || ra.getAction().isBlank()) continue;
+                        String headline = trimToHeadline(ra.getAction());
+                        if (!amberSeen.containsKey(headline)) {
+                            amberSeen.put(headline, KeyGapDTO.builder()
+                                    .text(headline)
+                                    .gapId(g.getId())
+                                    .obligationId(g.getObligationId())
+                                    .source(gapSource)
+                                    .build());
                         }
                         if (amberSeen.size() == 10) break;
                     }
-                    keyGaps = new ArrayList<>(amberSeen.values());
-                    requiredChanges = keyGaps.stream().map(KeyGapDTO::getText).toList();
-                    blockers = List.of();
-                } else if ("RED".equals(verdict)) {
-                    summary = persistedSummary != null ? persistedSummary : "Blocked";
-                    List<Gap> gaps = run.getCurrentSessionId() != null
-                            ? gapRepository.findBySessionId(run.getCurrentSessionId())
-                            : List.of();
-                    keyGaps = gaps.stream()
-                            .filter(g -> g.getResidualRisk() != null)
-                            .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
-                            .limit(3)
-                            .filter(g -> g.getNarrative() != null)
-                            .map(g -> KeyGapDTO.builder()
-                                    .text(trimToHeadline(g.getNarrative()))
-                                    .gapId(g.getId())
-                                    .obligationId(g.getObligationId())
-                                    .source(sourceFor(g.getObligationId()))
-                                    .build())
-                            .toList();
-                    blockers = keyGaps.stream().map(KeyGapDTO::getText).toList();
-                    requiredChanges = List.of();
-                } else {
-                    summary = "Analysis in progress";
-                    requiredChanges = List.of();
-                    blockers = List.of();
-                    keyGaps = List.of();
+                    if (amberSeen.size() == 10) break;
                 }
+                keyGaps = new ArrayList<>(amberSeen.values());
+                requiredChanges = keyGaps.stream().map(KeyGapDTO::getText).toList();
+                blockers = List.of();
+            } else if ("RED".equals(verdict)) {
+                summary = persistedSummary != null ? persistedSummary : "Blocked";
+                List<Gap> gaps = run.getCurrentSessionId() != null
+                        ? gapRepository.findBySessionId(run.getCurrentSessionId())
+                        : List.of();
+                keyGaps = gaps.stream()
+                        .filter(g -> g.getResidualRisk() != null)
+                        .sorted(Comparator.comparingDouble(Gap::getResidualRisk).reversed())
+                        .limit(3)
+                        .filter(g -> g.getNarrative() != null)
+                        .map(g -> KeyGapDTO.builder()
+                                .text(trimToHeadline(g.getNarrative()))
+                                .gapId(g.getId())
+                                .obligationId(g.getObligationId())
+                                .source(sourceFromMap(g.getObligationId(), obligationById))
+                                .build())
+                        .toList();
+                blockers = keyGaps.stream().map(KeyGapDTO::getText).toList();
+                requiredChanges = List.of();
+            } else {
+                summary = "Analysis in progress";
+                requiredChanges = List.of();
+                blockers = List.of();
+                keyGaps = List.of();
             }
-
-            result.add(toDto(run, verdict, summary, requiredChanges, blockers, keyGaps, proofPackAvailable,
-                    regulationsCovered, obligationsCount, controlsCount,
-                    obligationsExtracted, obligationsRelevant));
         }
-        return result;
+
+        return toDto(run, verdict, summary, requiredChanges, blockers, keyGaps, proofPackAvailable,
+                regulationsCovered, obligationsCount, controlsCount,
+                obligationsExtracted, obligationsRelevant);
     }
 
     private String trimToHeadline(String text) {
@@ -288,11 +314,10 @@ public class LaunchService {
         return text.substring(0, 140) + "…";
     }
 
-    private ObligationSourceDTO sourceFor(String obligationId) {
+    private ObligationSourceDTO sourceFromMap(String obligationId, Map<String, Obligation> obligationById) {
         if (obligationId == null || obligationId.isBlank()) return null;
-        return obligationRepository.findById(obligationId)
-                .map(obl -> obl.getSource() == null ? null : ObligationMapper.toSourceDto(obl.getSource()))
-                .orElse(null);
+        Obligation obl = obligationById.get(obligationId);
+        return obl == null || obl.getSource() == null ? null : ObligationMapper.toSourceDto(obl.getSource());
     }
 
     private String displayedVerdict(JurisdictionRun run) {

@@ -8,6 +8,8 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +24,7 @@ public class ChatMessage {
     @Getter(onMethod_ = @DynamoDbPartitionKey)
     private String id;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("chatId"))
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "chat_id-timestamp-index"), @DynamoDbAttribute("chatId")})
     private String chatId;
 
     @Getter(onMethod_ = @DynamoDbAttribute("sessionId"))
@@ -37,7 +39,7 @@ public class ChatMessage {
     @Getter(onMethod_ = @DynamoDbAttribute("citations"))
     private List<Citation> citations;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("timestamp"))
+    @Getter(onMethod_ = {@DynamoDbSecondarySortKey(indexNames = "chat_id-timestamp-index"), @DynamoDbAttribute("timestamp")})
     private Instant timestamp;
 
     @Getter(onMethod_ = @DynamoDbAttribute("tokenUsage"))

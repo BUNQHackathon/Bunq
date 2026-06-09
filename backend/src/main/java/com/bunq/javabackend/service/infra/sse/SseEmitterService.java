@@ -58,6 +58,7 @@ public class SseEmitterService {
         });
 
         emitter.onTimeout(() -> {
+            removeCallback.run();
             emitter.complete();
             log.debug("SSE connection timed out for session {}", sessionId);
         });

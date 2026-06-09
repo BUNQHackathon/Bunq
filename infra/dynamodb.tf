@@ -16,7 +16,7 @@ resource "aws_dynamodb_table" "session_costs" {
 }
 
 resource "aws_dynamodb_table" "this" {
-  for_each     = toset([for t in local.dynamodb_tables : t if !contains(["audit-log", "obligations", "controls", "mappings", "gaps", "evidence", "sanctions-hits"], t)])
+  for_each     = toset([for t in local.dynamodb_tables : t if !contains(["audit-log", "obligations", "controls", "mappings", "gaps", "evidence", "sanctions-hits", "sanctions-entities", "chat-messages"], t)])
   name         = "${local.name_prefix}-${each.value}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
@@ -305,6 +305,66 @@ resource "aws_dynamodb_table" "sessions" {
     name            = "launch-sessions-index"
     hash_key        = "launch_id"
     range_key       = "createdAt"
+    projection_type = "ALL"
+  }
+}
+
+moved {
+  from = aws_dynamodb_table.this["sanctions-entities"]
+  to   = aws_dynamodb_table.sanctions_entities
+}
+
+resource "aws_dynamodb_table" "sanctions_entities" {
+  name         = "${local.name_prefix}-sanctions-entities"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "entity_name_normalized"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "entity-name-normalized-index"
+    hash_key        = "entity_name_normalized"
+    projection_type = "ALL"
+  }
+}
+
+moved {
+  from = aws_dynamodb_table.this["chat-messages"]
+  to   = aws_dynamodb_table.chat_messages
+}
+
+resource "aws_dynamodb_table" "chat_messages" {
+  name         = "${local.name_prefix}-chat-messages"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "chatId"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "chat_id-timestamp-index"
+    hash_key        = "chatId"
+    range_key       = "timestamp"
     projection_type = "ALL"
   }
 }

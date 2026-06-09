@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.transcribe.TranscribeClient;
@@ -91,17 +92,23 @@ public class TranscribeAsyncService {
     }
 
     private String downloadTranscript(String bucket, String outputKey) {
+        String transcript;
         try (ResponseInputStream<GetObjectResponse> stream = s3Client.getObject(
                 GetObjectRequest.builder().bucket(bucket).key(outputKey).build())) {
             JsonNode root = objectMapper.readTree(stream);
             JsonNode transcripts = root.path("results").path("transcripts");
-            if (transcripts.isArray() && !transcripts.isEmpty()) {
-                return transcripts.get(0).path("transcript").asText("");
-            }
-            return "";
+            transcript = (transcripts.isArray() && !transcripts.isEmpty())
+                    ? transcripts.get(0).path("transcript").asText("")
+                    : "";
         } catch (IOException e) {
             throw new RuntimeException("Failed to parse Transcribe result from s3://" + bucket + "/" + outputKey, e);
         }
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(outputKey).build());
+        } catch (Exception e) {
+            log.warn("Failed to delete Transcribe result s3://{}/{}: {}", bucket, outputKey, e.getMessage());
+        }
+        return transcript;
     }
 
     private java.util.Optional<MediaFormat> inferMediaFormat(String s3Key) {

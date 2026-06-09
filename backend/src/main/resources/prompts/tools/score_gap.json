@@ -53,6 +53,6 @@
       "narrative": {"type": "string"},
       "escalation_required": {"type": "boolean"}
     },
-    "required": ["severity", "likelihood", "detectability", "blast_radius", "recoverability"]
+    "required": ["severity", "likelihood", "detectability", "blast_radius", "recoverability", "narrative", "escalation_required"]
   }
 }

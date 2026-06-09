@@ -1,7 +1,6 @@
 package com.bunq.javabackend.service.ai.bedrock;
 
 import com.bunq.javabackend.model.enums.BedrockModel;
-import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +12,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -28,8 +29,10 @@ public class ObligationControlMatcher {
                                     MatchableObligation obl, List<MatchableControl> candidates,
                                     BedrockModel model) {
         List<MatchResult> results = new ArrayList<>();
+        Set<String> candidateIds = candidates.stream().map(MatchableControl::id).collect(Collectors.toSet());
         try {
             // --- Phase 1: reasoning call (no tool) ---
+            // Fix 12: cached system block so the stable regulation prefix hits Bedrock prompt cache.
             String analysisText = "";
             try {
                 HashMap<String, Object> reasoningInput = new HashMap<>();
@@ -49,7 +52,11 @@ public class ObligationControlMatcher {
                 String phase1RequestJson = objectMapper.writeValueAsString(Map.of(
                         "anthropic_version", "bedrock-2023-05-31",
                         "max_tokens", 1024,
-                        "system", SystemPrompts.MATCH_REASONING,
+                        "system", List.of(Map.of(
+                                "type", "text",
+                                "text", SystemPrompts.MATCH_REASONING,
+                                "cache_control", Map.of("type", "ephemeral")
+                        )),
                         "messages", List.of(Map.of(
                                 "role", "user",
                                 "content", objectMapper.writeValueAsString(reasoningInput)
@@ -60,7 +67,8 @@ public class ObligationControlMatcher {
                         model.getModelId(), phase1RequestJson);
                 JsonNode content = phase1Response.path("content");
                 if (content.isArray() && !content.isEmpty()) {
-                    analysisText = content.get(0).path("text").asText("");
+                    String t = content.get(0).path("text").asString();
+                    if (t != null) analysisText = t;
                 }
             } catch (Exception e) {
                 log.warn("Phase-1 reasoning failed for obligation {}: {}", obl.id(), e.getMessage());
@@ -91,14 +99,21 @@ public class ObligationControlMatcher {
                     ToolDefinitions.MATCH_OBLIGATION_TO_CONTROLS_TOOL
             );
 
+            // Fix 3: filter hallucinated control IDs against the candidate list.
             JsonNode matchesNode = toolInput.isArray() ? toolInput : toolInput.path("matches");
             if (matchesNode.isArray()) {
                 for (JsonNode node : matchesNode) {
-                    String controlId = node.path("control_id").asText(null);
+                    String controlId = node.path("control_id").asString();
+                    if (controlId == null || !candidateIds.contains(controlId)) {
+                        log.warn("Dropping hallucinated control_id '{}' for obligation {} (not in candidates)",
+                                controlId, obl.id());
+                        continue;
+                    }
                     double confidence = node.path("match_score").asDouble(0.0);
-                    String reason = node.path("reason").asText(null);
-                    String mappingType = node.path("mapping_type").asText("partial");
-                    results.add(new MatchResult(controlId, confidence, reason, mappingType));
+                    String reason = node.path("reason").asString();
+                    String mappingType = node.path("mapping_type").asString();
+                    results.add(new MatchResult(controlId, confidence, reason,
+                            mappingType != null ? mappingType : "partial"));
                 }
             }
         } catch (Exception e) {
@@ -124,6 +139,7 @@ public class ObligationControlMatcher {
         if (obligations.isEmpty()) return Collections.emptyMap();
 
         // --- Phase 1: batch reasoning call (no tool) ---
+        // Fix 12: cached system block (byte-stable prefix).
         String analysisText = "";
         try {
             List<Map<String, Object>> oblItems = new ArrayList<>();
@@ -148,7 +164,11 @@ public class ObligationControlMatcher {
             String phase1RequestJson = objectMapper.writeValueAsString(Map.of(
                     "anthropic_version", "bedrock-2023-05-31",
                     "max_tokens", 2048,
-                    "system", SystemPrompts.MATCH_REASONING,
+                    "system", List.of(Map.of(
+                            "type", "text",
+                            "text", SystemPrompts.MATCH_REASONING,
+                            "cache_control", Map.of("type", "ephemeral")
+                    )),
                     "messages", List.of(Map.of(
                             "role", "user",
                             "content", objectMapper.writeValueAsString(Map.of("obligations", oblItems))
@@ -159,7 +179,8 @@ public class ObligationControlMatcher {
                     model.getModelId(), phase1RequestJson);
             JsonNode content = phase1Response.path("content");
             if (content.isArray() && !content.isEmpty()) {
-                analysisText = content.get(0).path("text").asText("");
+                String t = content.get(0).path("text").asString();
+                if (t != null) analysisText = t;
             }
         } catch (Exception e) {
             log.warn("Phase-1 batch reasoning failed (obligations={}): {}",
@@ -204,17 +225,27 @@ public class ObligationControlMatcher {
             JsonNode obligationsNode = toolInput.path("obligations");
             if (obligationsNode.isArray()) {
                 for (JsonNode oblNode : obligationsNode) {
-                    String obligationId = oblNode.path("obligation_id").asText(null);
+                    String obligationId = oblNode.path("obligation_id").asString();
                     if (obligationId == null) continue;
+                    // Fix 3: build candidate-ID set for this obligation to filter hallucinations.
+                    Set<String> candIds = candidatesByObligationId
+                            .getOrDefault(obligationId, List.of())
+                            .stream().map(MatchableControl::id).collect(Collectors.toSet());
                     List<MatchResult> matchResults = new ArrayList<>();
                     JsonNode matchesNode = oblNode.path("matches");
                     if (matchesNode.isArray()) {
                         for (JsonNode node : matchesNode) {
-                            String controlId = node.path("control_id").asText(null);
+                            String controlId = node.path("control_id").asString();
+                            if (controlId == null || !candIds.contains(controlId)) {
+                                log.warn("Dropping hallucinated control_id '{}' for obligation {} (not in candidates)",
+                                        controlId, obligationId);
+                                continue;
+                            }
                             double confidence = node.path("match_score").asDouble(0.0);
-                            String reason = node.path("reason").asText(null);
-                            String mappingType = node.path("mapping_type").asText("partial");
-                            matchResults.add(new MatchResult(controlId, confidence, reason, mappingType));
+                            String reason = node.path("reason").asString();
+                            String mappingType = node.path("mapping_type").asString();
+                            matchResults.add(new MatchResult(controlId, confidence, reason,
+                                    mappingType != null ? mappingType : "partial"));
                         }
                     }
                     results.put(obligationId, matchResults);

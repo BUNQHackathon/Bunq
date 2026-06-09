@@ -6,6 +6,7 @@ import com.bunq.javabackend.repository.JurisdictionRunRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -26,7 +27,8 @@ public class StaleRunSweeper {
         new Thread(this::sweep, "stale-run-sweeper").start();
     }
 
-    private void sweep() {
+    @Scheduled(fixedDelay = 300_000)
+    void sweep() {
         try {
             List<JurisdictionRun> all = repository.findAll();
             Instant threshold = Instant.now().minus(Duration.ofMinutes(30));
@@ -42,11 +44,21 @@ public class StaleRunSweeper {
                             run.getLaunchId(), run.getJurisdictionCode(), run.getLastRunAt());
                     continue;
                 }
-                run.setStatus(RunStatus.FAILED);
-                run.setFailedStage(STAGE_ABANDONED);
-                run.setLastError("Pipeline run abandoned (likely process restart)");
-                repository.save(run);
-                log.info("stale-run-sweeper: flipped {}/{}", run.getLaunchId(), run.getJurisdictionCode());
+                JurisdictionRun fresh = repository
+                        .findByLaunchIdAndCode(run.getLaunchId(), run.getJurisdictionCode())
+                        .orElse(null);
+                if (fresh == null || fresh.getStatus() != RunStatus.RUNNING) continue;
+                if (fresh.getLastRunAt() == null) continue;
+                try {
+                    if (Instant.parse(fresh.getLastRunAt()).isAfter(threshold)) continue;
+                } catch (Exception e) {
+                    continue;
+                }
+                fresh.setStatus(RunStatus.FAILED);
+                fresh.setFailedStage(STAGE_ABANDONED);
+                fresh.setLastError("Pipeline run abandoned (likely process restart)");
+                repository.save(fresh);
+                log.info("stale-run-sweeper: flipped {}/{}", fresh.getLaunchId(), fresh.getJurisdictionCode());
                 flipped++;
             }
 

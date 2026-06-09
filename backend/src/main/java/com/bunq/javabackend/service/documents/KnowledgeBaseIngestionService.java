@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.bedrockagent.BedrockAgentClient;
 import software.amazon.awssdk.services.bedrockagent.model.ConflictException;
+import software.amazon.awssdk.services.bedrockagent.model.GetIngestionJobRequest;
+import software.amazon.awssdk.services.bedrockagent.model.GetIngestionJobResponse;
+import software.amazon.awssdk.services.bedrockagent.model.IngestionJobStatus;
 import software.amazon.awssdk.services.bedrockagent.model.StartIngestionJobRequest;
 import software.amazon.awssdk.services.bedrockagent.model.StartIngestionJobResponse;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -160,9 +163,63 @@ public class KnowledgeBaseIngestionService {
                     .build());
             String ingestionJobId = response.ingestionJob() != null ? response.ingestionJob().ingestionJobId() : null;
             log.info("Started KB ingestion for document {} on {} job={}", documentId, entry.getKey(), ingestionJobId);
+            if (ingestionJobId != null) {
+                trackIngestionJob(entry, documentId, ingestionJobId);
+            }
         } catch (ConflictException ex) {
-            log.info("KB ingestion already running for {} while publishing document {}", entry.getKey(), documentId);
+            log.info("KB ingestion already running for {} while publishing document {} — retrying after delay", entry.getKey(), documentId);
+            Thread.ofVirtual().start(() -> {
+                try {
+                    Thread.sleep(30_000);
+                    StartIngestionJobResponse retry = bedrockAgentClient.startIngestionJob(StartIngestionJobRequest.builder()
+                            .knowledgeBaseId(entry.getKnowledgeBaseId())
+                            .dataSourceId(entry.getDataSourceId())
+                            .description("Document library sync retry for " + documentId)
+                            .build());
+                    String retryJobId = retry.ingestionJob() != null ? retry.ingestionJob().ingestionJobId() : null;
+                    log.info("Retry KB ingestion started for document {} on {} job={}", documentId, entry.getKey(), retryJobId);
+                    if (retryJobId != null) {
+                        trackIngestionJob(entry, documentId, retryJobId);
+                    }
+                } catch (Exception retryEx) {
+                    log.warn("KB ingestion retry failed for document {} on {}: {}", documentId, entry.getKey(), retryEx.getMessage());
+                }
+            });
         }
+    }
+
+    private void trackIngestionJob(KnowledgeBaseConfig.Entry entry, String documentId, String jobId) {
+        Thread.ofVirtual().start(() -> {
+            long pollIntervalMs = 15_000;
+            long deadlineMs = System.currentTimeMillis() + 10 * 60 * 1_000L;
+            while (System.currentTimeMillis() < deadlineMs) {
+                try {
+                    Thread.sleep(pollIntervalMs);
+                    GetIngestionJobResponse resp = bedrockAgentClient.getIngestionJob(
+                            GetIngestionJobRequest.builder()
+                                    .knowledgeBaseId(entry.getKnowledgeBaseId())
+                                    .dataSourceId(entry.getDataSourceId())
+                                    .ingestionJobId(jobId)
+                                    .build());
+                    IngestionJobStatus status = resp.ingestionJob() != null ? resp.ingestionJob().status() : null;
+                    if (status == IngestionJobStatus.COMPLETE) {
+                        log.info("KB ingestion COMPLETE for document {} on {} job={}", documentId, entry.getKey(), jobId);
+                        return;
+                    } else if (status == IngestionJobStatus.FAILED) {
+                        log.error("KB ingestion FAILED for document {} on {} job={} stats={}",
+                                documentId, entry.getKey(), jobId,
+                                resp.ingestionJob().statistics());
+                        return;
+                    }
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception ex) {
+                    log.warn("KB ingestion poll error for document {} on {} job={}: {}", documentId, entry.getKey(), jobId, ex.getMessage());
+                }
+            }
+            log.warn("KB ingestion tracking timed out for document {} on {} job={}", documentId, entry.getKey(), jobId);
+        });
     }
 
     private static String metadataKey(String documentKey) {

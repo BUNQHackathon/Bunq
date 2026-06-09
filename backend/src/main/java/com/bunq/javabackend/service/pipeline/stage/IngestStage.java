@@ -134,16 +134,13 @@ public class IngestStage implements Stage {
                                                 .build(),
                                         RequestBody.fromString(text, StandardCharsets.UTF_8));
                                 log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, extractionKey, text.length());
-                                doc.setExtractionS3Key(extractionKey);
-                                doc.setExtractedAt(now);
-                                doc.setPageCount(pageCount);
-                                documentRepository.save(doc);
+                                documentRepository.updateExtractionResult(finalDocId, extractionKey, pageCount, now);
                                 return text;
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }
                         }, stageWorkerExecutor);
-                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId, f));
                         return f;
                     });
                     extractedText = future.join();
@@ -163,12 +160,9 @@ public class IngestStage implements Stage {
                         CompletableFuture<String> f = CompletableFuture.supplyAsync(() -> {
                             try {
                                 log.info("Running Transcribe for document {} s3Key={}", finalDocId, doc.getS3Key());
-                                String text;
-                                try {
-                                    text = transcribeAsyncService.transcribeAudio(uploadsBucket, doc.getS3Key(), ctx);
-                                } catch (Exception e) {
-                                    log.warn("Transcribe failed for document {}: {}", finalDocId, e.getMessage());
-                                    text = "";
+                                String text = transcribeAsyncService.transcribeAudio(uploadsBucket, doc.getS3Key(), ctx);
+                                if (text == null || text.isBlank()) {
+                                    throw new RuntimeException("Transcribe returned blank text for document " + finalDocId);
                                 }
                                 String audioExtractionKey = "extractions/" + finalDocId + ".txt";
                                 s3Client.putObject(PutObjectRequest.builder()
@@ -178,19 +172,26 @@ public class IngestStage implements Stage {
                                                 .build(),
                                         RequestBody.fromString(text, StandardCharsets.UTF_8));
                                 log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, audioExtractionKey, text.length());
-                                doc.setExtractionS3Key(audioExtractionKey);
-                                doc.setExtractedAt(now);
-                                doc.setPageCount(null);
-                                documentRepository.save(doc);
+                                documentRepository.updateExtractionResult(finalDocId, audioExtractionKey, null, now);
                                 return text;
                             } catch (Exception e) {
                                 throw new CompletionException(e);
                             }
                         }, stageWorkerExecutor);
-                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                        f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId, f));
                         return f;
                     });
-                    extractedText = future.join();
+                    try {
+                        extractedText = future.join();
+                    } catch (Exception e) {
+                        if ("regulation".equalsIgnoreCase(doc.getKind())) {
+                            throw e;
+                        }
+                        log.warn("Transcribe failed for document {} (kind={}) — skipping: {}", docId, doc.getKind(), e.getMessage());
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "document.skipped",
+                                Map.of("documentId", docId, "reason", "transcribe_blank"));
+                        continue;
+                    }
 
                     Map<String, Object> payload = new LinkedHashMap<>();
                     payload.put("documentId", docId);
@@ -204,7 +205,13 @@ public class IngestStage implements Stage {
                     if (doc.getSizeBytes() != null && doc.getSizeBytes() > MAX_PLAIN_TEXT_BYTES) {
                         log.warn("Skipping S3 download for document {} — sizeBytes={} exceeds 5 MB limit",
                                 docId, doc.getSizeBytes());
-                        extractedText = "";
+                        ctx.getSseEmitterService().send(ctx.getSessionId(), "document.skipped",
+                                Map.of("documentId", docId, "reason", "file_exceeds_5mb_limit",
+                                        "sizeBytes", doc.getSizeBytes()));
+                        if ("regulation".equalsIgnoreCase(doc.getKind())) {
+                            throw new RuntimeException("Document " + docId + " exceeds 5 MB plain-text limit (" + doc.getSizeBytes() + " bytes)");
+                        }
+                        continue;
                     } else {
                         final String finalDocId = docId;
                         CompletableFuture<String> future = inFlightExtractions.computeIfAbsent(docId, id -> {
@@ -225,15 +232,13 @@ public class IngestStage implements Stage {
                                                     .build(),
                                             RequestBody.fromString(text, StandardCharsets.UTF_8));
                                     log.info("Stored extracted text in S3 for document {}: key={} size={} chars", finalDocId, plainExtractionKey, text.length());
-                                    doc.setExtractionS3Key(plainExtractionKey);
-                                    doc.setExtractedAt(now);
-                                    documentRepository.save(doc);
+                                    documentRepository.updateExtractionResult(finalDocId, plainExtractionKey, null, now);
                                     return text;
                                 } catch (Exception e) {
                                     throw new CompletionException(e);
                                 }
                             }, stageWorkerExecutor);
-                            f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId));
+                            f.whenComplete((r, ex) -> inFlightExtractions.remove(finalDocId, f));
                             return f;
                         });
                         extractedText = future.join();

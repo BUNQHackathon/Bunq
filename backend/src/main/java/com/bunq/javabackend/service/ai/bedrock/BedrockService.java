@@ -404,7 +404,6 @@ public class BedrockService {
                         ObjectNode toolObj = (ObjectNode) toolNode;
                         ObjectNode cacheControl = objectMapper.createObjectNode();
                         cacheControl.put("type", "ephemeral");
-                        cacheControl.put("ttl", "1h");
                         toolObj.set("cache_control", cacheControl);
                         return objectMapper.writeValueAsString(toolObj);
                     }
@@ -472,7 +471,7 @@ public class BedrockService {
                                     {
                                       "type": "text",
                                       "text": %s,
-                                      "cache_control": {"type": "ephemeral", "ttl": "1h"}
+                                      "cache_control": {"type": "ephemeral"}
                                     }
                                   ],
                                   "tools": [%s],
@@ -535,13 +534,18 @@ public class BedrockService {
                                     return input;
                                 }
                             }
-                            // No tool_use block found — log what came back instead
-                            log.warn("Bedrock returned no tool_use block (stop_reason={}, content_types={})",
-                                    root.path("stop_reason").asText("?"),
-                                    java.util.stream.StreamSupport.stream(content.spliterator(), false)
-                                            .map(b -> b.path("type").asText("?")).toList());
+                            // No tool_use block — malformed response; throwing prevents silent 0-risk defaults.
+                            String stopReason = root.path("stop_reason").asText("?");
+                            List<String> contentTypes = java.util.stream.StreamSupport
+                                    .stream(content.spliterator(), false)
+                                    .map(b -> b.path("type").asText("?")).toList();
+                            throw new IllegalStateException(
+                                    "Bedrock returned no tool_use block (stop_reason=" + stopReason
+                                    + ", content_types=" + contentTypes + ")");
                         }
-                        return root;
+                        throw new IllegalStateException(
+                                "Bedrock response has no content array (stop_reason="
+                                + root.path("stop_reason").asText("?") + ")");
                     } catch (ThrottlingException e) {
                         lastThrottle = e;
                         if (attempt < MAX_SAME_MODEL_RETRIES) {

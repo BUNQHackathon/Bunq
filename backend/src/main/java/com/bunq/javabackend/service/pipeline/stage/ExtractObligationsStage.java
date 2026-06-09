@@ -12,6 +12,7 @@ import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.repository.SessionRepository;
 import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.ai.bedrock.ToolDefinitions;
+import com.bunq.javabackend.service.pipeline.IngestedDocument;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
@@ -83,16 +84,24 @@ public class ExtractObligationsStage implements Stage {
                 return;
             }
 
-            List<String> documentIds = sessionRepository.findById(ctx.getSessionId())
-                    .map(Session::getDocumentIds)
-                    .orElse(List.of());
-
-            List<String> regulationDocIds = documentIds.stream()
-                    .filter(id -> {
-                        Optional<Document> doc = documentRepository.findById(id);
-                        return doc.isPresent() && "regulation".equals(doc.get().getKind());
-                    })
-                    .toList();
+            List<String> regulationDocIds;
+            List<IngestedDocument> ingested = ctx.getIngestedDocuments();
+            if (ingested != null && !ingested.isEmpty()) {
+                regulationDocIds = ingested.stream()
+                        .filter(d -> "regulation".equalsIgnoreCase(d.kind()))
+                        .map(IngestedDocument::documentId)
+                        .toList();
+            } else {
+                List<String> documentIds = sessionRepository.findById(ctx.getSessionId())
+                        .map(Session::getDocumentIds)
+                        .orElse(List.of());
+                regulationDocIds = documentIds.stream()
+                        .filter(id -> {
+                            Optional<Document> doc = documentRepository.findById(id);
+                            return doc.isPresent() && "regulation".equals(doc.get().getKind());
+                        })
+                        .toList();
+            }
 
             if (regulationDocIds.isEmpty()) {
                 // No regulation-kind documents attached — fall back to single Bedrock call on concatenated text
@@ -173,8 +182,7 @@ public class ExtractObligationsStage implements Stage {
         }
 
         if (doc != null) {
-            doc.setObligationsExtracted(true);
-            documentRepository.save(doc);
+            documentRepository.markObligationsExtracted(doc.getId());
         }
 
         log.info("ExtractObligationsStage: extracted {} obligations for session {} (document={}, chunks={})",
@@ -232,7 +240,10 @@ public class ExtractObligationsStage implements Stage {
                 Obligation obl = new Obligation();
                 String oblSubject = node.path("subject").asText(null);
                 String oblAction  = node.path("action").asText(null);
-                obl.setId(IdGenerator.obligationId(sessionId, documentId, oblSubject, oblAction));
+                String oblDeontic = node.path("deontic").asText(null);
+                JsonNode condNode0 = node.path("conditions");
+                String oblCondition0 = (condNode0.isArray() && condNode0.size() > 0) ? condNode0.get(0).asText(null) : null;
+                obl.setId(IdGenerator.obligationId(sessionId, documentId, oblSubject, oblAction, oblDeontic, oblCondition0));
                 obl.setSessionId(sessionId);
                 obl.setDocumentId(documentId);
                 obl.setDeontic(parseEnum(node.path("deontic").asText()));
@@ -285,8 +296,19 @@ public class ExtractObligationsStage implements Stage {
         if (snippet == null || snippet.isBlank() || chunkText == null) return false;
         String n = normalize(snippet);
         if (n.isEmpty()) return false;
-        String needle = n.length() > 30 ? n.substring(0, 30) : n;
-        return normalize(chunkText).contains(needle);
+        String haystack = normalize(chunkText);
+        String needle = n.length() > 100 ? n.substring(0, 100) : n;
+        if (haystack.contains(needle)) return true;
+        String[] tokens = n.split(" ");
+        long meaningful = 0;
+        long found = 0;
+        for (String token : tokens) {
+            if (token.length() > 3) {
+                meaningful++;
+                if (haystack.contains(token)) found++;
+            }
+        }
+        return meaningful > 0 && (double) found / meaningful >= 0.8;
     }
 
     private static String normalize(String s) {

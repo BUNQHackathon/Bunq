@@ -6,6 +6,7 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class SanctionsEntity {
     @Getter(onMethod_ = @DynamoDbAttribute("entity_name"))
     private String entityName;
 
-    @Getter(onMethod_ = @DynamoDbAttribute("entity_name_normalized"))
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "entity-name-normalized-index"), @DynamoDbAttribute("entity_name_normalized")})
     private String entityNameNormalized;
 
     @Getter(onMethod_ = @DynamoDbAttribute("aliases"))

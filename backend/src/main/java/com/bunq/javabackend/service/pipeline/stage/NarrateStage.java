@@ -1,9 +1,11 @@
 package com.bunq.javabackend.service.pipeline.stage;
 
 import com.bunq.javabackend.dto.response.ExecutiveSummaryDTO;
+import com.bunq.javabackend.model.enums.SanctionMatchStatus;
 import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.mapping.Mapping;
 import com.bunq.javabackend.model.obligation.ObligationSource;
+import com.bunq.javabackend.model.sanction.SanctionHit;
 import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.repository.GapRepository;
 import com.bunq.javabackend.repository.MappingRepository;
@@ -16,10 +18,10 @@ import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -28,10 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class NarrateStage implements Stage {
 
     private final BedrockService bedrockService;
@@ -42,6 +44,23 @@ public class NarrateStage implements Stage {
     private final ObjectMapper objectMapper;
     private final ReportService reportService;
     private final SessionRepository sessionRepository;
+    private final Executor pipelineExecutor;
+
+    public NarrateStage(BedrockService bedrockService, GapRepository gapRepository,
+                        MappingRepository mappingRepository, ObligationRepository obligationRepository,
+                        ControlRepository controlRepository, ObjectMapper objectMapper,
+                        ReportService reportService, SessionRepository sessionRepository,
+                        @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
+        this.bedrockService = bedrockService;
+        this.gapRepository = gapRepository;
+        this.mappingRepository = mappingRepository;
+        this.obligationRepository = obligationRepository;
+        this.controlRepository = controlRepository;
+        this.objectMapper = objectMapper;
+        this.reportService = reportService;
+        this.sessionRepository = sessionRepository;
+        this.pipelineExecutor = pipelineExecutor;
+    }
 
     @Override
     public PipelineStage stage() {
@@ -68,7 +87,8 @@ public class NarrateStage implements Stage {
                     ? controlRepository.findBySessionId(ctx.getSessionId()).size()
                     : ctx.getControls().size();
 
-            String overallSeverity = determineOverall(gaps);
+            List<SanctionHit> sanctionHits = ctx.getSanctionHits();
+            String overallSeverity = determineOverall(gaps, sanctionHits);
             List<String> topRisks = extractTopRisks(gaps);
             String narrative = generateNarrative(gaps, mappings, overallSeverity, ctx.getSessionId());
 
@@ -99,17 +119,31 @@ public class NarrateStage implements Stage {
             ctx.getSseEmitterService().send(ctx.getSessionId(), "narrative.completed", summary);
 
             log.info("NarrateStage: summary generated for session {} overall={}", ctx.getSessionId(), overallSeverity);
-        });
+        }, pipelineExecutor);
     }
 
-    private String determineOverall(List<Gap> gaps) {
-        if (gaps.isEmpty()) return "green";
-        long critical = gaps.stream()
-                .filter(g -> g.getEscalationRequired() != null && g.getEscalationRequired())
-                .count();
-        if (critical > 0) return "red";
-        if (gaps.size() > 3) return "amber";
-        return "amber";
+    private static final double AMBER_RESIDUAL_RISK_THRESHOLD = 0.4;
+    private static final int AMBER_GAP_COUNT_THRESHOLD = 3;
+
+    private String determineOverall(List<Gap> gaps, List<SanctionHit> sanctionHits) {
+        boolean hasEscalation = gaps.stream()
+                .anyMatch(g -> g.getEscalationRequired() != null && g.getEscalationRequired());
+        if (hasEscalation) return "red";
+
+        boolean hasRealSanctionHit = sanctionHits != null && sanctionHits.stream()
+                .anyMatch(h -> h.getMatchStatus() == SanctionMatchStatus.flagged);
+        if (hasRealSanctionHit) return "red";
+
+        boolean hasUnscreened = sanctionHits != null && sanctionHits.stream()
+                .anyMatch(h -> h.getMatchStatus() == SanctionMatchStatus.under_review);
+
+        if (gaps.isEmpty() && !hasUnscreened) return "green";
+
+        boolean hasHighRisk = gaps.stream()
+                .anyMatch(g -> g.getResidualRisk() != null && g.getResidualRisk() >= AMBER_RESIDUAL_RISK_THRESHOLD);
+        if (hasHighRisk || gaps.size() > AMBER_GAP_COUNT_THRESHOLD || hasUnscreened) return "amber";
+
+        return "green";
     }
 
     private List<String> extractTopRisks(List<Gap> gaps) {
@@ -148,7 +182,7 @@ public class NarrateStage implements Stage {
 
             String requestJson = objectMapper.writeValueAsString(Map.of(
                     "anthropic_version", "bedrock-2023-05-31",
-                    "max_tokens", 512,
+                    "max_tokens", 2048,
                     "system", SystemPrompts.NARRATE_EXEC_SUMMARY,
                     "messages", List.of(Map.of(
                             "role", "user",
@@ -158,6 +192,10 @@ public class NarrateStage implements Stage {
 
             JsonNode response = bedrockService.invokeModel(sessionId, "narrate",
                     BedrockModel.HAIKU.getModelId(), requestJson);
+            String stopReason = response.path("stop_reason").asText(null);
+            if ("max_tokens".equals(stopReason)) {
+                log.warn("NarrateStage: narrative truncated at max_tokens for session {}", sessionId);
+            }
             JsonNode content = response.path("content");
             if (content.isArray() && !content.isEmpty()) {
                 return content.get(0).path("text").asText("");

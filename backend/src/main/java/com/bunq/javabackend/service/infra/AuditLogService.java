@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -50,14 +51,19 @@ public class AuditLogService {
         try {
             for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
                 if (attempt > 0) {
-                    Thread.sleep(BACKOFF_MS[attempt - 1]);
+                    try {
+                        Thread.sleep(BACKOFF_MS[attempt - 1]);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Audit append interrupted for session " + sessionId, ie);
+                    }
                     log.debug("Retrying audit append for session {} (attempt {})", sessionId, attempt + 1);
                 }
 
                 Optional<AuditChainTail> currentTail = chainTailRepo.findBySessionId(sessionId);
                 String prevHash = currentTail.map(AuditChainTail::getTailHash).orElse("GENESIS");
 
-                String payloadJson = mapper.writeValueAsString(payload == null ? Map.of() : payload);
+                String payloadJson = mapper.writeValueAsString(toSortedMap(payload == null ? Map.of() : payload));
                 Instant now = Instant.now();
                 String id = UUID.randomUUID().toString();
 
@@ -135,7 +141,17 @@ public class AuditLogService {
             throw new RuntimeException("Failed to append audit entry after retries for session " + sessionId);
         } finally {
             lock.unlock();
+            if (!lock.hasQueuedThreads()) {
+                sessionLocks.remove(sessionId, lock);
+            }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static TreeMap<String, Object> toSortedMap(Map<String, Object> map) {
+        TreeMap<String, Object> sorted = new TreeMap<>();
+        map.forEach((k, v) -> sorted.put(k, v instanceof Map ? toSortedMap((Map<String, Object>) v) : v));
+        return sorted;
     }
 
     /**

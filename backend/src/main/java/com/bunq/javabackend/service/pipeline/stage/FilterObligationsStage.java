@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 @Service
 public class FilterObligationsStage implements Stage {
 
-    static final double RELEVANCE_THRESHOLD = 0.3;
+    public static final double RELEVANCE_THRESHOLD = 0.4;
 
     private final BedrockService bedrockService;
     private final ObligationRepository obligationRepository;
@@ -84,7 +84,7 @@ public class FilterObligationsStage implements Stage {
                 ctx.getSseEmitterService().send(ctx.getSessionId(), "obligations.filtered",
                         Map.of("total", total, "relevant", relevant.size(), "dropped", dropped));
             }
-        });
+        }, pipelineExecutor);
     }
 
     private void scoreObligation(Obligation obl, String brief, String sessionId) {

@@ -21,7 +21,7 @@
                   "mapping_type": {"type": "string", "enum": ["direct", "partial", "requires_multiple"]},
                   "reason": {"type": "string"}
                 },
-                "required": ["reasoning", "control_id", "match_score", "reason"]
+                "required": ["reasoning", "control_id", "match_score", "mapping_type", "reason"]
               }
             }
           },

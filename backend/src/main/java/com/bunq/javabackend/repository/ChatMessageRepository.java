@@ -4,16 +4,14 @@ import com.bunq.javabackend.model.chat.ChatMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
@@ -37,18 +35,15 @@ public class ChatMessageRepository {
     }
 
     public List<ChatMessage> findByChatId(String chatId, int limit) {
-        Expression filter = Expression.builder()
-                .expression("chatId = :c")
-                .expressionValues(Map.of(":c", AttributeValue.fromS(chatId)))
-                .build();
-
-        ScanEnhancedRequest request = ScanEnhancedRequest.builder()
-                .filterExpression(filter)
-                .build();
-
-        return StreamSupport.stream(table.scan(request).items().spliterator(), false)
-                .sorted(Comparator.comparing(ChatMessage::getTimestamp))
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(
+                        Key.builder().partitionValue(chatId).build()))
+                .scanIndexForward(true)
                 .limit(limit)
+                .build();
+        DynamoDbIndex<ChatMessage> index = table.index("chat_id-timestamp-index");
+        return index.query(request).stream()
+                .flatMap(page -> StreamSupport.stream(page.items().spliterator(), false))
                 .toList();
     }
 

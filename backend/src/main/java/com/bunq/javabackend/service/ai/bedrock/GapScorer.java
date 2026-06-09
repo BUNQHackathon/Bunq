@@ -1,10 +1,10 @@
 package com.bunq.javabackend.service.ai.bedrock;
 
+import com.bunq.javabackend.exception.GapScoringException;
 import com.bunq.javabackend.helper.GapNarrative;
 import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.model.gap.RecommendedAction;
 import com.bunq.javabackend.model.gap.SeverityDimensions;
-import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +23,14 @@ public class GapScorer {
     private final BedrockService bedrockService;
 
     public GapScore score(String sessionId, String stage, MatchableObligation obl, BedrockModel model) {
-        try {
-            HashMap<String, Object> userInput = new HashMap<>();
-            userInput.put("obligation_id", obl.id());
-            userInput.put("obligation_subject", obl.subject());
-            userInput.put("obligation_action", obl.action());
-            userInput.put("risk_category", obl.riskCategory());
-            userInput.put("regulatory_penalty", obl.regulatoryPenalty());
+        HashMap<String, Object> userInput = new HashMap<>();
+        userInput.put("obligation_id", obl.id());
+        userInput.put("obligation_subject", obl.subject());
+        userInput.put("obligation_action", obl.action());
+        userInput.put("risk_category", obl.riskCategory());
+        userInput.put("regulatory_penalty", obl.regulatoryPenalty());
 
+        try {
             JsonNode toolInput = bedrockService.invokeModelWithTool(
                     sessionId, stage,
                     model.getModelId(),
@@ -38,16 +38,16 @@ public class GapScorer {
                     userInput,
                     ToolDefinitions.SCORE_GAP_TOOL
             );
-
             return buildGapScore(toolInput);
+        } catch (GapScoringException e) {
+            throw e;
         } catch (Exception e) {
-            log.warn("Gap scoring failed for obligation {}: {}", obl.id(), e.getMessage());
-            return defaultGapScore();
+            throw new GapScoringException("Gap scoring failed for obligation " + obl.id() + ": " + e.getMessage(), e);
         }
     }
 
     private GapScore buildGapScore(JsonNode toolInput) {
-        String rawNarrative = toolInput.path("narrative").asText(null);
+        String rawNarrative = toolInput.path("narrative").asString();
         String narrative = GapNarrative.clean(rawNarrative);
         boolean escalationRequired = toolInput.path("escalation_required").asBoolean(false);
         if (!escalationRequired) { escalationRequired = GapNarrative.recoverEscalation(rawNarrative); }
@@ -78,8 +78,8 @@ public class GapScorer {
         if (actionsNode.isArray()) {
             for (JsonNode a : actionsNode) {
                 RecommendedAction action = new RecommendedAction();
-                action.setAction(a.path("action").asText(null));
-                action.setSuggestedOwner(a.path("suggested_owner").asText(null));
+                action.setAction(a.path("action").asString());
+                action.setSuggestedOwner(a.path("suggested_owner").asString());
                 actions.add(action);
             }
         }
@@ -87,10 +87,6 @@ public class GapScorer {
 
         return new GapScore(narrative, escalationRequired, severity, likelihood, detectability,
                 blastRadius, recoverability, residualRisk, dims, actions);
-    }
-
-    private GapScore defaultGapScore() {
-        return new GapScore(null, false, null, null, null, null, null, 0.0, null, List.of());
     }
 
     private static Double nullableDouble(JsonNode node, String field) {

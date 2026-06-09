@@ -35,6 +35,12 @@ public class LaunchRepository {
         return StreamSupport.stream(table.scan().items().spliterator(), false).toList();
     }
 
+    public List<Launch> findAll(int limit) {
+        return StreamSupport.stream(table.scan().items().spliterator(), false)
+                .limit(limit)
+                .toList();
+    }
+
     public void deleteById(String id) {
         table.deleteItem(Key.builder().partitionValue(id).build());
     }

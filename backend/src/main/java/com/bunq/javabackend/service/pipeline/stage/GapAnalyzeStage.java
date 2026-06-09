@@ -1,5 +1,6 @@
 package com.bunq.javabackend.service.pipeline.stage;
 
+import com.bunq.javabackend.exception.GapScoringException;
 import com.bunq.javabackend.helper.mapper.GapMapper;
 import com.bunq.javabackend.model.gap.Gap;
 import com.bunq.javabackend.model.mapping.Mapping;
@@ -67,7 +68,8 @@ public class GapAnalyzeStage implements Stage {
             }
 
             Set<String> coveredObligationIds = mappings.stream()
-                    .filter(m -> m.getMappingConfidence() != null && m.getMappingConfidence() >= 50)
+                    .filter(m -> m.getMappingConfidence() != null
+                            && m.getMappingConfidence() >= MapObligationsControlsStage.SATISFIED_CONFIDENCE_THRESHOLD)
                     .map(Mapping::getObligationId)
                     .collect(Collectors.toSet());
 
@@ -99,31 +101,39 @@ public class GapAnalyzeStage implements Stage {
             }
 
             log.info("GapAnalyzeStage: {} gaps for session {}", ctx.getGaps().size(), ctx.getSessionId());
-        });
+        }, pipelineExecutor);
     }
 
     private Gap scoreGap(Obligation obl, String sessionId) {
-        GapScore s = gapScorer.score(
-                sessionId, "score_gap",
-                new MatchableObligation(obl.getId(), obl.getSubject(), obl.getAction(),
-                        obl.getRiskCategory(), obl.getRegulatoryPenaltyRange()),
-                BedrockModel.HAIKU);
         Gap gap = new Gap();
         gap.setId(IdGenerator.generateGapId());
         gap.setSessionId(sessionId);
         gap.setObligationId(obl.getId());
         gap.setGapType(GapType.control_missing);
         gap.setGapStatus(GapStatus.gap);
-        gap.setNarrative(s.narrative());
-        gap.setEscalationRequired(s.escalationRequired());
-        gap.setSeverity(s.severity());
-        gap.setLikelihood(s.likelihood());
-        gap.setDetectability(s.detectability());
-        gap.setBlastRadius(s.blastRadius());
-        gap.setRecoverability(s.recoverability());
-        gap.setResidualRisk(s.residualRisk());
-        gap.setSeverityDimensions(s.severityDimensions());
-        gap.setRecommendedActions(s.recommendedActions());
+        try {
+            GapScore s = gapScorer.score(
+                    sessionId, "score_gap",
+                    new MatchableObligation(obl.getId(), obl.getSubject(), obl.getAction(),
+                            obl.getRiskCategory(), obl.getRegulatoryPenaltyRange()),
+                    BedrockModel.HAIKU);
+            gap.setNarrative(s.narrative());
+            gap.setEscalationRequired(s.escalationRequired());
+            gap.setSeverity(s.severity());
+            gap.setLikelihood(s.likelihood());
+            gap.setDetectability(s.detectability());
+            gap.setBlastRadius(s.blastRadius());
+            gap.setRecoverability(s.recoverability());
+            gap.setResidualRisk(s.residualRisk());
+            gap.setSeverityDimensions(s.severityDimensions());
+            gap.setRecommendedActions(s.recommendedActions());
+        } catch (GapScoringException e) {
+            log.warn("GapAnalyzeStage: scoring inconclusive for obligation {}, applying conservative defaults: {}",
+                    obl.getId(), e.getMessage());
+            gap.setEscalationRequired(true);
+            gap.setResidualRisk(0.5);
+            gap.setNarrative("Gap scoring inconclusive — manual review required.");
+        }
         return gap;
     }
 }

@@ -19,7 +19,10 @@ import java.util.Set;
 public class AutoDocService {
 
     private static final Set<String> ALLOWED_KINDS = Set.of("policy", "regulation", "brief");
-    private static final Set<String> EU_MEMBER_CODES = Set.of("NL", "DE", "FR", "IE");
+    private static final Set<String> EU_MEMBER_CODES = Set.of(
+            "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+            "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+            "PL", "PT", "RO", "SK", "SI", "ES", "SE");
 
     private final DocumentRepository documentRepository;
     private final DocJurisdictionRepository docJurisdictionRepository;

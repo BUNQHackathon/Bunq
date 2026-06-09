@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import com.bunq.javabackend.exception.NotFoundException;
+import com.bunq.javabackend.helper.GapNarrative;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
@@ -152,7 +153,10 @@ public class ReportService {
         document.add(narrativeHeading);
         document.add(new Paragraph(" "));
 
-        String narrativeText = summary.getNarrative() != null ? summary.getNarrative() : "";
+        String rawNarrative = summary.getNarrative() != null ? summary.getNarrative() : "";
+        String narrativeText = GapNarrative.clean(rawNarrative);
+        if (narrativeText == null) narrativeText = "";
+        if (narrativeText.length() > 5000) narrativeText = narrativeText.substring(0, 5000) + "…";
         document.add(new Paragraph(narrativeText, normalFont));
 
         document.close();

@@ -29,6 +29,7 @@ import com.bunq.javabackend.service.ai.kb.KnowledgeBaseService.RetrievedChunk;
 import com.bunq.javabackend.util.JurisdictionInference;
 import com.bunq.javabackend.service.documents.DocumentService;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
+import com.bunq.javabackend.service.ai.kb.Reranker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,29 +59,8 @@ public class ChatService {
 
   private static final long CHAT_SSE_TIMEOUT_MS = 300_000L;
   private static final Pattern DOCUMENT_ID_PATTERN = Pattern.compile("/documents/([a-fA-F0-9]{64})(?:\\.[^/#?]+)?");
-
-  private static final String QA_EXAMPLES = """
-      1. Question: What are our AML obligations in Germany?
-        Answer: Under the German Money Laundering Act (GwG) enforced by BaFin, your primary obligations include conducting comprehensive Customer Due Diligence (KYC/CDD), implementing an internal risk management system, appointing an AML officer (Geldwäschebeauftragter) if applicable to your business size, and immediately reporting suspicious transactions to Germany's Financial Intelligence Unit (FIU).
-
-      2. Question: Can we offer crypto custody under MiCA?
-        Answer: Yes, you can offer crypto custody services within the EU, provided you are authorized as a Crypto-Asset Service Provider (CASP) under the Markets in Crypto-Assets (MiCA) regulation. This requires approval from your national competent authority and strict compliance with MiCA's rules on safeguarding client assets, segregating funds, and maintaining operational resilience. Existing financial institutions (like banks) may follow a streamlined notification process.
-
-      3. Question: GDPR retention rules for transaction data
-        Answer: While GDPR enforces the principle of "storage limitation" (keeping data only as long as necessary), intersecting financial regulations dictate the actual timeline. For transaction data, you are generally legally required by the EU's Anti-Money Laundering Directives (AMLD) and national laws to retain records for 5 to 10 years following the execution of the transaction or termination of the business relationship, after which the data must be securely deleted.
-
-      4. Question: EMI passporting requirements for France
-        Answer: If you are an authorized Electronic Money Institution (EMI) in another EEA state, you can passport your services to France under the freedom to provide services or right of establishment. You must submit a passporting notification to your home state regulator, who will assess it and forward it to the French regulator (ACPR). If operating through a local branch or network of agents in France, you must also adhere to French host-state rules, including local consumer protection and AML reporting guidelines.
-
-      5. Question: Which third-party provider does bunq use to detect deepfakes during the digital identity verification process, and where is its headquarters?
-        Answer: For targeted deepfake detection during the KYC onboarding process, bunq uses DuckDuckGoose AI, which is headquartered in Delft, Netherlands. Additionally, they partner with Incode Technologies, headquartered in San Francisco, California, for broader identity verification and AI-driven liveness checks.
-
-      6. Question: At what age does a minor child get full access to their bunq bank account?
-        Answer: A minor gains full, independent access to their bunq account at age 18. About a month prior to their 18th birthday, they are prompted to accept the Terms & Conditions themselves. Once they turn 18, the link giving parents or legal guardians oversight is automatically removed.
-
-      7. Question: What is the email address of bunq's Data Protection Officer (DPO)?
-        Answer: You can reach bunq's Data Protection Officer regarding the processing of personal data or privacy concerns by emailing privacy@bunq.com.
-      """;
+  private static final Pattern SHA256_PATTERN = Pattern.compile("[0-9a-f]{64}");
+  private static final int HISTORY_TURNS = 20;
 
   private static final String SYSTEM_PROMPT = """
       You are Prism, a compliance Q&A assistant. Answer using only
@@ -91,14 +72,9 @@ public class ChatService {
       If user asks to list the files or summarise all of them, politely
       redirect the question to be more specific (e.g. ask about certain file
       or policy).
-      """
-      + QA_EXAMPLES +
-      """
-              CRITICAL EXCEPTION RULE: If the user's question matches or closely matches one of the pre-approved FAQ questions above, you MUST answer using the exact text provided in the example above, even if the information is not found in the <context> blocks.
-              For all other questions:
-              If the answer is not in the context, say "I don't have enough
-              information to answer that" — do not speculate.
-          """;
+      If the answer is not in the context, say "I don't have enough
+      information to answer that" — do not speculate.
+      """;
 
   private final KnowledgeBaseService knowledgeBaseService;
   private final BedrockService bedrockService;
@@ -112,6 +88,7 @@ public class ChatService {
   private final KnowledgeBaseConfig knowledgeBaseConfig;
   private final ObjectMapper objectMapper;
   private final Executor pipelineExecutor;
+  private final Reranker reranker;
 
   public ChatService(
       KnowledgeBaseService knowledgeBaseService,
@@ -125,7 +102,8 @@ public class ChatService {
       ChatConfig chatConfig,
       KnowledgeBaseConfig knowledgeBaseConfig,
       ObjectMapper objectMapper,
-      @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+      @Qualifier("pipelineExecutor") Executor pipelineExecutor,
+      Reranker reranker) {
     this.knowledgeBaseService = knowledgeBaseService;
     this.bedrockService = bedrockService;
     this.bedrockStreamingService = bedrockStreamingService;
@@ -138,6 +116,7 @@ public class ChatService {
     this.knowledgeBaseConfig = knowledgeBaseConfig;
     this.objectMapper = objectMapper;
     this.pipelineExecutor = pipelineExecutor;
+    this.reranker = reranker;
   }
 
   public List<KnowledgeBaseOptionDTO> listKnowledgeBases() {
@@ -258,6 +237,18 @@ public class ChatService {
                   jurisdictions)
               .join();
 
+      List<Reranker.RankedItem> candidates = chunks.stream()
+          .map(c -> new Reranker.RankedItem(c.chunkId(), c.text()))
+          .toList();
+      List<Reranker.RankedItem> reranked = reranker.rerank(req.getQuery(), candidates, chunks.size());
+      Map<String, Integer> rankOrder = new HashMap<>();
+      for (int ri = 0; ri < reranked.size(); ri++) {
+        rankOrder.put(reranked.get(ri).id(), ri);
+      }
+      chunks = chunks.stream()
+          .sorted(Comparator.comparingInt(c -> rankOrder.getOrDefault(c.chunkId(), Integer.MAX_VALUE)))
+          .toList();
+
       String docText = req.getDocumentId() != null
           ? documentService.getExtractedText(req.getDocumentId()).orElse(null)
           : null;
@@ -271,10 +262,14 @@ public class ChatService {
           .citations(citations)
           .build());
 
-      String userContent = buildUserContent(chunks, req.getQuery(), docText);
+      List<ChatMessage> history = chatMessageRepository.findByChatId(chatId, HISTORY_TURNS).stream()
+          .filter(m -> !("USER".equalsIgnoreCase(m.getRole()) && req.getQuery().equals(m.getContent())))
+          .toList();
+
+      String userContent = buildUserContent(chunks, req.getQuery(), docText, history);
 
       StringBuilder fullText = new StringBuilder();
-      AtomicReference<TokenUsageDTO> usageRef = new AtomicReference<TokenUsageDTO>(null);
+      AtomicReference<TokenUsageDTO> usageRef = new AtomicReference<>(null);
 
       List<Citation> citationModels = chunks.stream().map(this::toCitationModel).toList();
       String sessionId = req.getSessionId();
@@ -359,11 +354,29 @@ public class ChatService {
     }
   }
 
-  private String buildUserContent(List<RetrievedChunk> chunks, String query, String docText) {
-    StringBuilder sb = new StringBuilder("<context>\n");
+  private String buildUserContent(List<RetrievedChunk> chunks, String query, String docText,
+      List<ChatMessage> history) {
+    StringBuilder sb = new StringBuilder();
+
+    if (!history.isEmpty()) {
+      sb.append("<history>\n");
+      String lastRole = null;
+      for (ChatMessage msg : history) {
+        String role = msg.getRole() != null ? msg.getRole().toUpperCase() : "USER";
+        if (role.equals(lastRole)) {
+          continue;
+        }
+        lastRole = role;
+        sb.append("<turn role=\"").append(role.toLowerCase()).append("\">\n")
+            .append(xmlText(msg.getContent())).append("\n</turn>\n");
+      }
+      sb.append("</history>\n\n");
+    }
+
+    sb.append("<context>\n");
     if (docText != null) {
       sb.append("<chunk source=\"document\" id=\"d1\" document=\"uploaded-document\">\n")
-          .append(docText).append("\n</chunk>\n");
+          .append(xmlText(docText)).append("\n</chunk>\n");
     }
     int index = 1;
     for (var chunk : chunks) {
@@ -373,13 +386,15 @@ public class ChatService {
           .append("\" id=\"").append(contextChunkId)
           .append("\" document=\"").append(xmlAttribute(displayName != null ? displayName : chunk.knowledgeBaseLabel()))
           .append("\" score=\"").append(chunk.score()).append("\">\n")
-          .append(chunk.text()).append("\n</chunk>\n");
+          .append(xmlText(chunk.text())).append("\n</chunk>\n");
     }
-    sb.append("</context>\n\nQuestion: ").append(query);
-    // TODO(ChatService:buildUserContent): include last N chat history turns as
-    // prior messages
-    // for multi-turn conversation. See ChatMessageRepository.findByChatId().
+    sb.append("</context>\n\nQuestion: ").append(xmlText(query));
     return sb.toString();
+  }
+
+  private static String xmlText(String value) {
+    if (value == null) return "";
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
   }
 
   private static String xmlAttribute(String value) {
@@ -454,8 +469,8 @@ public class ChatService {
     while (current != null && depth++ < 10) {
       if (current instanceof ResourceNotFoundException || current instanceof AccessDeniedException) {
         String message = current.getMessage();
-        return message == null || message.contains("Model") || message.contains("model")
-            || message.contains("Anthropic");
+        return message != null && (message.contains("Model") || message.contains("model")
+            || message.contains("Anthropic"));
       }
       current = current.getCause();
     }
@@ -491,7 +506,7 @@ public class ChatService {
         .s3Uri(chunk.s3Uri())
         .displayName(displayNameFor(chunk))
         .documentId(documentIdFor(chunk))
-        .sha256(documentIdFor(chunk))
+        .sha256(sha256For(chunk))
         .sourceText(chunk.text() != null && chunk.text().length() > 500
             ? chunk.text().substring(0, 500)
             : chunk.text())
@@ -508,7 +523,7 @@ public class ChatService {
     c.setS3Uri(chunk.s3Uri());
     c.setDisplayName(displayNameFor(chunk));
     c.setDocumentId(documentIdFor(chunk));
-    c.setSha256(documentIdFor(chunk));
+    c.setSha256(sha256For(chunk));
     c.setSourceText(chunk.text() != null && chunk.text().length() > 500
         ? chunk.text().substring(0, 500)
         : chunk.text());
@@ -537,6 +552,11 @@ public class ChatService {
       return fromS3Uri;
     }
     return documentIdFrom(chunk.chunkId());
+  }
+
+  private static String sha256For(RetrievedChunk chunk) {
+    String id = documentIdFor(chunk);
+    return id != null && SHA256_PATTERN.matcher(id).matches() ? id : null;
   }
 
   private static String documentIdFrom(String value) {

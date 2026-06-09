@@ -6,6 +6,7 @@ import com.bunq.javabackend.model.observability.StageCost;
 import com.bunq.javabackend.repository.SessionCostRepository;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -114,6 +115,12 @@ public class SessionCostService {
         return acc.snapshot(sessionId);
     }
 
+    @Scheduled(fixedDelay = 3_600_000)
+    void evictIdleAccumulators() {
+        Instant cutoff = Instant.now().minusSeconds(6 * 3600);
+        accumulators.entrySet().removeIf(e -> e.getValue().isIdleSince(cutoff));
+    }
+
     // -----------------------------------------------------------------------
     // Internals
     // -----------------------------------------------------------------------
@@ -175,6 +182,7 @@ public class SessionCostService {
         volatile long totalCents;
         final ConcurrentHashMap<String, long[]> perStage = new ConcurrentHashMap<>();
         // long[]: [input, output, cacheCreation, cacheRead, cents]
+        volatile Instant lastTouched = Instant.now();
 
         synchronized void add(String stage,
                               int input, int output, int cacheCreation, int cacheRead,
@@ -184,6 +192,7 @@ public class SessionCostService {
             totalCacheCreation += cacheCreation;
             totalCacheRead     += cacheRead;
             totalCents         += cents;
+            lastTouched        = Instant.now();
 
             perStage.compute(stage, (k, v) -> {
                 if (v == null) v = new long[5];
@@ -209,7 +218,7 @@ public class SessionCostService {
             return buildSnapshot(sessionId, this);
         }
 
-        Map<String, StageCost> snapshotPerStage() {
+        synchronized Map<String, StageCost> snapshotPerStage() {
             Map<String, StageCost> result = new HashMap<>();
             perStage.forEach((stage, v) -> result.put(stage, StageCost.builder()
                     .inputTokens(v[0])
@@ -219,6 +228,10 @@ public class SessionCostService {
                     .usdCents(v[4])
                     .build()));
             return result;
+        }
+
+        boolean isIdleSince(Instant cutoff) {
+            return lastTouched.isBefore(cutoff);
         }
     }
 }

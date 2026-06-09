@@ -106,7 +106,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
     }
     environment {
       name  = "AWS_DYNAMODB_SANCTIONS_ENTITIES_TABLE"
-      value = aws_dynamodb_table.this["sanctions-entities"].name
+      value = aws_dynamodb_table.sanctions_entities.name
     }
     environment {
       name  = "AWS_DYNAMODB_AUDIT_LOG_TABLE"
@@ -130,7 +130,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
     }
     environment {
       name  = "AWS_DYNAMODB_CHAT_MESSAGES_TABLE"
-      value = aws_dynamodb_table.this["chat-messages"].name
+      value = aws_dynamodb_table.chat_messages.name
     }
     environment {
       name  = "AWS_S3_UPLOADS_BUCKET"

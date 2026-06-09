@@ -15,11 +15,14 @@ public final class IdGenerator {
     // Cross-session mapping cache will no longer hit — this is intentional.
 
     /**
-     * Session-scoped obligation ID based on session + document + deontic subject + action.
+     * Session-scoped obligation ID based on session + document + subject + action + deontic + condition.
      * Prefix "OBL-" distinguishes it from legacy random IDs ("obl-").
      */
-    public static String obligationId(String sessionId, String documentId, String subject, String action) {
-        String key = nullToEmpty(sessionId) + " " + nullToEmpty(documentId) + " " + nullToEmpty(subject) + " " + nullToEmpty(action);
+    public static String obligationId(String sessionId, String documentId, String subject, String action,
+                                      String deontic, String condition) {
+        String key = nullToEmpty(sessionId) + " " + nullToEmpty(documentId) + " "
+                + nullToEmpty(subject) + " " + nullToEmpty(action) + " "
+                + nullToEmpty(deontic) + " " + nullToEmpty(condition);
         return "OBL-" + sha256Hex(key).substring(0, 24);
     }
 

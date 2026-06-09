@@ -149,7 +149,7 @@ public class SearchService {
     }
 
     private List<Hit> searchLaunches(String q, int limit) {
-        List<Launch> all = launchRepository.findAll();
+        List<Launch> all = launchRepository.findAll(scanCap);
         List<Hit> out = new ArrayList<>();
         for (Launch l : all) {
             if (matches(q, l.getName(), l.getBrief(), l.getLicense(), l.getStatus() != null ? l.getStatus().name() : null)) {

@@ -159,7 +159,10 @@ public class RagService {
                 })
                 .build();
 
-        asyncClient.retrieveAndGenerateStream(request, handler);
+        asyncClient.retrieveAndGenerateStream(request, handler)
+                .whenComplete((v, ex) -> {
+                    if (ex != null) emitter.completeWithError(ex);
+                });
 
         return emitter;
     }

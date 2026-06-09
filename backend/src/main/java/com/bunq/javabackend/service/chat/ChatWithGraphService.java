@@ -14,6 +14,7 @@ import com.bunq.javabackend.service.ai.bedrock.MatchResult;
 import com.bunq.javabackend.service.ai.bedrock.MatchableControl;
 import com.bunq.javabackend.service.ai.bedrock.MatchableObligation;
 import com.bunq.javabackend.service.ai.bedrock.ObligationControlMatcher;
+import com.bunq.javabackend.service.ai.kb.Reranker;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import com.bunq.javabackend.util.JurisdictionInference;
@@ -42,6 +43,7 @@ public class ChatWithGraphService {
     private final BedrockStreamingService bedrockStreamingService;
     private final SseEmitterService sseEmitterService;
     private final Executor pipelineExecutor;
+    private final Reranker reranker;
 
     public ChatWithGraphService(
             KnowledgeBaseService knowledgeBaseService,
@@ -49,13 +51,15 @@ public class ChatWithGraphService {
             GapScorer gapScorer,
             BedrockStreamingService bedrockStreamingService,
             SseEmitterService sseEmitterService,
-            @Qualifier("pipelineExecutor") Executor pipelineExecutor) {
+            @Qualifier("pipelineExecutor") Executor pipelineExecutor,
+            Reranker reranker) {
         this.knowledgeBaseService = knowledgeBaseService;
         this.matcher = matcher;
         this.gapScorer = gapScorer;
         this.bedrockStreamingService = bedrockStreamingService;
         this.sseEmitterService = sseEmitterService;
         this.pipelineExecutor = pipelineExecutor;
+        this.reranker = reranker;
     }
 
     public SseEmitter startChat(ChatWithGraphRequestDTO req) {
@@ -80,16 +84,28 @@ public class ChatWithGraphService {
                 js = Set.of("NL", "DE", "FR", "UK", "US", "IE");
             }
 
-            // Step 2: RAG retrieval
+            // Step 2: RAG retrieval + rerank
             List<RetrievedChunk> allChunks = knowledgeBaseService
                     .retrieveAllWithFilter(req.getQuestion(), 8, 16, List.copyOf(js))
                     .join();
+
+            List<Reranker.RankedItem> candidates = allChunks.stream()
+                    .map(c -> new Reranker.RankedItem(c.chunkId(), c.text()))
+                    .toList();
+            List<Reranker.RankedItem> reranked = reranker.rerank(req.getQuestion(), candidates, allChunks.size());
+            Map<String, Integer> rankOrder = new HashMap<>();
+            for (int i = 0; i < reranked.size(); i++) {
+                rankOrder.put(reranked.get(i).id(), i);
+            }
+            List<RetrievedChunk> sortedChunks = allChunks.stream()
+                    .sorted(java.util.Comparator.comparingInt(c -> rankOrder.getOrDefault(c.chunkId(), Integer.MAX_VALUE)))
+                    .toList();
 
             List<RetrievedChunk> obligationChunks = new ArrayList<>();
             List<RetrievedChunk> controlChunks = new ArrayList<>();
             List<RetrievedChunk> policyChunks = new ArrayList<>();
 
-            for (RetrievedChunk chunk : allChunks) {
+            for (RetrievedChunk chunk : sortedChunks) {
                 if (chunk.kbType() == KbType.REGULATIONS) {
                     obligationChunks.add(chunk);
                 } else if (chunk.kbType() == KbType.CONTROLS) {
@@ -99,7 +115,7 @@ public class ChatWithGraphService {
                 }
             }
 
-            // Cap to top-5 each (already sorted by score desc from retrieval)
+            // Cap to top-5 each (reranker order preserved)
             List<RetrievedChunk> topObligations = obligationChunks.stream().limit(5).toList();
             List<RetrievedChunk> topControls = controlChunks.stream().limit(5).toList();
 
@@ -151,10 +167,18 @@ public class ChatWithGraphService {
                         new ChatGraphNodeDTO(chunk.chunkId(), "control", desc, meta));
             }
 
-            // Step 5: Matching fan-out
+            // Step 5: Matching fan-out — parallel, up to 5 obligations
+            List<CompletableFuture<List<MatchResult>>> matchFutures = matchableObligations.stream()
+                    .map(obl -> CompletableFuture.supplyAsync(
+                            () -> matcher.match(chatId, "chat", obl, matchableControls, BedrockModel.SONNET),
+                            pipelineExecutor))
+                    .toList();
+            CompletableFuture.allOf(matchFutures.toArray(new CompletableFuture[0])).join();
+
             Set<String> coveredObligationIds = new HashSet<>();
-            for (MatchableObligation obl : matchableObligations) {
-                List<MatchResult> results = matcher.match(chatId, "chat", obl, matchableControls, BedrockModel.SONNET);
+            for (int mi = 0; mi < matchableObligations.size(); mi++) {
+                MatchableObligation obl = matchableObligations.get(mi);
+                List<MatchResult> results = matchFutures.get(mi).join();
                 boolean hasSatisfactoryMatch = false;
                 for (MatchResult result : results) {
                     if (result.confidence() >= 30) {
@@ -182,11 +206,11 @@ public class ChatWithGraphService {
                             () -> gapScorer.score(chatId, "chat", obl, BedrockModel.SONNET), pipelineExecutor))
                     .toList();
 
-            CompletableFuture.allOf(gapFutures.toArray(new CompletableFuture[0])).join();
+            List<GapScore> gapResults = gapFutures.stream().map(CompletableFuture::join).toList();
 
             for (int i = 0; i < uncovered.size(); i++) {
                 MatchableObligation obl = uncovered.get(i);
-                GapScore gap = gapFutures.get(i).join();
+                GapScore gap = gapResults.get(i);
                 String oblIdShort = obl.id().length() > 8 ? obl.id().substring(0, 8) : obl.id();
                 String gapId = "GAP-" + oblIdShort;
 
@@ -212,8 +236,7 @@ public class ChatWithGraphService {
 
             // Step 7: Stream LLM answer
             String userContent = buildUserContent(topObligations, topControls, uncovered,
-                    gapFutures.stream().map(CompletableFuture::join).toList(),
-                    policyChunks, req.getQuestion());
+                    gapResults, policyChunks, req.getQuestion());
 
             bedrockStreamingService
                     .streamWithCachedSystem(
@@ -256,17 +279,17 @@ public class ChatWithGraphService {
 
         for (RetrievedChunk c : obligations) {
             sb.append("<obligation id=\"").append(c.chunkId()).append("\">\n")
-              .append(c.text() != null ? c.text() : "").append("\n</obligation>\n");
+              .append(xmlText(c.text())).append("\n</obligation>\n");
         }
 
         for (RetrievedChunk c : controls) {
             sb.append("<control id=\"").append(c.chunkId()).append("\">\n")
-              .append(c.text() != null ? c.text() : "").append("\n</control>\n");
+              .append(xmlText(c.text())).append("\n</control>\n");
         }
 
         for (RetrievedChunk c : policies) {
             sb.append("<policy id=\"").append(c.chunkId()).append("\">\n")
-              .append(c.text() != null ? c.text() : "").append("\n</policy>\n");
+              .append(xmlText(c.text())).append("\n</policy>\n");
         }
 
         for (int i = 0; i < uncovered.size(); i++) {
@@ -275,12 +298,17 @@ public class ChatWithGraphService {
             String oblIdShort = obl.id().length() > 8 ? obl.id().substring(0, 8) : obl.id();
             String gapId = "GAP-" + oblIdShort;
             sb.append("<gap id=\"").append(gapId).append("\">\n")
-              .append(gap.narrative() != null ? gap.narrative() : "")
+              .append(xmlText(gap.narrative()))
               .append("\n</gap>\n");
         }
 
-        sb.append("</context>\n\nQuestion: ").append(question);
+        sb.append("</context>\n\nQuestion: ").append(xmlText(question));
         return sb.toString();
+    }
+
+    private static String xmlText(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private String firstSentence(String text) {

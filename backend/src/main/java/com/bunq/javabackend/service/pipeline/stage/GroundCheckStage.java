@@ -1,10 +1,12 @@
 package com.bunq.javabackend.service.pipeline.stage;
 
 import com.bunq.javabackend.helper.mapper.MappingMapper;
+import com.bunq.javabackend.model.document.Document;
 import com.bunq.javabackend.model.mapping.Mapping;
 import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.model.enums.BedrockModel;
 import com.bunq.javabackend.model.evidence.Evidence;
+import com.bunq.javabackend.repository.DocumentRepository;
 import com.bunq.javabackend.repository.EvidenceRepository;
 import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
@@ -52,6 +54,7 @@ public class GroundCheckStage implements Stage {
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
     private final EvidenceRepository evidenceRepository;
+    private final DocumentRepository documentRepository;
     private final Executor pipelineExecutor;
     private final S3Client s3Client;
 
@@ -64,6 +67,7 @@ public class GroundCheckStage implements Stage {
             ObjectMapper objectMapper,
             AuditLogService auditLogService,
             EvidenceRepository evidenceRepository,
+            DocumentRepository documentRepository,
             S3Client s3Client,
             @Qualifier("stageWorkerExecutor") Executor pipelineExecutor) {
         this.bedrockService = bedrockService;
@@ -72,6 +76,7 @@ public class GroundCheckStage implements Stage {
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
         this.evidenceRepository = evidenceRepository;
+        this.documentRepository = documentRepository;
         this.s3Client = s3Client;
         this.pipelineExecutor = pipelineExecutor;
     }
@@ -138,7 +143,7 @@ public class GroundCheckStage implements Stage {
 
             log.info("GroundCheckStage: checked {} mappings in {} batches for session {} (skipped {} cached)",
                     toCheck.size(), batches.size(), ctx.getSessionId(), skipped.size());
-        });
+        }, pipelineExecutor);
     }
 
     private void processBatch(List<Mapping> batch, Map<String, Obligation> oblMap,
@@ -152,46 +157,62 @@ public class GroundCheckStage implements Stage {
         // Known limitation: obligations from text beyond DOC_TEXT_MAX_CHARS are
         // verified against
         // a truncated document; this keeps NOVA-PRO token cost manageable.
+        // Fetch doc text per-docId independently; mappings whose doc failed get inconclusive treatment.
         Map<String, String> docTexts = new HashMap<>();
+        java.util.Set<String> failedDocIds = new java.util.HashSet<>();
         for (Mapping mapping : batch) {
             Obligation obl = oblMap.get(mapping.getObligationId());
             if (obl == null) {
                 obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
             }
             String docId = obl != null ? obl.getDocumentId() : null;
-            if (docId != null && !docTexts.containsKey(docId)) {
-                String s3Key = "extractions/" + docId + ".txt";
-                try {
-                    String fullText = s3Client.getObjectAsBytes(
-                            GetObjectRequest.builder()
-                                    .bucket(uploadsBucket)
-                                    .key(s3Key)
-                                    .build())
-                            .asUtf8String();
-                    if (fullText.length() > DOC_TEXT_MAX_CHARS) {
-                        fullText = fullText.substring(0, DOC_TEXT_MAX_CHARS);
-                    }
-                    docTexts.put(docId, fullText);
-                } catch (NoSuchKeyException e) {
-                    log.error("GroundCheck: S3 key {} not found for document {}; batch marked failed", s3Key, docId);
-                    // Fail closed: mark all mappings in this batch as failed and abort
-                    for (Mapping m : batch) {
-                        m.setReviewerNotes("ground-check failed: source document text unavailable");
-                        mappingRepository.save(m);
-                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
-                                Map.of("mappingId", m.getId(), "reason", "source document text unavailable"));
-                    }
-                    return;
-                } catch (Exception e) {
-                    log.error("GroundCheck: failed to fetch S3 key {} for document {}: {}; batch marked failed",
-                            s3Key, docId, e.getMessage());
-                    for (Mapping m : batch) {
-                        m.setReviewerNotes("ground-check failed: source document text unavailable");
-                        mappingRepository.save(m);
-                        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.dropped",
-                                Map.of("mappingId", m.getId(), "reason", "source document text unavailable"));
-                    }
-                    return;
+            if (docId == null || docTexts.containsKey(docId) || failedDocIds.contains(docId)) continue;
+            String s3Key = "extractions/" + docId + ".txt";
+            try {
+                String fullText = s3Client.getObjectAsBytes(
+                        GetObjectRequest.builder()
+                                .bucket(uploadsBucket)
+                                .key(s3Key)
+                                .build())
+                        .asUtf8String();
+                if (fullText.length() > DOC_TEXT_MAX_CHARS) {
+                    fullText = fullText.substring(0, DOC_TEXT_MAX_CHARS);
+                }
+                docTexts.put(docId, fullText);
+            } catch (NoSuchKeyException e) {
+                log.warn("GroundCheck: S3 key {} not found for document {}; trying inline extractedText", s3Key, docId);
+                String inline = documentRepository.findById(docId)
+                        .map(Document::getExtractedText).orElse(null);
+                if (inline != null && !inline.isBlank()) {
+                    String trimmed = inline.length() > DOC_TEXT_MAX_CHARS ? inline.substring(0, DOC_TEXT_MAX_CHARS) : inline;
+                    docTexts.put(docId, trimmed);
+                } else {
+                    log.error("GroundCheck: no text available for document {}; affected mappings marked inconclusive", docId);
+                    failedDocIds.add(docId);
+                }
+            } catch (Exception e) {
+                log.error("GroundCheck: failed to fetch S3 key {} for document {}: {}; trying inline extractedText",
+                        s3Key, docId, e.getMessage());
+                String inline = documentRepository.findById(docId)
+                        .map(Document::getExtractedText).orElse(null);
+                if (inline != null && !inline.isBlank()) {
+                    String trimmed = inline.length() > DOC_TEXT_MAX_CHARS ? inline.substring(0, DOC_TEXT_MAX_CHARS) : inline;
+                    docTexts.put(docId, trimmed);
+                } else {
+                    log.error("GroundCheck: no text available for document {}; affected mappings marked inconclusive", docId);
+                    failedDocIds.add(docId);
+                }
+            }
+        }
+
+        // Mark mappings whose document text could not be loaded as inconclusive (fail-closed).
+        if (!failedDocIds.isEmpty()) {
+            for (Mapping m : batch) {
+                Obligation obl = oblMap.get(m.getObligationId());
+                if (obl == null) obl = obligationRepository.findById(m.getObligationId()).orElse(null);
+                String docId = obl != null ? obl.getDocumentId() : null;
+                if (docId != null && failedDocIds.contains(docId)) {
+                    applyInconclusive(m, ctx);
                 }
             }
         }
@@ -211,16 +232,16 @@ public class GroundCheckStage implements Stage {
                 obl = obligationRepository.findById(mapping.getObligationId()).orElse(null);
             }
             String docId = obl != null ? obl.getDocumentId() : null;
+            if (docId != null && failedDocIds.contains(docId)) continue;
             Map<String, String> check = new HashMap<>();
             check.put("mapping_id", mapping.getId());
             check.put("claim", mapping.getSemanticReason());
-            // Reference document by id rather than embedding the full text in every check
-            // entry.
-            // The model receives documents[doc_id] = <text> in the top-level payload.
             check.put("doc_id", docId != null ? docId : "");
             checks.add(check);
             byId.put(mapping.getId(), mapping);
         }
+
+        if (checks.isEmpty()) return;
 
         Map<String, Object> userInput = new HashMap<>();
         userInput.put("documents", docTexts); // unique doc texts, keyed by documentId
@@ -257,10 +278,18 @@ public class GroundCheckStage implements Stage {
                 processBatch(batch.subList(0, mid), oblMap, ctx, evidenceHashes);
                 processBatch(batch.subList(mid, batch.size()), oblMap, ctx, evidenceHashes);
             } else {
-                log.warn("GroundCheck: single-item batch still failed; treating as verified to avoid data loss");
-                applyResult(batch.get(0), true, ctx, evidenceHashes);
+                log.warn("GroundCheck: single-item batch still failed; marking inconclusive (fail-closed)");
+                applyInconclusive(batch.get(0), ctx);
             }
         }
+    }
+
+    private void applyInconclusive(Mapping mapping, PipelineContext ctx) {
+        mapping.setReviewerNotes("ground-check inconclusive: model error — manual review required");
+        mappingRepository.save(mapping);
+        ctx.getSseEmitterService().send(ctx.getSessionId(), "ground_check.inconclusive",
+                Map.of("mappingId", mapping.getId(),
+                        "reason", "ground-check inconclusive: model error — manual review required"));
     }
 
     private void applyResult(Mapping mapping, boolean verified, PipelineContext ctx, List<String> evidenceHashes) {

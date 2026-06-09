@@ -12,9 +12,11 @@ import com.bunq.javabackend.repository.DocumentRepository;
 import com.bunq.javabackend.repository.SessionRepository;
 import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.ai.bedrock.ToolDefinitions;
+import com.bunq.javabackend.service.pipeline.IngestedDocument;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
+import com.bunq.javabackend.service.pipeline.TextChunker;
 import com.bunq.javabackend.service.pipeline.prompts.SystemPrompts;
 import com.bunq.javabackend.util.IdGenerator;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +75,7 @@ public class ExtractControlsStage implements Stage {
 
     @Override
     public CompletableFuture<Void> execute(PipelineContext ctx) {
+        // Fix 5a: pass pipelineExecutor to the outer runAsync (was missing — ran on ForkJoinPool.commonPool)
         return CompletableFuture.runAsync(() -> {
             String policyText = ctx.getPolicy();
             if (policyText == null || policyText.isBlank()) {
@@ -81,19 +85,27 @@ public class ExtractControlsStage implements Stage {
                 return;
             }
 
-            List<String> documentIds = sessionRepository.findById(ctx.getSessionId())
-                    .map(Session::getDocumentIds)
-                    .orElse(List.of());
-
-            List<String> policyDocIds = documentIds.stream()
-                    .filter(id -> {
-                        Optional<Document> doc = documentRepository.findById(id);
-                        return doc.isPresent() && "policy".equals(doc.get().getKind());
-                    })
-                    .toList();
+            // Fix 6: use ingestedDocuments when available to avoid per-id DynamoDB lookups
+            List<String> policyDocIds;
+            List<IngestedDocument> ingested = ctx.getIngestedDocuments();
+            if (ingested != null && !ingested.isEmpty()) {
+                policyDocIds = ingested.stream()
+                        .filter(d -> "policy".equalsIgnoreCase(d.kind()))
+                        .map(IngestedDocument::documentId)
+                        .toList();
+            } else {
+                List<String> documentIds = sessionRepository.findById(ctx.getSessionId())
+                        .map(Session::getDocumentIds)
+                        .orElse(List.of());
+                policyDocIds = documentIds.stream()
+                        .filter(id -> {
+                            Optional<Document> doc = documentRepository.findById(id);
+                            return doc.isPresent() && "policy".equals(doc.get().getKind());
+                        })
+                        .toList();
+            }
 
             if (policyDocIds.isEmpty()) {
-                // No policy-kind documents attached — fall back to single Bedrock call on concatenated text
                 log.info("No policy-kind documents for session {}; running single Bedrock extraction", ctx.getSessionId());
                 runBedrockExtraction(ctx, policyText, null, ctx.getControls());
                 return;
@@ -109,7 +121,6 @@ public class ExtractControlsStage implements Stage {
                             return;
                         }
 
-                        // Cold path — Bedrock extraction; use per-doc text if available, else fall back to ctx.getPolicy()
                         String loaded = loadExtractedText(doc);
                         String textToExtract = (loaded != null && !loaded.isBlank())
                                 ? loaded
@@ -121,7 +132,7 @@ public class ExtractControlsStage implements Stage {
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             ctx.getControls().addAll(collectedControls);
-        });
+        }, pipelineExecutor);
     }
 
     private String loadExtractedText(Document doc) {
@@ -138,8 +149,55 @@ public class ExtractControlsStage implements Stage {
         return null;
     }
 
+    // Fix 5b: chunk policy text and fan out parallel Bedrock calls, dedup by control ID
     private void runBedrockExtraction(PipelineContext ctx, String text, Document doc, List<Control> sink) {
-        Map<String, String> userInput = Map.of("policy_text", text, "policy_id", "POL-" + ctx.getSessionId());
+        List<String> chunks = TextChunker.chunk(text);
+        String documentId = doc != null ? doc.getId() : null;
+        log.info("Splitting doc {} ({} chars) into {} chunks", documentId, text.length(), chunks.size());
+
+        int totalChunks = chunks.size();
+        List<CompletableFuture<List<Control>>> futures = new ArrayList<>(totalChunks);
+        for (int i = 0; i < totalChunks; i++) {
+            final int chunkIdx = i;
+            final String chunkText = chunks.get(i);
+            futures.add(CompletableFuture.supplyAsync(
+                    () -> extractChunk(ctx, chunkText, doc, chunkIdx, totalChunks),
+                    pipelineExecutor));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        // Dedup controls from overlapping chunks by deterministic ID
+        Map<String, Control> seen = new LinkedHashMap<>();
+        for (CompletableFuture<List<Control>> f : futures) {
+            for (Control ctrl : f.join()) {
+                seen.putIfAbsent(ctrl.getId(), ctrl);
+            }
+        }
+
+        for (Control ctrl : seen.values()) {
+            controlRepository.save(ctrl);
+            sink.add(ctrl);
+            ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
+                    ControlMapper.toDto(ctrl));
+        }
+
+        // Fix 1: targeted update instead of full putItem to avoid clobbering parallel writers
+        if (doc != null) {
+            documentRepository.markControlsExtracted(doc.getId());
+        }
+
+        log.info("ExtractControlsStage: extracted {} controls for session {} (document={}, chunks={})",
+                seen.size(), ctx.getSessionId(), documentId, totalChunks);
+    }
+
+    private List<Control> extractChunk(PipelineContext ctx, String chunkText, Document doc,
+                                       int chunkIdx, int totalChunks) {
+        String documentId = doc != null ? doc.getId() : null;
+        log.info("Extracting chunk {}/{} for document {} (session {})",
+                chunkIdx + 1, totalChunks, documentId, ctx.getSessionId());
+
+        Map<String, String> userInput = Map.of("policy_text", chunkText, "policy_id", "POL-" + ctx.getSessionId());
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
                 ctx.getSessionId(), "extract_controls",
@@ -149,23 +207,7 @@ public class ExtractControlsStage implements Stage {
                 ToolDefinitions.EXTRACT_CONTROLS_TOOL
         );
 
-        String documentId = doc != null ? doc.getId() : null;
-        List<Control> extracted = parseControls(ctx, text, toolInput, ctx.getSessionId(), documentId);
-
-        for (Control ctrl : extracted) {
-            controlRepository.save(ctrl);
-            sink.add(ctrl);
-            ctx.getSseEmitterService().send(ctx.getSessionId(), "control.extracted",
-                    ControlMapper.toDto(ctrl));
-        }
-
-        if (doc != null) {
-            doc.setControlsExtracted(true);
-            documentRepository.save(doc);
-        }
-
-        log.info("ExtractControlsStage: extracted {} controls for session {} (document={})",
-                extracted.size(), ctx.getSessionId(), documentId);
+        return parseControls(ctx, chunkText, toolInput, ctx.getSessionId(), documentId);
     }
 
     private List<Control> parseControls(PipelineContext ctx, String sourceText,
@@ -224,12 +266,24 @@ public class ExtractControlsStage implements Stage {
         return result;
     }
 
+    // Fix 4: 100-char prefix check + 80% token-overlap fallback (mirrors ExtractObligationsStage)
     private static boolean isGrounded(String snippet, String sourceText) {
         if (snippet == null || snippet.isBlank() || sourceText == null) return false;
         String n = normalize(snippet);
         if (n.isEmpty()) return false;
-        String needle = n.length() > 30 ? n.substring(0, 30) : n;
-        return normalize(sourceText).contains(needle);
+        String haystack = normalize(sourceText);
+        String needle = n.length() > 100 ? n.substring(0, 100) : n;
+        if (haystack.contains(needle)) return true;
+        String[] tokens = n.split(" ");
+        long meaningful = 0;
+        long found = 0;
+        for (String token : tokens) {
+            if (token.length() > 3) {
+                meaningful++;
+                if (haystack.contains(token)) found++;
+            }
+        }
+        return meaningful > 0 && (double) found / meaningful >= 0.8;
     }
 
     private static String normalize(String s) {

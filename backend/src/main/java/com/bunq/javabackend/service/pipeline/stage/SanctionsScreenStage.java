@@ -86,7 +86,7 @@ public class SanctionsScreenStage implements Stage {
                     sidecarHits = sidecarClient.screenSanctions(
                             ctx.getSessionId(), needsSidecar, ctx.getBriefText());
                 } catch (SidecarCommunicationException e) {
-                    log.warn("SanctionsScreenStage: sidecar unreachable for session {}, skipping sanctions screening: {}",
+                    log.warn("SanctionsScreenStage: sidecar unreachable for session {}, persisting unscreened hits: {}",
                             ctx.getSessionId(), e.getMessage());
                     ctx.getSseEmitterService().send(ctx.getSessionId(), StageDeltaEvent.builder()
                             .sessionId(ctx.getSessionId())
@@ -95,7 +95,21 @@ public class SanctionsScreenStage implements Stage {
                             .itemType("sanctions.degraded")
                             .item(Map.of("reason", "sidecar unreachable"))
                             .build());
-                    sidecarHits = List.of();
+                    sidecarHits = new ArrayList<>();
+                    for (Counterparty cp : needsSidecar) {
+                        SanctionHit unscreened = new SanctionHit();
+                        unscreened.setId(IdGenerator.generateSanctionsHitId());
+                        unscreened.setSessionId(ctx.getSessionId());
+                        unscreened.setScreenedAt(Instant.now());
+                        unscreened.setMatchStatus(SanctionMatchStatus.under_review);
+                        unscreened.setCounterparty(cp);
+                        SanctionMatch placeholder = new SanctionMatch();
+                        placeholder.setListSource("screening unavailable");
+                        placeholder.setEntityName(cp.getName());
+                        placeholder.setMatchScore(0.0);
+                        unscreened.setHits(List.of(placeholder));
+                        sidecarHits.add(unscreened);
+                    }
                 }
                 allHits.addAll(sidecarHits);
             }

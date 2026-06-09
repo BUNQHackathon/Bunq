@@ -31,16 +31,20 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @Slf4j
 @Service
 public class MapObligationsControlsStage implements Stage {
+
+    public static final int SATISFIED_CONFIDENCE_THRESHOLD = 75;
 
     private static final int BATCH_SIZE = 10;
     private static final int BATCH_GROUP_SIZE = 3;
@@ -124,7 +128,7 @@ public class MapObligationsControlsStage implements Stage {
 
             log.info("MapObligationsControlsStage: {} computed via Bedrock, {} reused from cache",
                     computedCount, reusedCount);
-        });
+        }, pipelineExecutor);
     }
 
     private record BatchResult(List<Mapping> mappings, int computed, int reused) {}
@@ -245,7 +249,7 @@ public class MapObligationsControlsStage implements Stage {
                 try { mapping.setMappingType(MappingType.valueOf(typeStr.toLowerCase())); }
                 catch (Exception ignored) { mapping.setMappingType(MappingType.partial); }
                 double score = mapping.getMappingConfidence() != null ? mapping.getMappingConfidence() : 0;
-                mapping.setGapStatus(score >= 50 ? GapStatus.satisfied : GapStatus.partial);
+                mapping.setGapStatus(score >= SATISFIED_CONFIDENCE_THRESHOLD ? GapStatus.satisfied : GapStatus.partial);
                 Map<String, String> meta = new HashMap<>();
                 meta.put("route", "llm");
                 mapping.setMetadata(meta);
@@ -332,16 +336,15 @@ public class MapObligationsControlsStage implements Stage {
                 if (ctrl.getId() != null) controlIndex.put(ctrl.getId(), ctrl);
             }
 
-            List<Control> matched = new ArrayList<>();
+            Set<Control> matchedSet = new LinkedHashSet<>();
             for (KnowledgeBaseService.RetrievedChunk chunk : chunks) {
-                if (matched.size() >= MAX_CANDIDATE_CONTROLS) break;
+                if (matchedSet.size() >= MAX_CANDIDATE_CONTROLS) break;
 
                 // B6: prefer controlId from chunk metadata (set at ingest time)
                 String metaControlId = chunk.metadata() != null ? chunk.metadata().get("controlId") : null;
                 if (metaControlId != null) {
                     Control ctrl = controlIndex.get(metaControlId);
-                    if (ctrl != null && !matched.contains(ctrl)) {
-                        matched.add(ctrl);
+                    if (ctrl != null && matchedSet.add(ctrl)) {
                         continue;
                     }
                 }
@@ -349,16 +352,17 @@ public class MapObligationsControlsStage implements Stage {
                 // Fallback: substring match on description — remains until KB is re-indexed with metadata
                 String chunkText = chunk.text() != null ? chunk.text().toLowerCase() : "";
                 for (Control ctrl : allControls) {
-                    if (matched.contains(ctrl)) continue;
+                    if (matchedSet.contains(ctrl)) continue;
                     String desc = ctrl.getDescription() != null ? ctrl.getDescription().toLowerCase() : "";
                     if (!desc.isBlank() && chunkText.contains(desc.substring(0, Math.min(desc.length(), 40)))) {
-                        matched.add(ctrl);
+                        matchedSet.add(ctrl);
                         break;
                     }
                 }
             }
 
-            if (matched.isEmpty()) return List.of();
+            if (matchedSet.isEmpty()) return List.of();
+            List<Control> matched = new ArrayList<>(matchedSet);
 
             // B8: rerank candidates by relevance to the obligation query, return top-N
             List<Reranker.RankedItem> items = matched.stream()

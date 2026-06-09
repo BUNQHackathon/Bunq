@@ -80,8 +80,8 @@ public class JurisdictionOverviewService {
             analyzedLaunchIds.add(run.getLaunchId());
 
             String verdict = run.getVerdict();
-            // Runs with no verdict (PENDING/RUNNING) go to pending bucket
-            if (verdict == null) {
+            // Runs with no verdict or UNKNOWN (no docs attached) go to pending bucket — needs human attention
+            if (verdict == null || "UNKNOWN".equalsIgnoreCase(verdict)) {
                 pending.add(new JurisdictionTriageDTO.PendingCard(
                         run.getLaunchId(), launch.getName(), launch.getKind(), run.getStatus() != null ? run.getStatus().name() : null));
                 continue;
@@ -166,6 +166,8 @@ public class JurisdictionOverviewService {
         if (hasAmber) return "AMBER";
         boolean hasGreen = runs.stream().anyMatch(r -> "GREEN".equals(r.getVerdict()));
         if (hasGreen) return "GREEN";
+        boolean hasUnknown = runs.stream().anyMatch(r -> "UNKNOWN".equals(r.getVerdict()) || r.getVerdict() == null);
+        if (hasUnknown) return "UNKNOWN";
         return null;
     }
 }

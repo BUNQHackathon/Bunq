@@ -182,9 +182,10 @@ public class ProofPackService {
         if (!documents.isEmpty()) {
             safePdf(doc, new Paragraph("Policy versions used:", subFont));
             for (var d : documents) {
-                String sha = d.getId() != null && d.getId().length() >= 12 ? d.getId().substring(0, 12) : safeStr(d.getId());
                 String lastUsed = d.getLastUsedAt() != null ? d.getLastUsedAt().toString() : "—";
-                safePdf(doc, new Paragraph("• " + safeStr(d.getFilename()) + "  SHA-256:" + sha + "  last used:" + lastUsed, smallFont));
+                String hashPart = documentHashLabel(d.getId());
+                String line = "• " + safeStr(d.getFilename()) + (hashPart != null ? "  " + hashPart : "") + "  last used:" + lastUsed;
+                safePdf(doc, new Paragraph(line, smallFont));
             }
             safePdf(doc, new Paragraph(" "));
         }
@@ -450,6 +451,17 @@ public class ProofPackService {
         } catch (Exception e) {
             log.warn("PDF paragraph add failed: {}", e.getMessage());
         }
+    }
+
+    private static final java.util.regex.Pattern SHA256_HEX = java.util.regex.Pattern.compile("[0-9a-f]{64}");
+
+    /** Returns a label string for a document ID, or null if the ID is not a recognisable hash. */
+    private String documentHashLabel(String id) {
+        if (id == null) return null;
+        if (SHA256_HEX.matcher(id).matches()) {
+            return "SHA-256:" + id;
+        }
+        return null;
     }
 
     private String safeStr(String s) {
