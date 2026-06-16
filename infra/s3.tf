@@ -43,7 +43,7 @@ resource "aws_s3_bucket_cors_configuration" "uploads" {
 
 resource "aws_s3_bucket" "kb_sources" {
   for_each      = toset(local.kb_sources)
-  bucket        = "${local.name_prefix}-kb-${each.value}"
+  bucket        = "${local.name_prefix}-kb-${each.value}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
