@@ -63,6 +63,7 @@ public class BedrockService {
     private final BedrockRuntimeClient bedrockRuntimeClient;
     private final ObjectMapper objectMapper;
     private final Semaphore bedrockPermits;
+    private final int permitTimeoutSeconds;
     private final SessionCostService sessionCostService;
     // Byte-stable cache_control-annotated tool JSON strings, keyed by the original tool JSON.
     // Computed once per unique toolJson string so the byte image is identical across calls,
@@ -72,10 +73,12 @@ public class BedrockService {
     public BedrockService(BedrockRuntimeClient bedrockRuntimeClient,
                           ObjectMapper objectMapper,
                           @Value("${bedrock.max-concurrent:30}") int maxConcurrent,
+                          @Value("${bedrock.permit-timeout-seconds:600}") int permitTimeoutSeconds,
                           SessionCostService sessionCostService) {
         this.bedrockRuntimeClient = bedrockRuntimeClient;
         this.objectMapper = objectMapper;
         this.bedrockPermits = new Semaphore(maxConcurrent);
+        this.permitTimeoutSeconds = permitTimeoutSeconds;
         this.sessionCostService = sessionCostService;
     }
 
@@ -129,7 +132,7 @@ public class BedrockService {
                 // Backpressure on one model falls through to the next in the chain (Bonus fix).
                 boolean acquired;
                 try {
-                    acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
+                    acquired = bedrockPermits.tryAcquire(permitTimeoutSeconds, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
@@ -197,7 +200,7 @@ public class BedrockService {
             }
         }
         if (lastThrottle != null) throw lastThrottle;
-        throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s: all models in chain exhausted");
+        throw new BedrockBackpressureException("bedrock_backpressure_timeout: all models in chain exhausted");
     }
 
     /**
@@ -427,7 +430,7 @@ public class BedrockService {
                     // Backpressure on one model falls through to the next in the chain (Bonus fix).
                     boolean acquired;
                     try {
-                        acquired = bedrockPermits.tryAcquire(60, TimeUnit.SECONDS);
+                        acquired = bedrockPermits.tryAcquire(permitTimeoutSeconds, TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException("Interrupted waiting for Bedrock permit", e);
@@ -563,7 +566,7 @@ public class BedrockService {
                 }
             }
             if (lastThrottle != null) throw lastThrottle;
-            throw new BedrockBackpressureException("bedrock_backpressure_timeout_60s: all models in chain exhausted");
+            throw new BedrockBackpressureException("bedrock_backpressure_timeout: all models in chain exhausted");
         } catch (ThrottlingException e) {
             throw e;
         } catch (RuntimeException e) {

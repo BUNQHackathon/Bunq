@@ -208,7 +208,7 @@ public class MapObligationsControlsStage implements Stage {
         try {
             batchResults = matcher.matchBatch(
                     ctx.getSessionId(), "map_obligations_controls",
-                    matchableObls, candidatesById, BedrockModel.SONNET);
+                    matchableObls, candidatesById, BedrockModel.HAIKU);
         } catch (Exception e) {
             log.warn("matchBatch failed for group of {} obligations, falling back to single calls: {}",
                     group.size(), e.getMessage());
@@ -227,7 +227,7 @@ public class MapObligationsControlsStage implements Stage {
                 log.warn("obligation_id {} missing from matchBatch response, falling back to single match", oblId);
                 try {
                     matchResults = matcher.match(ctx.getSessionId(), "map_obligations_controls",
-                            oc.matchable(), oc.uncachedMatchable(), BedrockModel.SONNET);
+                            oc.matchable(), oc.uncachedMatchable(), BedrockModel.HAIKU);
                 } catch (Exception e) {
                     log.warn("Single-match fallback also failed for obligation {}: {}", oblId, e.getMessage());
                     matchResults = List.of();

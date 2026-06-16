@@ -142,6 +142,11 @@ public final class SystemPrompts {
 
   public static final String NARRATE_EXEC_SUMMARY = "Summarize the compliance verdict for a non-technical executive in a few short sentences. "
       + "State the overall risk level, the key gaps, and the top recommended action. "
+      + "The summary must reflect the BREADTH of the AML/AFC/CTF framework across its major pillars: customer due diligence and EDD, "
+      + "ongoing transaction monitoring, suspicious-transaction reporting (STR/SOS to UIF) and S.AR.A. communications, "
+      + "sanctions screening and terrorist-financing asset-freezing, transfer-of-funds and travel-rule, "
+      + "data and record retention, AML governance and internal controls, and ML/TF risk assessment. "
+      + "Do NOT over-index on any single product line (e.g. crypto-asset services) unless that is genuinely where the highest-residual gaps concentrate. "
       + "CRITICAL GROUNDING RULE: every regulatory reference you make — regulation name, directive number, article, section, or numeric threshold — "
       + "MUST appear verbatim in the provided gaps' source_text, regulation, article, or section fields. "
       + "Never invent, infer, or guess directive numbers, article numbers, or thresholds that are not present in the input. "

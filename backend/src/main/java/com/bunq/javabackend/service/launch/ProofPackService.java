@@ -208,7 +208,15 @@ public class ProofPackService {
 
         if (!gaps.isEmpty()) {
             safePdf(doc, new Paragraph("Unresolved gaps:", subFont));
-            for (var g : gaps) {
+            var sortedGaps = gaps.stream()
+                    .sorted(Comparator
+                            .comparing((Gap g) -> Boolean.TRUE.equals(g.getEscalationRequired()) ? 0 : 1)
+                            .thenComparingDouble(g -> -(g.getResidualRisk() != null ? g.getResidualRisk() : 0.0))
+                            .thenComparingDouble(g -> -(g.getSeverity() != null ? g.getSeverity() : 0.0)))
+                    .toList();
+            int topN = Math.min(20, sortedGaps.size());
+            for (int i = 0; i < topN; i++) {
+                var g = sortedGaps.get(i);
                 var obl = g.getObligationId() != null ? obligationRepository.findById(g.getObligationId()).orElse(null) : null;
                 String title = obl != null && obl.getSource() != null
                         ? safeStr(obl.getSource().getRegulation()) + " " + safeStr(obl.getSource().getArticle())
@@ -217,6 +225,9 @@ public class ProofPackService {
                         ? "score=" + fmt(g.getSeverityDimensions().getCombinedRiskScore())
                         : "residualRisk=" + fmt(g.getResidualRisk());
                 safePdf(doc, new Paragraph("• " + title + "  " + sev, smallFont));
+            }
+            if (sortedGaps.size() > 20) {
+                safePdf(doc, new Paragraph("... and " + (sortedGaps.size() - 20) + " more unresolved gaps (see gaps.pdf)", smallFont));
             }
             safePdf(doc, new Paragraph(" "));
         }

@@ -17,10 +17,10 @@ resource "null_resource" "jib_build" {
     interpreter = ["powershell", "-NoProfile", "-Command"]
     working_dir = "${path.module}/../backend"
     command     = <<-EOT
-      $ErrorActionPreference = 'Stop'
       $ecrImage = '${aws_ecr_repository.backend.repository_url}:${var.image_tag}'
       $pw = aws ecr get-login-password --region ${var.region} --profile ${var.aws_profile}
-      .\mvnw.cmd -B -DskipTests compile jib:build "-Djib.to.image=$ecrImage" "-Djib.to.auth.username=AWS" "-Djib.to.auth.password=$pw"
+      cmd /c ".\mvnw.cmd -B -DskipTests compile jib:build ""-Djib.to.image=$ecrImage"" ""-Djib.to.auth.username=AWS"" ""-Djib.to.auth.password=$pw"" > jib_tf.log 2>&1"
+      exit $LASTEXITCODE
     EOT
   }
 

@@ -26,7 +26,7 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
 # Express Mode auto-provisions ALB, HTTPS listener, managed TLS cert, and a
 # *.ecs.<region>.on.aws endpoint. The endpoint is exposed via ingress_paths[0].endpoint.
 resource "aws_ecs_express_gateway_service" "backend" {
-  service_name            = "${local.name_prefix}-backend-v5"
+  service_name            = "${local.name_prefix}-backend-v7"
   cluster                 = "default"
   execution_role_arn      = aws_iam_role.ecs_task_execution.arn
   infrastructure_role_arn = aws_iam_role.ecs_infra_express.arn

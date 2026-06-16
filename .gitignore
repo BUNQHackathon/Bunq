@@ -13,3 +13,6 @@ docs/superpowers/
 admin_accessKeys.csv
 CLAUDE.local.md
 /Policies
+/test
+*.log
+/backend/docs/dev
