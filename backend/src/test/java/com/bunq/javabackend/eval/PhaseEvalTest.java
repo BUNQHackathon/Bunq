@@ -39,10 +39,12 @@ class PhaseEvalTest {
     // -----------------------------------------------------------------------
     // Matrix control flags — set to false to skip cells and save budget
     // -----------------------------------------------------------------------
-    /** Set false to skip all Sonnet calls (Haiku only). */
-    private static final boolean RUN_SONNET = true;
-    /** Set false to skip all OLD-prompt calls (NEW only). */
-    private static final boolean RUN_OLD    = true;
+    /** Set -Deval.sonnet=false to skip all Sonnet calls. */
+    private static final boolean RUN_SONNET = Boolean.parseBoolean(System.getProperty("eval.sonnet", "true"));
+    /** Set -Deval.haiku=false to skip all Haiku calls. */
+    private static final boolean RUN_HAIKU  = Boolean.parseBoolean(System.getProperty("eval.haiku", "true"));
+    /** Set -Deval.old=false to skip all OLD-prompt calls (NEW only). */
+    private static final boolean RUN_OLD    = Boolean.parseBoolean(System.getProperty("eval.old", "true"));
 
     // -----------------------------------------------------------------------
     // Injected services
@@ -67,6 +69,7 @@ class PhaseEvalTest {
         for (PromptVariant pv : PromptVariant.values()) {
             if (pv == PromptVariant.OLD && !RUN_OLD) continue;
             for (BedrockModel m : new BedrockModel[]{BedrockModel.HAIKU, BedrockModel.SONNET}) {
+                if (m == BedrockModel.HAIKU && !RUN_HAIKU) continue;
                 if (m == BedrockModel.SONNET && !RUN_SONNET) continue;
                 out.add(new Cell(pv, m));
             }
@@ -393,7 +396,7 @@ class PhaseEvalTest {
 
         // Only compare by model — skip OLD prompt for mapping (see note above)
         List<BedrockModel> models = new ArrayList<>();
-        models.add(BedrockModel.HAIKU);
+        if (RUN_HAIKU) models.add(BedrockModel.HAIKU);
         if (RUN_SONNET) models.add(BedrockModel.SONNET);
 
         for (BedrockModel model : models) {

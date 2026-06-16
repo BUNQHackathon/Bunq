@@ -119,6 +119,8 @@ public final class SystemPrompts {
       + "- 0.5 — recoverable with significant effort (e.g., GDPR breach notification sent late; ICO fine and remediation plan required)\n"
       + "- 0.9 — largely unrecoverable (e.g., correspondent-bank relationship terminated after AML enforcement action; reputational harm permanent)\n"
       + "\n"
+      + "\n### Escalation criterion\n"
+      + "Set escalation_required=true when the residual risk is >= 0.5, OR severity >= 0.7, OR the obligation concerns suspicious-transaction reporting, sanctions screening, or terrorist-financing asset-freezing, OR non-compliance carries criminal liability or licence/activity suspension; otherwise set it false.\n"
       + "Use these anchors as your scale; never quote them as evidence.";
 
   public static final String RELEVANCE_SCORER =

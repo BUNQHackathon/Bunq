@@ -3,55 +3,176 @@
     "id": "gap-1",
     "obligation": {
       "subject": "obligated entities",
-      "action": "submit a suspicious activity report to the Financial Intelligence Unit without delay",
+      "action": "file a suspicious transaction report (SOS/STR) to the UIF (Financial Intelligence Unit) without delay upon detection of suspicious activity",
       "risk_category": "suspicious_activity_reporting",
-      "regulatory_penalty": "Administrative fine and potential criminal referral for wilful non-reporting"
+      "regulatory_penalty": "Criminal referral and substantial administrative fine; suspension of the responsible officer's functions for wilful or systematic failure to report to the UIF"
     },
-    "expected_residual_range": [0.6, 1.0],
+    "expected_residual_range": [0.65, 1.0],
     "expect_escalation": true
   },
   {
     "id": "gap-2",
     "obligation": {
-      "subject": "credit institutions",
-      "action": "retain KYC records for a minimum of five years",
-      "risk_category": "record_keeping",
-      "regulatory_penalty": "Written warning and requirement to remedy within 60 days"
+      "subject": "credit institutions and intermediaries",
+      "action": "immediately freeze funds and economic resources held by or for designated persons subject to the CTF freezing regime under D.Lgs 109/2007 and apply for de-listing or derogation where appropriate",
+      "risk_category": "terrorist_financing_freezing",
+      "regulatory_penalty": "Criminal liability under D.Lgs 109/2007; administrative suspension of business activities and referral to judicial authority for breach of the freezing obligation"
     },
-    "expected_residual_range": [0.1, 0.4],
-    "expect_escalation": false
+    "expected_residual_range": [0.7, 1.0],
+    "expect_escalation": true
   },
   {
     "id": "gap-3",
     "obligation": {
       "subject": "obligated entities",
-      "action": "apply enhanced due diligence to all politically exposed persons",
+      "action": "apply enhanced due diligence measures to politically exposed persons, including senior management approval, enhanced source-of-wealth verification, and intensified ongoing monitoring",
       "risk_category": "enhanced_due_diligence",
-      "regulatory_penalty": "Significant administrative sanction and public censure by supervisory authority"
+      "regulatory_penalty": "Significant administrative sanction, public censure by the supervisory authority, and potential suspension of onboarding activities pending remediation"
     },
-    "expected_residual_range": [0.5, 0.85],
+    "expected_residual_range": [0.55, 0.85],
     "expect_escalation": true
   },
   {
     "id": "gap-4",
     "obligation": {
       "subject": "obligated entities",
-      "action": "verify the identity of the customer before establishing a business relationship",
-      "risk_category": "customer_due_diligence",
-      "regulatory_penalty": "Corrective measure and administrative fine proportionate to the breach"
+      "action": "conduct continuous monitoring and scrutiny of transactions throughout the business relationship to ensure consistency with the customer's risk profile and source of funds",
+      "risk_category": "transaction_monitoring",
+      "regulatory_penalty": "Suspension of business activities pending remediation and substantial periodic penalty payments for persistent failure to monitor transactions adequately"
     },
-    "expected_residual_range": [0.05, 0.3],
-    "expect_escalation": false
+    "expected_residual_range": [0.6, 0.95],
+    "expect_escalation": true
   },
   {
     "id": "gap-5",
     "obligation": {
       "subject": "obligated entities",
-      "action": "conduct ongoing monitoring of the business relationship including scrutiny of transactions",
-      "risk_category": "transaction_monitoring",
-      "regulatory_penalty": "Suspension of business activities pending remediation and substantial periodic penalty payments"
+      "action": "verify the customer's identity through reliable, independent source documents, data, or information before establishing the business relationship or carrying out a transaction",
+      "risk_category": "customer_due_diligence",
+      "regulatory_penalty": "Administrative fine proportionate to the gravity of the breach and a supervisory corrective measure requiring remedial action within a fixed term"
     },
-    "expected_residual_range": [0.65, 1.0],
+    "expected_residual_range": [0.5, 0.8],
     "expect_escalation": true
+  },
+  {
+    "id": "gap-6",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "determine the residual ML/TF risk level by combining the inherent risk score with the control-system vulnerability assessment on the prescribed 4x4 risk matrix and document the outcome",
+      "risk_category": "risk_assessment",
+      "regulatory_penalty": "Administrative sanction for inadequate risk governance and supervisory order to overhaul the risk-assessment methodology within a prescribed period"
+    },
+    "expected_residual_range": [0.5, 0.8],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-7",
+    "obligation": {
+      "subject": "payment service providers and intermediaries",
+      "action": "include complete and accurate originator and beneficiary information on all funds transfers in accordance with the travel rule under Regulation EU 2023/1113 and D.Lgs 204/2024",
+      "risk_category": "transfer_of_funds",
+      "regulatory_penalty": "Substantial administrative fine and supervisory notice to cease non-compliant transfers; repeated breach may result in temporary licence restriction"
+    },
+    "expected_residual_range": [0.55, 0.85],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-8",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "retain AML/KYC records, supporting documents, and transaction data for the statutory minimum retention period prescribed by applicable AML legislation",
+      "risk_category": "record_keeping",
+      "regulatory_penalty": "Administrative fine and corrective order requiring restoration or reconstruction of missing records within a defined remediation timeline"
+    },
+    "expected_residual_range": [0.45, 0.7],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-9",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "establish and maintain a dedicated AML compliance function with adequate organisational arrangements, clear reporting lines, and effective internal controls to prevent ML/TF risks",
+      "risk_category": "governance",
+      "regulatory_penalty": "Supervisory corrective measure and administrative sanction requiring appointment of a qualified MLRO and submission of a governance remediation plan within 90 days"
+    },
+    "expected_residual_range": [0.5, 0.8],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-10",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "screen all customers, beneficial owners, and transactions against current UN and EU consolidated sanctions lists before onboarding and on an ongoing basis",
+      "risk_category": "sanctions_screening",
+      "regulatory_penalty": "Criminal liability for knowingly facilitating prohibited transactions; licence suspension and referral to competent authorities for systemic failures in sanctions screening"
+    },
+    "expected_residual_range": [0.6, 0.95],
+    "expect_escalation": true
+  },
+  {
+    "id": "gap-11",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "submit the aggregate AML statistical report (S.AR.A.) to the supervisory authority by the prescribed periodic deadline",
+      "risk_category": "regulatory_reporting",
+      "regulatory_penalty": "Written warning and requirement to submit the overdue report within a short grace period; minor administrative fine for repeated late submissions"
+    },
+    "expected_residual_range": [0.2, 0.45],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-12",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "transmit UIF objective communications containing the required aggregate data on the schedule prescribed by the UIF",
+      "risk_category": "regulatory_reporting",
+      "regulatory_penalty": "Corrective measure and administrative notice to remedy the missed transmission; no criminal consequences for isolated scheduling failures"
+    },
+    "expected_residual_range": [0.15, 0.4],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-13",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "provide periodic AML/CFT training to all relevant staff covering current typologies, red flags, and internal reporting procedures",
+      "risk_category": "training",
+      "regulatory_penalty": "Administrative notice and corrective order to implement a compliant training programme; no immediate financial penalty for a first-time gap in training records"
+    },
+    "expected_residual_range": [0.25, 0.5],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-14",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "maintain internal AML policies and procedures in documented, current form and ensure they reflect any changes to applicable legislation or supervisory guidance",
+      "risk_category": "policy_maintenance",
+      "regulatory_penalty": "Written supervisory recommendation to update documentation; minor administrative sanction if deficiencies persist following a follow-up inspection"
+    },
+    "expected_residual_range": [0.2, 0.45],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-15",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "format suspicious-activity report (SOS) fields in strict conformance with the Infostat-UIF technical specification for data quality and transmission",
+      "risk_category": "reporting_mechanics",
+      "regulatory_penalty": "Technical rejection of the report by the UIF system and a remediation notice requiring resubmission in the correct format; no standalone penalty for formatting defects alone"
+    },
+    "expected_residual_range": [0.1, 0.35],
+    "expect_escalation": false
+  },
+  {
+    "id": "gap-16",
+    "obligation": {
+      "subject": "obligated entities",
+      "action": "file the routine quarterly compliance attestation with the supervisory authority by the prescribed deadline",
+      "risk_category": "regulatory_reporting",
+      "regulatory_penalty": "Reminder notice and minor administrative fee for late filing; remediated by submission within the correction window with no further consequence"
+    },
+    "expected_residual_range": [0.1, 0.3],
+    "expect_escalation": false
   }
 ]

@@ -51,15 +51,9 @@ public class BedrockService {
     // Order is cheapest→most-capable so we only escalate under pressure.
     private static final Map<String, List<String>> FALLBACK_CHAIN = Map.of(
             "eu.anthropic.claude-haiku-4-5-20251001-v1:0", List.of(
-                    "eu.anthropic.claude-sonnet-4-6",
-                    "eu.amazon.nova-pro-v1:0",
-                    "eu.amazon.nova-lite-v1:0"),
+                    "eu.anthropic.claude-sonnet-4-6"),
             "eu.anthropic.claude-sonnet-4-6", List.of(
-                    "eu.amazon.nova-pro-v1:0",
-                    "eu.amazon.nova-lite-v1:0"),
-            "eu.amazon.nova-pro-v1:0", List.of(
-                    "eu.amazon.nova-lite-v1:0"),
-            "eu.amazon.nova-lite-v1:0", List.of()
+                    "eu.anthropic.claude-haiku-4-5-20251001-v1:0")
     );
 
     private static boolean isNovaModel(String modelId) {

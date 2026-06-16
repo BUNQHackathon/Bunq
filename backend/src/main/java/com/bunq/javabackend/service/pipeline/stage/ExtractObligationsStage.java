@@ -163,7 +163,15 @@ public class ExtractObligationsStage implements Stage {
             final int chunkIdx = i;
             final String chunkText = chunks.get(i);
             futures.add(CompletableFuture.supplyAsync(
-                    () -> extractChunk(ctx, chunkText, doc, chunkIdx, totalChunks),
+                    () -> {
+                        try {
+                            return extractChunk(ctx, chunkText, doc, chunkIdx, totalChunks);
+                        } catch (Exception e) {
+                            log.error("ExtractObligationsStage: chunk {}/{} failed for document {} (session {}), skipping: {}",
+                                    chunkIdx + 1, totalChunks, documentId, ctx.getSessionId(), e.getMessage());
+                            return java.util.List.<Obligation>of();
+                        }
+                    },
                     pipelineExecutor));
         }
 

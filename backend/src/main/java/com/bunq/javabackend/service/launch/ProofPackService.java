@@ -112,13 +112,17 @@ public class ProofPackService {
             var bos = new ByteArrayOutputStream();
             var zos = new ZipOutputStream(bos);
 
-            addZipEntry(zos, "cover.pdf",
+            addZipEntry(zos, "executive_report.pdf",
                     buildCoverPdf(launch, run, jurisdictionCode, jurisdictionName,
-                            obligations, controls, mappings, gaps, documents));
+                            obligations, controls, mappings, gaps, documents,
+                            session != null ? session.getExecutiveSummary() : null));
             addZipEntry(zos, "mappings.xlsx",
                     buildMappingsXlsx(mappings, obligations, controls, evidences));
             addZipEntry(zos, "gaps.pdf",
-                    buildGapsPdf(gaps, obligations));
+                    buildGapsPdf(gaps, obligations,
+                            session != null ? session.getExecutiveSummary() : null,
+                            run.getVerdict(),
+                            jurisdictionName));
             addZipEntry(zos, "sanctions.pdf",
                     buildSanctionsPdf(run, jurisdictionName, sanctionHits));
             addEvidenceFiles(zos, evidences);
@@ -142,7 +146,7 @@ public class ProofPackService {
                                   String code, String jName,
                                   List<Obligation> obligations, List<Control> controls,
                                   List<Mapping> mappings, List<Gap> gaps,
-                                  List<Document> documents) {
+                                  List<Document> documents, String execSummary) {
         var bos = new ByteArrayOutputStream();
         var doc = new com.lowagie.text.Document(PageSize.A4);
         PdfWriter.getInstance(doc, bos);
@@ -155,7 +159,7 @@ public class ProofPackService {
 
         String verdict = run.getVerdict() != null ? run.getVerdict() : "UNKNOWN";
 
-        safePdf(doc, new Paragraph(jName + " — " + launch.getName() + " Compliance Evidence Pack", titleFont));
+        safePdf(doc, new Paragraph(jName + " — " + launch.getName() + " — AML/AFC Gap Analysis: Executive Report", titleFont));
         safePdf(doc, new Paragraph(
                 "Generated: " + Instant.now() + " | Run #1 | Verdict: " + verdictEmoji(verdict) + " " + verdict, subFont));
         safePdf(doc, new Paragraph(" "));
@@ -177,6 +181,18 @@ public class ProofPackService {
                 mappings.size() + " mappings  /  " +
                 gaps.size() + " gaps  /  " +
                 safe(run.getSanctionsHits()) + " sanctions hits", normalFont));
+        safePdf(doc, new Paragraph(" "));
+
+        long escalated = gaps.stream().filter(g -> Boolean.TRUE.equals(g.getEscalationRequired())).count();
+        long highResidual = gaps.stream()
+                .filter(g -> !Boolean.TRUE.equals(g.getEscalationRequired())
+                        && g.getResidualRisk() != null && g.getResidualRisk() >= 0.40)
+                .count();
+        long other = gaps.size() - escalated - highResidual;
+        safePdf(doc, new Paragraph("Severity breakdown:", subFont));
+        safePdf(doc, new Paragraph(
+                escalated + " escalated  /  " + highResidual + " elevated-high residual  /  " + other + " other",
+                normalFont));
         safePdf(doc, new Paragraph(" "));
 
         if (!documents.isEmpty()) {
@@ -201,6 +217,17 @@ public class ProofPackService {
                         ? "score=" + fmt(g.getSeverityDimensions().getCombinedRiskScore())
                         : "residualRisk=" + fmt(g.getResidualRisk());
                 safePdf(doc, new Paragraph("• " + title + "  " + sev, smallFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+        }
+
+        if (execSummary != null && !execSummary.isBlank()) {
+            safePdf(doc, new Paragraph("Executive Summary", subFont));
+            String cleaned = GapNarrative.clean(execSummary);
+            String stripped = cleaned != null ? GapNarrative.stripMarkdown(cleaned) : null;
+            if (stripped != null && !stripped.isBlank()) {
+                if (stripped.length() > 3000) stripped = stripped.substring(0, 3000) + "…";
+                safePdf(doc, new Paragraph(stripped, normalFont));
             }
             safePdf(doc, new Paragraph(" "));
         }
@@ -284,80 +311,155 @@ public class ProofPackService {
         return bos.toByteArray();
     }
 
-    private byte[] buildGapsPdf(List<Gap> gaps, List<Obligation> obligations) {
+    private byte[] buildGapsPdf(List<Gap> gaps, List<Obligation> obligations,
+                                 String execSummary, String verdict, String jurisdictionName) {
         var bos = new ByteArrayOutputStream();
         var doc = new com.lowagie.text.Document(PageSize.A4);
         PdfWriter.getInstance(doc, bos);
         doc.open();
 
-        var titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-        var subFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+        var titleFont  = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+        var subFont    = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
         var normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
 
-        if (gaps.isEmpty()) {
+        var oblById = new HashMap<String, Obligation>();
+        for (var o : obligations) oblById.put(o.getId(), o);
+
+        // Sort: escalation_required first, then residualRisk descending (nulls last)
+        var sorted = new java.util.ArrayList<>(gaps);
+        sorted.sort(Comparator
+                .<Gap, Boolean>comparing(g -> g.getEscalationRequired() != null && g.getEscalationRequired(),
+                        Comparator.reverseOrder())
+                .thenComparing(g -> g.getResidualRisk() != null ? g.getResidualRisk() : 0.0,
+                        Comparator.reverseOrder()));
+
+        // ---- Summary page ----
+        String jName = jurisdictionName != null ? jurisdictionName : "—";
+        safePdf(doc, new Paragraph(jName + " — AML/AFC Gap Analysis: Findings", titleFont));
+        safePdf(doc, new Paragraph(" "));
+
+        String verdictText = verdict != null ? verdict : "UNKNOWN";
+        safePdf(doc, new Paragraph("Verdict: " + verdictEmoji(verdict) + " " + verdictText, subFont));
+        safePdf(doc, new Paragraph(" "));
+
+        int total = sorted.size();
+        long escalated    = sorted.stream().filter(g -> Boolean.TRUE.equals(g.getEscalationRequired())).count();
+        long highResidual = sorted.stream()
+                .filter(g -> !Boolean.TRUE.equals(g.getEscalationRequired())
+                          && g.getResidualRisk() != null && g.getResidualRisk() >= 0.4)
+                .count();
+        long other = total - escalated - highResidual;
+        safePdf(doc, new Paragraph(
+                total + " gaps — " + escalated + " escalated, " +
+                highResidual + " elevated/high residual, " + other + " other", normalFont));
+        safePdf(doc, new Paragraph(" "));
+
+        if (execSummary != null && !execSummary.isBlank()) {
+            safePdf(doc, new Paragraph("Executive Summary", subFont));
+            String cleaned = GapNarrative.stripMarkdown(GapNarrative.clean(execSummary));
+            if (cleaned != null) {
+                if (cleaned.length() > 4000) cleaned = cleaned.substring(0, 4000) + "…";
+                safePdf(doc, new Paragraph(cleaned, normalFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+        }
+
+        safePdf(doc, new Paragraph("Priority findings", subFont));
+        if (sorted.isEmpty()) {
             safePdf(doc, new Paragraph("No gaps identified.", normalFont));
         } else {
-            var oblById = new HashMap<String, Obligation>();
-            for (var o : obligations) oblById.put(o.getId(), o);
-
-            boolean first = true;
-            for (var gap : gaps) {
-                if (!first) doc.newPage();
-                first = false;
-
-                var obl = gap.getObligationId() != null ? oblById.get(gap.getObligationId()) : null;
-                String regulation = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getRegulation()) : "—";
-                String article = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getArticle()) : "—";
-                String text = obl != null && obl.getSource() != null && obl.getSource().getSourceText() != null
-                        ? obl.getSource().getSourceText()
-                        : (obl != null && obl.getAction() != null ? obl.getAction() : "—");
-                if (text.length() > 300) text = text.substring(0, 300) + "...";
-
-                safePdf(doc, new Paragraph("Gap — " + regulation + " " + article, titleFont));
-                safePdf(doc, new Paragraph("Obligation: " + text, normalFont));
-                safePdf(doc, new Paragraph(" "));
-
-                safePdf(doc, new Paragraph("Severity", subFont));
-                SeverityDimensions dims = gap.getSeverityDimensions();
-                if (dims != null) {
-                    safePdf(doc, new Paragraph("Regulatory urgency: " + fmt(dims.getRegulatoryUrgency()), normalFont));
-                    safePdf(doc, new Paragraph("Penalty severity:   " + fmt(dims.getPenaltySeverity()), normalFont));
-                    safePdf(doc, new Paragraph("Probability:        " + fmt(dims.getProbability()), normalFont));
-                    safePdf(doc, new Paragraph("Business impact:    " + fmt(dims.getBusinessImpact()), normalFont));
-                    safePdf(doc, new Paragraph("Combined score:     " + fmt(dims.getCombinedRiskScore()), normalFont));
-                } else {
-                    safePdf(doc, new Paragraph("Residual risk: " + fmt(gap.getResidualRisk()), normalFont));
-                }
-                safePdf(doc, new Paragraph(" "));
-
-                safePdf(doc, new Paragraph("Gap type: " + (gap.getGapType() != null ? gap.getGapType().name() : "—"), normalFont));
-                String narr = GapNarrative.clean(gap.getNarrative());
-                if (narr != null && !narr.isBlank()) {
-                    safePdf(doc, new Paragraph("Narrative: " + narr, normalFont));
-                }
-                safePdf(doc, new Paragraph(" "));
-
-                safePdf(doc, new Paragraph("Remediation", subFont));
-                List<RecommendedAction> actions = gap.getRecommendedActions();
-                if (actions == null || actions.isEmpty()) {
-                    actions = GapNarrative.recoverActions(gap.getNarrative());
-                }
-                if (!actions.isEmpty()) {
-                    for (var a : actions) safePdf(doc, new Paragraph("• " + safeStr(a.getAction()), normalFont));
-                } else {
-                    safePdf(doc, new Paragraph("TBD", normalFont));
-                }
-                safePdf(doc, new Paragraph(" "));
-
-                safePdf(doc, new Paragraph("Owner: compliance-officer", normalFont));
-                safePdf(doc, new Paragraph("Target date: " + targetDate(gap), normalFont));
-                safePdf(doc, new Paragraph("Rerun history: Run #1 — first detected — current", normalFont));
+            int limit = Math.min(10, sorted.size());
+            for (int i = 0; i < limit; i++) {
+                var g = sorted.get(i);
+                var obl = g.getObligationId() != null ? oblById.get(g.getObligationId()) : null;
+                String reg = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getRegulation()) : "—";
+                String art = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getArticle()) : "—";
+                String esc = Boolean.TRUE.equals(g.getEscalationRequired()) ? "  [ESCALATION REQUIRED]" : "";
+                safePdf(doc, new Paragraph(
+                        (i + 1) + ". " + reg + " " + art + " — " + residualLevelLabel(g.getResidualRisk()) + esc,
+                        normalFont));
             }
         }
 
-        doc.close();
+        // ---- One page per gap ----
+        for (var gap : sorted) {
+            doc.newPage();
 
+            var obl = gap.getObligationId() != null ? oblById.get(gap.getObligationId()) : null;
+            String regulation = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getRegulation()) : "—";
+            String article    = obl != null && obl.getSource() != null ? safeStr(obl.getSource().getArticle()) : "—";
+            String text = obl != null && obl.getSource() != null && obl.getSource().getSourceText() != null
+                    ? obl.getSource().getSourceText()
+                    : (obl != null && obl.getAction() != null ? obl.getAction() : "—");
+            if (text.length() > 300) text = text.substring(0, 300) + "...";
+
+            boolean isEscalated = Boolean.TRUE.equals(gap.getEscalationRequired());
+            String heading = regulation + " " + article
+                    + " — Residual: " + residualLevelLabel(gap.getResidualRisk())
+                    + (isEscalated ? "  — ESCALATION REQUIRED" : "");
+            safePdf(doc, new Paragraph(heading, titleFont));
+            safePdf(doc, new Paragraph(" "));
+
+            safePdf(doc, new Paragraph("Obligation: " + text, normalFont));
+            safePdf(doc, new Paragraph(" "));
+
+            safePdf(doc, new Paragraph("Residual risk: " + residualLevelLabel(gap.getResidualRisk())
+                    + "  (" + fmt(gap.getResidualRisk()) + ")", normalFont));
+
+            SeverityDimensions dims = gap.getSeverityDimensions();
+            if (dims != null) {
+                safePdf(doc, new Paragraph("Regulatory urgency: " + fmt(dims.getRegulatoryUrgency()), normalFont));
+                safePdf(doc, new Paragraph("Penalty severity:   " + fmt(dims.getPenaltySeverity()), normalFont));
+                safePdf(doc, new Paragraph("Probability:        " + fmt(dims.getProbability()), normalFont));
+                safePdf(doc, new Paragraph("Business impact:    " + fmt(dims.getBusinessImpact()), normalFont));
+                safePdf(doc, new Paragraph("Combined score:     " + fmt(dims.getCombinedRiskScore()), normalFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+
+            safePdf(doc, new Paragraph("Gap type: " + (gap.getGapType() != null ? gap.getGapType().name() : "—"), normalFont));
+            String narr = GapNarrative.stripMarkdown(GapNarrative.clean(gap.getNarrative()));
+            if (narr != null && !narr.isBlank()) {
+                safePdf(doc, new Paragraph("Narrative: " + narr, normalFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+
+            safePdf(doc, new Paragraph("Remediation", subFont));
+            List<RecommendedAction> actions = gap.getRecommendedActions();
+            if (actions == null || actions.isEmpty()) {
+                actions = GapNarrative.recoverActions(gap.getNarrative());
+            }
+            if (!actions.isEmpty()) {
+                String firstOwner = null;
+                for (var a : actions) {
+                    String ownerSuffix = (a.getSuggestedOwner() != null && !a.getSuggestedOwner().isBlank())
+                            ? "  (owner: " + a.getSuggestedOwner() + ")" : "";
+                    safePdf(doc, new Paragraph("• " + safeStr(a.getAction()) + ownerSuffix, normalFont));
+                    if (firstOwner == null && a.getSuggestedOwner() != null && !a.getSuggestedOwner().isBlank()) {
+                        firstOwner = a.getSuggestedOwner();
+                    }
+                }
+                safePdf(doc, new Paragraph("Owner: " + (firstOwner != null ? firstOwner : "Compliance"), normalFont));
+            } else {
+                safePdf(doc, new Paragraph("TBD", normalFont));
+                safePdf(doc, new Paragraph("Owner: Compliance", normalFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+
+            safePdf(doc, new Paragraph("Target date: " + targetDate(gap), normalFont));
+            safePdf(doc, new Paragraph("Rerun history: Run #1 — first detected — current", normalFont));
+        }
+
+        doc.close();
         return bos.toByteArray();
+    }
+
+    /** Maps a 0–1 residual risk score to the Banca d'Italia 4-level scale label. */
+    private String residualLevelLabel(Double residual) {
+        if (residual == null) return "—";
+        if (residual >= 0.66) return "Elevato (4)";
+        if (residual >= 0.40) return "Medio (3)";
+        if (residual >= 0.20) return "Basso (2)";
+        return "Non significativo (1)";
     }
 
     private byte[] buildSanctionsPdf(JurisdictionRun run, String jurisdictionName, List<SanctionHit> hits) {
@@ -490,11 +592,11 @@ public class ProofPackService {
         int days = 90;
         if (gap.getSeverityDimensions() != null && gap.getSeverityDimensions().getCombinedRiskScore() != null) {
             double score = gap.getSeverityDimensions().getCombinedRiskScore();
-            if (score >= 7.0) days = 30;
-            else if (score >= 4.0) days = 60;
+            if (score >= 0.66) days = 30;
+            else if (score >= 0.40) days = 60;
         } else if (gap.getResidualRisk() != null) {
-            if (gap.getResidualRisk() >= 7.0) days = 30;
-            else if (gap.getResidualRisk() >= 4.0) days = 60;
+            if (gap.getResidualRisk() >= 0.66) days = 30;
+            else if (gap.getResidualRisk() >= 0.40) days = 60;
         }
         return LocalDate.now().plusDays(days).toString();
     }

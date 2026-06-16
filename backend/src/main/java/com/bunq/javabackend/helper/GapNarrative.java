@@ -97,6 +97,42 @@ public final class GapNarrative {
     }
 
     /**
+     * Strips lightweight Markdown formatting from a string so it renders cleanly in
+     * plain-text contexts such as PDF paragraphs.
+     * <ul>
+     *   <li>Returns {@code null} if the input is {@code null}.</li>
+     *   <li>Removes bold/italic markers: {@code **}, {@code __}, and standalone {@code *}/{@code _}.</li>
+     *   <li>Removes leading heading markers at line starts ({@code # }, {@code ## }, …).</li>
+     *   <li>Converts list-item starts ({@code - }, {@code * }, {@code + }) to {@code • }.</li>
+     *   <li>Removes inline-code backticks.</li>
+     *   <li>Collapses three or more consecutive newlines to two.</li>
+     * </ul>
+     */
+    public static String stripMarkdown(String s) {
+        if (s == null) return null;
+
+        // Remove bold/italic: **, __, then lone * or _ (word-boundary emphasis)
+        s = s.replace("**", "").replace("__", "");
+        s = s.replaceAll("(?<![\\w])([*_])(?!\\1)(.+?)\\1(?![\\w])", "$2");
+        // Remove remaining lone * or _ used as emphasis markers
+        s = s.replaceAll("(?m)(?<![\\w])[*_](?![\\w])", "");
+
+        // Remove leading heading markers at line starts (e.g. "## Heading")
+        s = s.replaceAll("(?m)^#{1,6}\\s+", "");
+
+        // Convert list-item starts to bullet
+        s = s.replaceAll("(?m)^[ \\t]*[-*+]\\s+", "• ");
+
+        // Remove inline-code backticks
+        s = s.replace("`", "");
+
+        // Collapse 3+ consecutive newlines to 2
+        s = s.replaceAll("\\n{3,}", "\n\n");
+
+        return s;
+    }
+
+    /**
      * Recovers the escalation_required flag leaked into the narrative.
      * Returns false if absent or on any error.
      */
