@@ -201,7 +201,7 @@ public class ExtractControlsStage implements Stage {
 
         JsonNode toolInput = bedrockService.invokeModelWithTool(
                 ctx.getSessionId(), "extract_controls",
-                BedrockModel.HAIKU.getModelId(),
+                BedrockModel.SONNET.getModelId(),
                 SystemPrompts.EXTRACT_CONTROLS,
                 userInput,
                 ToolDefinitions.EXTRACT_CONTROLS_TOOL

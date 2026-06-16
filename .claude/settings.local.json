@@ -6,7 +6,8 @@
       "WebSearch",
       "Read(//tmp/**)",
       "WebFetch(domain:www.jeroenreijn.com)",
-      "Bash(Get-ChildItem -Path \"D:\\\\hackathon\\\\Bunq\\\\backend\" -Recurse -Name -Include \"*.md\")"
+      "Bash(Get-ChildItem -Path \"D:\\\\hackathon\\\\Bunq\\\\backend\" -Recurse -Name -Include \"*.md\")",
+      "Skill(claude-api)"
     ]
   }
 }

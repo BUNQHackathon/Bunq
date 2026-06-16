@@ -116,7 +116,7 @@ public class GapAnalyzeStage implements Stage {
                     sessionId, "score_gap",
                     new MatchableObligation(obl.getId(), obl.getSubject(), obl.getAction(),
                             obl.getRiskCategory(), obl.getRegulatoryPenaltyRange()),
-                    BedrockModel.HAIKU);
+                    BedrockModel.SONNET);
             gap.setNarrative(s.narrative());
             gap.setEscalationRequired(s.escalationRequired());
             gap.setSeverity(s.severity());
