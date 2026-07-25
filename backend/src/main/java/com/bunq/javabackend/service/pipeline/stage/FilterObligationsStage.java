@@ -5,6 +5,7 @@ import com.bunq.javabackend.model.obligation.Obligation;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.service.ai.bedrock.BedrockService;
 import com.bunq.javabackend.service.ai.bedrock.ToolDefinitions;
+import com.bunq.javabackend.service.pipeline.ObligationValidity;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
@@ -15,8 +16,10 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -45,6 +48,8 @@ public class FilterObligationsStage implements Stage {
 
     @Override
     public CompletableFuture<Void> execute(PipelineContext ctx) {
+        applyValidityFilter(ctx);
+
         String brief = ctx.getBriefText();
         if (!ctx.isApplyRelevanceFilter() || brief == null || brief.isBlank()) {
             log.info("FilterObligationsStage: skipping for session {} (applyRelevanceFilter={}, hasBrief={})",
@@ -85,6 +90,41 @@ public class FilterObligationsStage implements Stage {
                         Map.of("total", total, "relevant", relevant.size(), "dropped", dropped));
             }
         }, pipelineExecutor);
+    }
+
+    /**
+     * Deterministic (no-LLM, no-AWS) pre-pass: drops extraction junk (empty records, wrong
+     * obligated party, tool-manual fragments) before the LLM relevance filter runs. Dropped
+     * obligations stay persisted in DynamoDB (audit trail) — only removed from the in-memory
+     * working set.
+     */
+    private void applyValidityFilter(PipelineContext ctx) {
+        List<Obligation> obligations = ctx.getObligations();
+        int total = obligations.size();
+
+        Map<ObligationValidity.DropReason, Long> byReason = new EnumMap<>(ObligationValidity.DropReason.class);
+        List<Obligation> kept = new ArrayList<>(total);
+        for (Obligation obl : obligations) {
+            Optional<ObligationValidity.DropReason> dropReason = ObligationValidity.check(obl);
+            if (dropReason.isPresent()) {
+                byReason.merge(dropReason.get(), 1L, Long::sum);
+            } else {
+                kept.add(obl);
+            }
+        }
+
+        int dropped = total - kept.size();
+
+        obligations.clear();
+        obligations.addAll(kept);
+
+        log.info("FilterObligationsStage: validity filter session {} — total={} kept={} dropped={} byReason={}",
+                ctx.getSessionId(), total, kept.size(), dropped, byReason);
+
+        if (dropped > 0) {
+            ctx.getSseEmitterService().send(ctx.getSessionId(), "obligations.validity_filtered",
+                    Map.of("total", total, "kept", kept.size(), "dropped", dropped, "byReason", byReason));
+        }
     }
 
     private void scoreObligation(Obligation obl, String brief, String sessionId) {

@@ -1,0 +1,702 @@
+[
+  {
+    "id": "OBL-284e6c838b21bf12b3aa9471",
+    "subject": "destinatari",
+    "action": "conduct more frequent controls on ongoing relationship to detect timely variations in client risk profile",
+    "conditions": [
+      "enhanced due diligence applies"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Parte Quarta, Sezione II",
+      "section": "PARTE QUARTA - OBBLIGHI RAFFORZATI DI ADEGUATA VERIFICA - Sezione II. Misure rafforzate di adeguata verifica",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-8bc257391bab11737782014a",
+    "note": "Annual re-review of PEPs/RCAs under EDD directly implements more-frequent EDD monitoring cycle; confidence med (frequency is annual not event-driven, but is the closest operational EDD re-review control)"
+  },
+  {
+    "id": "OBL-9195d73555c491951f2ee7fb",
+    "subject": "any person or entity",
+    "action": "perform acts in violation of freezing prohibitions",
+    "conditions": [
+      "acts violating freezing prohibitions are void"
+    ],
+    "riskCategory": null,
+    "deontic": "F",
+    "source": {
+      "regulation": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated",
+      "article": "Article 5",
+      "section": "Effetti del congelamento di fondi e di risorse economiche",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-b0054e2c085c6a79fb524a3e",
+    "note": "Automatic freezing of transaction funds in suspense account upon sanctions match directly enforces the asset-freezing prohibition; prior CTRL-6bdbc18912465617d0efc705 (transaction screening) is the detection layer only, not the freeze itself; confidence high"
+  },
+  {
+    "id": "OBL-5b13f9141742c8e00d034bc6",
+    "subject": "destinatari",
+    "action": "verify whether the customer and beneficial owner are included in the lists of persons and entities associated with terrorist financing activities adopted by the European Commission",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Parte Prima, Sezione II",
+      "section": "Criteri generali e fonti informative utili per la valutazione del rischio",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-9a04e41ec82a32abcd0135c7",
+    "note": "Daily Dow Jones PEP/SIP/sanctions/TF list screening of every user including UBOs directly satisfies EC terrorist financing list check obligation; confidence high"
+  },
+  {
+    "id": "OBL-776467908fceed61e954b941",
+    "subject": "destinatari",
+    "action": "define and formalize in the anti-money laundering policy document sufficiently detailed procedures for enhanced due diligence with specific measures for different client types or high-risk products",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Parte Quarta, Sezione I",
+      "section": "PARTE QUARTA - OBBLIGHI RAFFORZATI DI ADEGUATA VERIFICA - Sezione I. Principi generali",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "No control in the set addresses the governance requirement to formalise EDD procedures per client-type/product in an AML policy document; bunq controls describe operational EDD execution but not the meta-level policy-document formalisation obligation; prior CTRL-5b9e54346cd02aa555372a31 (sanctions escalation) was wrong; full-scan finds no satisfying control"
+  },
+  {
+    "id": "OBL-f37e4233c0af4e5ccd9d21e1",
+    "subject": "soggetti obbligati (obliged entities)",
+    "action": "obtain authorization from holders of administrative or management powers or their delegates before establishing, continuing or maintaining an ongoing relationship, professional service or occasional operation with politically exposed persons",
+    "conditions": [
+      "for ongoing relationships, professional services and operations with politically exposed persons"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 25",
+      "section": "Execution of enhanced customer due diligence obligations",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-e5b0eb0684f215030025d173",
+    "note": "Establishment or continuation of any relationship with a PEP requires formal approval from the Head of Compliance (management authority); direct match; confidence high"
+  },
+  {
+    "id": "OBL-917b68ad3469eeeaf6df38f6",
+    "subject": "destinatari",
+    "action": "fulfill identification obligations in relation to each beneficial owner when there are multiple beneficial owners",
+    "conditions": [
+      "multiple beneficial owners exist in concrete situations"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Sezione IV",
+      "section": "Sezione IV. L'identificazione del titolare effettivo",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-0ac7ce16ac6e84d802827e3d",
+    "note": "Independent source verification on every entity in multi-layer corporate structures to identify UBOs covers the multiple-UBO identification obligation; confidence med (addresses structure complexity, not purely the multiple-UBO count scenario)"
+  },
+  {
+    "id": "OBL-91a78a63215663af021440df",
+    "subject": "obliged entities",
+    "action": "perform identification and identity verification of customer, representative and beneficial owner before establishing ongoing relationship, conferring professional assignment, or executing occasional operation",
+    "conditions": [
+      "must be performed before establishment of ongoing relationship",
+      "must be performed before conferring professional assignment",
+      "must be performed before executing occasional operation"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 18",
+      "section": "Contenuto degli obblighi di adeguata verifica",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-549ce21dda0f4f3697d01c48",
+    "note": "Automated check for identification documents for all directors, representatives, and UBOs; missing documents auto-requested; covers the bundled pre-relationship identification obligation across all three subject types; prior CTRL-e1165408c4e89d4295beb8f3 (biometric only) was too narrow; confidence high"
+  },
+  {
+    "id": "OBL-3644cab0124f9e93d8a86108",
+    "subject": "destinatari (obliged entities)",
+    "action": "ensure compliance with principles of professional diligence and good faith when reporting suspicious operations, including only strictly relevant and necessary information",
+    "conditions": [
+      "in fulfilling the obligation to report suspicious operations",
+      "to protect reported subjects"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions",
+      "article": "Parte Prima, Sezione I",
+      "section": "Principi generali",
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-d6d0764968150a70f2d0f7b5",
+    "note": "Mandatory manual analyst assessment before reporting decision ensures legitimate transactions are not incorrectly reported; implements professional diligence principle for SOS quality; confidence med (covers diligence before reporting but not explicit 'only necessary info' restriction)"
+  },
+  {
+    "id": "OBL-6f6a5ef6e7a1ba875efe97ea",
+    "subject": "destinatario controparte (counterparty intermediary)",
+    "action": "preliminarily identify the role and position assumed by the intermediary acting on behalf of the customer",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": null,
+      "section": null,
+      "sourceText": null
+    },
+    "label": "should_be_covered",
+    "expected_control_id": "CTRL-ad67ec35074069a5093fd9db",
+    "note": "Executive's authorisation to represent the company is verified against Chamber of Commerce extract; non-listed persons require signed authorisation form — directly verifies role/position of intermediary/representative acting on behalf of customer; prior CTRL-e89d3570412151cb8f244c4d (ID document collection) was too generic; confidence med"
+  },
+  {
+    "id": "OBL-c8dba974babb09898e45497b",
+    "subject": "destinatari (intermediaries)",
+    "action": "appoint a company representative as responsible for anti-money laundering",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "04_BoI-Provision-26-March-2019_AML-organisation-procedures-internal-controls_consolidated-to-23-July-2025",
+      "article": "Parte Prima, Sezione III",
+      "section": "Presidi organizzativi minimi",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "No control in the set addresses the formal appointment of a named company representative as AML responsible officer (esponente responsabile per l'antiriciclaggio); bunq controls show compliance roles exist but none constitutes a formal 'appointment of AML responsible person' control; prior CTRL-49b721e43cb8446bca872656 (four-eyes risk score review) was wrong; full-scan finds no satisfying control"
+  },
+  {
+    "id": "OBL-d8ceda25146666ff10bb3d23",
+    "subject": "destinatari (recipients)",
+    "action": "rendere disponibili i dati e le informazioni alle autorità per i dieci anni successivi alla chiusura del rapporto o al compimento dell'operazione",
+    "conditions": [
+      "per i dieci anni successivi alla chiusura del rapporto o al compimento dell'operazione"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "06_BoI-Provision-24-March-2020_retention-of-data-documents-information",
+      "article": "Article 6",
+      "section": "Modalità per rendere disponibili i dati e le informazioni",
+      "sourceText": null
+    },
+    "label": "jurisdiction_delta",
+    "expected_control_id": "CTRL-1770b91075500fa5f41bf09b",
+    "note": "jurisdiction_delta: Italy requires 10yr retention of all CDD/transaction data; bunq control covers 5yr retention of FIU-reported unusual transaction records only — scope is narrower (FIU records only vs. all data) and period is half of what Italy mandates"
+  },
+  {
+    "id": "OBL-f2e638cbe78a9b4a1e1e002c",
+    "subject": "intermediari bancari e finanziari e società fiduciarie (banking and financial intermediaries and trust companies)",
+    "action": "transmit aggregated data to UIF concerning their operations to enable analysis of money laundering or terrorist financing phenomena",
+    "conditions": [
+      "excluding certain categories of intermediaries specified in Article 3(2)"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 33",
+      "section": "Obligation to send aggregated data to UIF",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-9994bd62a5abc50e7c3b986f",
+    "subject": "Destinatari (recipients listed in Article 2)",
+    "action": "transmit aggregated data to UIF concerning their operations",
+    "conditions": [
+      "data must concern their operational activity",
+      "data must enable analysis to identify money laundering or terrorism financing phenomena in specific territorial zones",
+      "operations must be of amount equal to or greater than 5,000 euros"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "12_UIF-Provision-25-August-2020_SARA-aggregate-AML-reporting",
+      "article": "Article 3",
+      "section": "Contenuto degli obblighi (Content of obligations)",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-751f7dd180332cf5e6502671",
+    "subject": "Destinatari",
+    "action": "Inviare le comunicazioni oggettive a partire dal mese di aprile 2019",
+    "conditions": [
+      "L'obbligo decorre dal mese di aprile 2019",
+      "In sede di prima applicazione, le comunicazioni di aprile, maggio e giugno 2019 possono essere inviate entro il 15 settembre 2019"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "11_UIF-Provision-28-March-2019_objective-communications",
+      "article": "Article 8",
+      "section": "Disposizioni transitorie e finali",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-0685a6c51a0ef67ab5278d0a",
+    "subject": "Nucleo speciale di polizia valutaria della Guardia di finanza",
+    "action": "effettuare ispezioni e controlli con i poteri attribuiti al Corpo dalla normativa valutaria",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 9",
+      "section": "Capo II - Autorità, vigilanza e Pubbliche amministrazioni",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-e8749cbcfefe8e1c7c13fae5",
+    "subject": "Financial Security Committee",
+    "action": "formulate designation proposals to UN and EU authorities",
+    "conditions": [
+      "based on information from international authorities and foreign States"
+    ],
+    "riskCategory": null,
+    "deontic": "P",
+    "source": {
+      "regulation": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated",
+      "article": "Article 4-ter",
+      "section": "Proposte di designazione di individui o entità alle Nazioni Unite e all'Unione europea",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-2a05fb6775a87e38e40406e4",
+    "subject": "Financial Security Committee",
+    "action": "adopt all necessary acts for correct and timely implementation of freezing measures",
+    "conditions": [
+      "as ordered by UN, EU and the Minister of Economy and Finance"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated",
+      "article": "Article 3",
+      "section": "Comitato di sicurezza finanziaria",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-6cde4527424affcb3de47cc9",
+    "subject": "segnalanti (obliged reporters)",
+    "action": "provide information on the economic classification of subjects, including ATECO code and economic activity subgroup",
+    "conditions": [
+      "for reported subjects"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "10a_UIF-Provision-4-May-2011_Annex-1_content-of-SOS-reports",
+      "article": "Section 2.2.2",
+      "section": "DATI INFORMATIVI IN FORMA STRUTTURATA - SOGGETTI",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-9abe02f2eb97bcaab2cbecf3",
+    "subject": "segnalanti (obliged reporters)",
+    "action": "provide for non-physical persons the registration details with the Chamber of Commerce, legal seat, administrative seat, and parent company seat when known",
+    "conditions": [
+      "for non-physical persons",
+      "when such information is known"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "10a_UIF-Provision-4-May-2011_Annex-1_content-of-SOS-reports",
+      "article": "Section 2.2.2",
+      "section": "DATI INFORMATIVI IN FORMA STRUTTURATA - SOGGETTI",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-3802e6838cfd6b87338f9f82",
+    "subject": "Guardia di finanza",
+    "action": "propose suspension of gaming service exercise for 15 days to 3 months",
+    "conditions": [
+      "upon finding serious violations",
+      "upon finding two prior sanctions within the last 3 years"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 64",
+      "section": null,
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-c08b83a8fc746b161859c439",
+    "subject": "recipient",
+    "action": "indicate during registration the name of the SOS referent and provide contact details to be kept updated for interactions with the UIF",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions",
+      "article": null,
+      "section": "Sezione I. Registrazione al portale Infostat UIF",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-6286df4253fd8badc4a1eaec",
+    "subject": "Special Financial Police Unit of Guardia di Finanza",
+    "action": "prepare detailed report on type, legal status, assets and use of frozen goods",
+    "conditions": [
+      "within sixty days from receipt of communication"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated",
+      "article": "Article 11",
+      "section": "Nucleo speciale di polizia valutaria",
+      "sourceText": null
+    },
+    "label": "should_stay_missing",
+    "expected_control_id": null,
+    "note": "Genuinely Italy-specific obligation; no bunq control exists"
+  },
+  {
+    "id": "OBL-1b4e55fcb00558136b21db39",
+    "subject": "destinatari (intermediaries)",
+    "action": "assign the anti-money laundering responsible representative role to the general manager in duly motivated cases based on overall corporate governance structure and delegation system, provided effectiveness of the function is preserved",
+    "conditions": [
+      "cases duly motivated",
+      "overall corporate governance structure and delegation system",
+      "effectiveness of the function is preserved"
+    ],
+    "riskCategory": null,
+    "deontic": "P",
+    "source": {
+      "regulation": "04_BoI-Provision-26-March-2019_AML-organisation-procedures-internal-controls_consolidated-to-23-July-2025",
+      "article": "Parte Seconda, Sezione III-bis",
+      "section": "Esponente responsabile per l'antiriciclaggio",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-363d3439954c7bd4d22e9363",
+    "subject": "segnalanti (obliged reporters)",
+    "action": "aggregate historical account movement data on an annual basis by operation type and sign, specifying total amount, number of operations, and time period",
+    "conditions": [
+      "when including historical account movement data"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "10a_UIF-Provision-4-May-2011_Annex-1_content-of-SOS-reports",
+      "article": "Section 2.2.4",
+      "section": "DATI STORICI DEI RAPPORTI",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-cb5cce6a9f933e5985228b0e",
+    "subject": "destinatari",
+    "action": "adopt procedures including automated procedures to detect anomalous transactions by recurrence, amount, destination or origin of flows",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "P",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Parte Quarta, Sezione IV",
+      "section": "Sezione IV. Rapporti di corrispondenza transfrontalieri con un intermediario bancario o finanziario rispondente di un paese terzo",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-44aa01bb4fd457746bccbef8",
+    "subject": "destinatario (reporting entity)",
+    "action": "limit the report to operations or professional services deemed most significant and representative of the suspicion",
+    "conditions": [
+      "when there are multiple operations or professional services"
+    ],
+    "riskCategory": null,
+    "deontic": "P",
+    "source": {
+      "regulation": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions",
+      "article": "general",
+      "section": "B.2. Operatività",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-862740f13470358e5f65dec6",
+    "subject": "Online and physical network game operators",
+    "action": "Comply with all provisions of the decree as obligated game service providers",
+    "conditions": [
+      "Operator must offer games with monetary winnings",
+      "Operator must hold a concession from the Agenzia delle dogane e dei monopoli"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 3",
+      "section": "Titolo I - Disposizioni di carattere generale",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-d1d2d3d9c52f46c97f9260b3",
+    "subject": "segnalanti (reporting entities)",
+    "action": "attach documents deemed necessary for describing suspicious activity to the report in electronic format",
+    "conditions": [
+      "documents must be in electronic format",
+      "documents must be deemed necessary for describing suspicious activity"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "10_UIF-Provision-4-May-2011_SOS-reporting-operational-instructions",
+      "article": "Article 10",
+      "section": "CAPO II",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-d9749df32dd2ad1293dc26ef",
+    "subject": "sanctioning authority",
+    "action": "sanction a person for conduct that is no longer unlawful at the date of entry into force of the regulation",
+    "conditions": [
+      "conduct must not constitute an offense at the date of entry into force of the regulation"
+    ],
+    "riskCategory": null,
+    "deontic": "F",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "69",
+      "section": "Art. 69 (Successione di leggi nel tempo)",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-5f895f752ffe6d3be8670f37",
+    "subject": "obliged subjects",
+    "action": "guarantee permanent training programs on correct application of the decree and recognition of money laundering and terrorism financing operations",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "16",
+      "section": "Procedure di mitigazione del rischio",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-b8e0a234b5e23381c69c58a2",
+    "subject": "UIF, Guardia di finanza and DIA (UIF, Guardia di finanza e Direzione investigativa antimafia)",
+    "action": "adopt measures to ensure confidentiality of reporter identity and subjects providing information for report analysis and investigation",
+    "conditions": [
+      "may be based on protocols of understanding",
+      "after consulting Financial Security Committee"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 40",
+      "section": "Capo III - Segnalazione di operazioni sospette",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-0bb77e975709aa516cf81133",
+    "subject": "UIF (Unità di Informazione Finanziaria per l'Italia)",
+    "action": "acquire data and information on aggregated operations for verification purposes, including through inspections",
+    "conditions": [
+      "acquisition is for the purpose of verifying compliance with SARA data transmission obligations",
+      "data and information concern operations subject to aggregation",
+      "acquisition may occur during inspections"
+    ],
+    "riskCategory": null,
+    "deontic": "P",
+    "source": {
+      "regulation": "12_UIF-Provision-25-August-2020_SARA-aggregate-AML-reporting",
+      "article": "Article 8",
+      "section": "Controlli e sanzioni (Controls and sanctions)",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-8d3f3ba09360d860ea70d7d7",
+    "subject": "destinatari",
+    "action": "carefully evaluate completeness of information and documentation provided and consider information gaps in risk profile reassessment",
+    "conditions": [],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "05_BoI-Provision-30-July-2019_customer-due-diligence_consolidated-to-13-June-2023",
+      "article": "Parte Quarta, Sezione IV",
+      "section": "Sezione IV. Rapporti di corrispondenza transfrontalieri con un intermediario bancario o finanziario rispondente di un paese terzo",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-472880c7ed04e5a19b973020",
+    "subject": "UIF",
+    "action": "communicate within two working days either the absence of conditions for suspension exercise or the initiation of evaluation",
+    "conditions": [
+      "within two working days following receipt of suspension request report"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions",
+      "article": "Parte Prima, Sezione VII",
+      "section": "Sospensione delle operazioni sospette",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-eb927fba23f76534c48f4f24",
+    "subject": "obliged subjects",
+    "action": "report suspicious operations",
+    "conditions": [
+      "failure to comply results in administrative penalty of 3,000 euros",
+      "conduct does not constitute a more serious crime"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "01_Legislative-Decree-231-2007_AML_consolidated",
+      "article": "Article 58",
+      "section": "Title V - Disposizioni sanzionatorie e finali",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-4c35ecc270ebd310cefa6ca3",
+    "subject": "active partners",
+    "action": "submit negative reports in months when there are no operations to report",
+    "conditions": [
+      "when the partner is considered active"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "12a_Infostat-UIF-SARA-manual_aggregate-reporting_v1.3",
+      "article": null,
+      "section": "4. Gestione Profilo Segnalante S.AR.A"
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  },
+  {
+    "id": "OBL-fd25e8c1baf769b063a423a4",
+    "subject": "Agenzia del demanio",
+    "action": "sospende il termine per l'appuramento di cui all'articolo 217 del regolamento delegato (UE) 2015/2446",
+    "conditions": [
+      "Per tutta la durata della misura di congelamento"
+    ],
+    "riskCategory": null,
+    "deontic": "O",
+    "source": {
+      "regulation": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated",
+      "article": "Article 12",
+      "section": "Compiti dell'Agenzia del Demanio",
+      "sourceText": null
+    },
+    "label": "random",
+    "expected_control_id": null,
+    "note": null
+  }
+]

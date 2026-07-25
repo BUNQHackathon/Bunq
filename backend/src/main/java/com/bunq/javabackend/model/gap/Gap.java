@@ -16,6 +16,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @DynamoDbBean
 @NoArgsConstructor
@@ -72,4 +73,7 @@ public class Gap {
 
     @Getter(onMethod_ = @DynamoDbAttribute("residual_risk"))
     private Double residualRisk;
+
+    @Getter(onMethod_ = @DynamoDbAttribute("metadata"))
+    private Map<String, String> metadata;
 }

@@ -14,6 +14,8 @@ import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.service.ai.bedrock.GapScore;
 import com.bunq.javabackend.service.ai.bedrock.GapScorer;
 import com.bunq.javabackend.service.ai.bedrock.MatchableObligation;
+import com.bunq.javabackend.service.pipeline.GapCoverage;
+import com.bunq.javabackend.service.pipeline.GapCoverage.CoverageStatus;
 import com.bunq.javabackend.service.pipeline.PipelineContext;
 import com.bunq.javabackend.service.pipeline.PipelineStage;
 import com.bunq.javabackend.service.pipeline.Stage;
@@ -23,11 +25,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -67,19 +72,24 @@ public class GapAnalyzeStage implements Stage {
                 mappings = mappingRepository.findBySessionId(ctx.getSessionId());
             }
 
-            Set<String> coveredObligationIds = mappings.stream()
-                    .filter(m -> m.getMappingConfidence() != null
-                            && m.getMappingConfidence() >= MapObligationsControlsStage.SATISFIED_CONFIDENCE_THRESHOLD)
-                    .map(Mapping::getObligationId)
-                    .collect(Collectors.toSet());
+            // Best (max) mapping confidence per obligation, and which obligations have any mapping at all.
+            Map<String, Double> bestConfidenceByObligation = new HashMap<>();
+            Set<String> mappedObligationIds = new HashSet<>();
+            for (Mapping m : mappings) {
+                String oblId = m.getObligationId();
+                if (oblId == null) {
+                    continue;
+                }
+                mappedObligationIds.add(oblId);
+                if (m.getMappingConfidence() != null) {
+                    bestConfidenceByObligation.merge(oblId, m.getMappingConfidence(), Math::max);
+                }
+            }
 
-            Set<String> mappedObligationIds = mappings.stream()
-                    .map(Mapping::getObligationId)
-                    .filter(java.util.Objects::nonNull)
-                    .collect(Collectors.toSet());
-
+            // TODO: no degraded-retrieval signal is plumbed into this stage yet; hardcoded false.
             List<Obligation> uncovered = obligations.stream()
-                    .filter(o -> !coveredObligationIds.contains(o.getId()))
+                    .filter(o -> GapCoverage.classify(bestConfidenceByObligation.get(o.getId()),
+                            mappedObligationIds.contains(o.getId()), false) != CoverageStatus.SATISFIED)
                     .toList();
 
             log.info("GapAnalyzeStage: scoring {} gaps in parallel for session {}", uncovered.size(), ctx.getSessionId());
@@ -88,19 +98,41 @@ public class GapAnalyzeStage implements Stage {
                 futures.add(CompletableFuture.supplyAsync(() -> scoreGap(obl, ctx.getSessionId()), pipelineExecutor));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            Map<CoverageStatus, Integer> statusCounts = new EnumMap<>(CoverageStatus.class);
             for (CompletableFuture<Gap> f : futures) {
                 Gap gap = f.join();
-                if (mappedObligationIds.contains(gap.getObligationId())) {
-                    gap.setGapType(GapType.control_weak);
-                    gap.setGapStatus(GapStatus.partial);
+                CoverageStatus status = GapCoverage.classify(bestConfidenceByObligation.get(gap.getObligationId()),
+                        mappedObligationIds.contains(gap.getObligationId()), false);
+                statusCounts.merge(status, 1, Integer::sum);
+                switch (status) {
+                    case SUBSTANTIALLY_COVERED, PARTIAL, JURISDICTION_DELTA, NEEDS_REVIEW -> {
+                        gap.setGapType(GapType.control_weak);
+                        gap.setGapStatus(GapStatus.partial);
+                    }
+                    case CONTROL_MISSING -> {
+                        gap.setGapType(GapType.control_missing);
+                        gap.setGapStatus(GapStatus.gap);
+                    }
+                    case SATISFIED -> {
+                        // unreachable: SATISFIED obligations never produce a gap
+                    }
                 }
+                Map<String, String> metadata = gap.getMetadata();
+                if (metadata == null) {
+                    metadata = new HashMap<>();
+                }
+                metadata.put("gap_semantics", status.name().toLowerCase());
+                metadata.put("best_mapping_confidence",
+                        String.valueOf(bestConfidenceByObligation.getOrDefault(gap.getObligationId(), 0.0)));
+                gap.setMetadata(metadata);
+
                 gapRepository.save(gap);
                 ctx.getGaps().add(gap);
                 ctx.getSseEmitterService().send(ctx.getSessionId(), "gap.identified",
                         GapMapper.toDto(gap));
             }
 
-            log.info("GapAnalyzeStage: {} gaps for session {}", ctx.getGaps().size(), ctx.getSessionId());
+            log.info("GapAnalyzeStage: {} gaps for session {} — {}", ctx.getGaps().size(), ctx.getSessionId(), statusCounts);
         }, pipelineExecutor);
     }
 

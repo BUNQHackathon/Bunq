@@ -1,0 +1,510 @@
+[
+  {
+    "obligation_id": "OBL-53616375dfeb75935251cab1",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "No control requires the AML function to include Italian self-assessment results (per BoI Parte Settima) in an annual report. bunq's controls address governance reviews and CRO approvals but not a BoI-specific annual self-assessment reporting obligation.",
+    "obligation_quote": "Include in the annual report results of the self-assessment exercise conducted pursuant to Part Seven (BoI provision).",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Generic governance controls exist (CTRL-fc485288ad7c25e0c4e3fd53, CTRL-a2883f2cc5c3e2a540a69d65) but none address Italy-specific BoI self-assessment annual reporting. Jurisdiction delta: BoI-specific obligation not matched by Dutch-law controls."
+  },
+  {
+    "obligation_id": "OBL-6f6a5ef6e7a1ba875efe97ea",
+    "coverage_status": "partial",
+    "acceptable_control_ids": ["CTRL-bc387f4787a3084910e8230c", "CTRL-0ac7ce16ac6e84d802827e3d", "CTRL-bfec54be7f41685a144e96f7"],
+    "required_control_combo": ["CTRL-bc387f4787a3084910e8230c", "CTRL-0ac7ce16ac6e84d802827e3d"],
+    "missing_delta": "bunq's controls cover CDD on its own customers and UBOs, but there is no specific control requiring preliminary identification of the role/position of a counterparty intermediary acting on behalf of a customer in a B2B intermediary chain — a specific BoI CDD step for intermediated transactions.",
+    "obligation_quote": "Preliminarily identify the role and position assumed by the intermediary acting on behalf of the customer.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-bc387f4787a3084910e8230c",
+        "quote": "Automated customer screening at onboarding via Incode/ComplyAdvantage against sanctions/TF/PEP/SIP/adverse media lists for all users, directors, UBOs, and representatives.",
+        "rationale": "Covers screening of intermediary parties but not the specific role-identification step."
+      },
+      {
+        "control_id": "CTRL-0ac7ce16ac6e84d802827e3d",
+        "quote": "Independent source verification must be performed on every entity in the structure to identify UBOs.",
+        "rationale": "Covers structure verification but not intermediary role identification as a distinct step."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "bunq has CDD and UBO controls but lacks a specific control for the BoI-required preliminary identification of a counterparty intermediary's role/position in an intermediated relationship. Partial coverage; SME review recommended."
+  },
+  {
+    "obligation_id": "OBL-917b68ad3469eeeaf6df38f6",
+    "coverage_status": "covered",
+    "acceptable_control_ids": ["CTRL-b5d73747e3be218484480374", "CTRL-001d42f7925b47d4cbd2faac", "CTRL-bfec54be7f41685a144e96f7", "CTRL-0ac7ce16ac6e84d802827e3d", "CTRL-c2d4b6352bf074b273a956cf"],
+    "required_control_combo": ["CTRL-b5d73747e3be218484480374", "CTRL-bfec54be7f41685a144e96f7"],
+    "missing_delta": "",
+    "obligation_quote": "Fulfill identification obligations in relation to each beneficial owner when there are multiple beneficial owners.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-b5d73747e3be218484480374",
+        "quote": "Identity verification of new UBOs via ID copy, mandatorily verified by a bunq employee or reliable third party (e.g., notary), regardless of risk level.",
+        "rationale": "Requires identity verification of UBOs — plural, regardless of risk — covering the multi-UBO scenario."
+      },
+      {
+        "control_id": "CTRL-bfec54be7f41685a144e96f7",
+        "quote": "UBO identification begins with app-provided data and must be verified against independent sources (Chamber of Commerce, UBO register, shareholders register) before onboarding is approved.",
+        "rationale": "Identification against independent sources covers each UBO in multi-UBO structures."
+      },
+      {
+        "control_id": "CTRL-0ac7ce16ac6e84d802827e3d",
+        "quote": "Independent source verification must be performed on every entity in the structure to identify UBOs.",
+        "rationale": "'Every entity' explicitly covers multi-UBO obligation."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Clear multi-UBO identification coverage in bunq controls. The Dutch UBO register specificity is a minor jurisdiction nuance but the safeguard (verify each UBO) is fully covered."
+  },
+  {
+    "obligation_id": "OBL-227f8bbcd6aa87bcb801ce4d",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-a2883f2cc5c3e2a540a69d65", "CTRL-8a3b6e396b5e85a7813aa5f5"],
+    "required_control_combo": [],
+    "missing_delta": "Italy-specific BoI obligation: the strategic supervision body (board) must formally appoint/revoke the AML responsible person after consulting the control function body. bunq has governance escalation controls but no documented board-level formal appointment/revocation process for an Italy-specific AML responsible representative (esponente responsabile).",
+    "obligation_quote": "Appoint and revoke the responsible person for reporting suspicious operations after consulting the control function body.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-a2883f2cc5c3e2a540a69d65",
+        "quote": "Policy changes require Managing Board approval.",
+        "rationale": "Generic board oversight exists but does not specifically address formal BoI-required AML representative appointment/revocation."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Italy-specific BoI governance obligation for formal board appointment of an 'esponente responsabile per l'antiriciclaggio'. Dutch controls address governance generally but not this Italian structural requirement."
+  },
+  {
+    "obligation_id": "OBL-f55e427128aaa63e31149f35",
+    "coverage_status": "substantially_covered",
+    "acceptable_control_ids": ["CTRL-d6d0764968150a70f2d0f7b5", "CTRL-983fc5fd98c658e1600690c0", "CTRL-c75807caf160f415e46342ab"],
+    "required_control_combo": ["CTRL-d6d0764968150a70f2d0f7b5", "CTRL-983fc5fd98c658e1600690c0"],
+    "missing_delta": "No explicit control codifies the UIF anomaly-indicator framework's rule that indicators are only relevant absent justified specific needs — bunq's controls mandate analyst judgment but don't reference this Italian safe-harbour principle explicitly.",
+    "obligation_quote": "Consider circumstances described in indicators and sub-indices as relevant to suspicion only if not justified by specific needs represented by the subject or other reasonable grounds.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-d6d0764968150a70f2d0f7b5",
+        "quote": "Every transaction monitoring or filtering hit is subject to mandatory manual analyst assessment before a reporting decision is made, ensuring that legitimate transactions with plausible explanations are not incorrectly reported.",
+        "rationale": "Analyst assessment requirement to exclude plausible explanations before reporting is functionally equivalent to the safe-harbour principle."
+      },
+      {
+        "control_id": "CTRL-983fc5fd98c658e1600690c0",
+        "quote": "Mandatory manual investigation by a compliance analyst for every Transaction Monitoring alert; the ML model's output is advisory only and does not substitute the analyst's own assessment.",
+        "rationale": "Human judgment requirement prevents automatic treatment of indicators as determinative."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "The substance of the obligation (don't treat indicators as automatically suspicious — apply judgment) is addressed by bunq's analyst-review requirement. The Italian UIF anomaly-indicator framework is jurisdiction-specific, but the safeguard is substantially matched."
+  },
+  {
+    "obligation_id": "OBL-cfd2f9955670b591d08cc7be",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "[EMPTY — no action, no regulation, no article, no risk category extracted]",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Obligation record is completely empty: subject is only 'Destinatari' with no action, regulation, article or risk category. Cannot be evaluated. Classic extraction failure — likely a chunk boundary artifact or failed extraction."
+  },
+  {
+    "obligation_id": "OBL-ec13c6b8e313f581ef6891f4",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "Customers shall provide in writing all necessary and updated information to enable obliged entities to comply with due diligence obligations.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "This obligation is ON CUSTOMERS (the counterparties), not on bunq. It describes what customers must do. bunq cannot have a control that satisfies an obligation binding on its customers. Extraction correctly parsed the text but the obligation is misrouted to bunq's gap set."
+  },
+  {
+    "obligation_id": "OBL-3ccf0fba3d84cefae3ea4112",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-7cf016821cb72fc6448f5d60", "CTRL-78a70357fed8e70d8dd2d41b"],
+    "required_control_combo": [],
+    "missing_delta": "The Italian UIF SOS-report Annex 1 requires specifying exact list name and exact subject name as it appears in the terrorism list when suspicion derives solely from list designation. bunq's FIU-NL reporting workflow exists but does not reference this specific Italian UIF Annex 1 Section 2.3 format requirement.",
+    "obligation_quote": "Specify the list details and the exact name of the subject as it appears in the list when suspicion is based solely on terrorism list designations.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-7cf016821cb72fc6448f5d60",
+        "quote": "Structured FIU reporting workflow in the Retool CRM system requiring analysts to select the unusual transaction(s), select the applicable indicator, and write a description of the reason for reporting.",
+        "rationale": "Generic STR workflow exists but targets FIU-NL, not UIF; does not enforce Italian Annex 1 format requirements."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Jurisdiction delta: bunq reports to FIU-NL, not UIF. Italian SOS-report Annex 1 specifies content requirements that differ from Dutch FIU-NL reporting format. The generic workflow partially covers the intent but not the Italian-specific format."
+  },
+  {
+    "obligation_id": "OBL-3dd1d744598e0579870ea4d9",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "The administration shall conclude the sanction procedure within 2 years.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Obligation is on the PUBLIC ADMINISTRATION (Italian regulatory/enforcement body) conducting sanction administrative procedures under D.Lgs. 231/2007 Article 69. Not an obligation on bunq. Cannot be satisfied by any bunq control."
+  },
+  {
+    "obligation_id": "OBL-8c60ec1c7e4794270871d684",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-78a70357fed8e70d8dd2d41b", "CTRL-7cf016821cb72fc6448f5d60"],
+    "required_control_combo": [],
+    "missing_delta": "Italian UIF Annex 1 Section 2.4 requires attachment of additional documentation in common electronic formats to supplement SOS reports. bunq's FIU-NL reporting generates XML reports but has no control specifically addressing supplementary document attachment in the Italian UIF portal format.",
+    "obligation_quote": "Attach additional documentation in common electronic formats to supplement the information in the report.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-78a70357fed8e70d8dd2d41b",
+        "quote": "Automated generation of FIU reports in the required XML reporting format, incorporating all mandatory data fields.",
+        "rationale": "bunq has automated report generation but for FIU-NL, not UIF, and does not address supplementary attachment requirements."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Jurisdiction delta: Italian UIF SOS-report specific attachment requirement. bunq's controls target FIU-NL reporting format, not Italian UIF portal submission requirements."
+  },
+  {
+    "obligation_id": "OBL-b038caa5acd5ff9bcf04680f",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "Self-regulatory organizations shall promote and control compliance with the decree's obligations by registered professionals.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Obligation is on SELF-REGULATORY ORGANIZATIONS (ordini professionali — notaries, lawyers, accountants guilds) under D.Lgs. 231/2007 Article 11. bunq is a credit institution/EMI, not a self-regulatory organization. Not applicable to bunq."
+  },
+  {
+    "obligation_id": "OBL-9352508582b1cc0ac61599ad",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-d6d0764968150a70f2d0f7b5", "CTRL-983fc5fd98c658e1600690c0", "CTRL-7cf016821cb72fc6448f5d60"],
+    "required_control_combo": [],
+    "missing_delta": "The Italian UIF anomaly-indicator framework requires the evaluation description (subjective + objective circumstances) to be included in the SOS report to the UIF. bunq's workflow targets FIU-NL and does not embed the Italian UIF Annex evaluation framework.",
+    "obligation_quote": "Identify activities as suspicious only in the presence of both subjective and objective circumstances, and describe them in the report to the UIF along with the evaluations carried out.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-d6d0764968150a70f2d0f7b5",
+        "quote": "Every TM/TF hit is subject to mandatory manual analyst assessment before a reporting decision is made.",
+        "rationale": "Analyst judgment for subjective+objective assessment is substantially present."
+      },
+      {
+        "control_id": "CTRL-7cf016821cb72fc6448f5d60",
+        "quote": "Structured FIU reporting workflow requiring analysts to select the applicable indicator and write a description of the reason for reporting.",
+        "rationale": "Documentation of reasoning exists but targets FIU-NL, not UIF."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "The substantive safeguard (analyst judgment + documented rationale) is largely present. However, the Italian UIF-specific reporting channel and evaluation framework format is not matched. Jurisdiction delta."
+  },
+  {
+    "obligation_id": "OBL-e7fca1bc7d1a9c493b5b418c",
+    "coverage_status": "missing",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "No control in the set addresses preparation of standardized attestation forms for third-party execution — a specific operational process for formalizing information acquisition from parties executing transactions on behalf of customers.",
+    "obligation_quote": "Prepare specific forms for release of attestations to standardize information acquisition process.",
+    "control_evidence": [],
+    "label_confidence": "low",
+    "adjudicator_notes": "Obligation has no regulation or article reference (likely BoI CDD provision on third-party execution). No matching control found. However, confidence is low because the obligation is vaguely stated and no source regulation is cited — may be an extraction quality issue. SME review recommended."
+  },
+  {
+    "obligation_id": "OBL-56557c406d6a24f7b5cf2db4",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-073abedd8954e260ab2f49c9", "CTRL-78a70357fed8e70d8dd2d41b"],
+    "required_control_combo": [],
+    "missing_delta": "BoI November 2024 amendments require reports to be submitted via modalities in Annex 2 (Italian SARA/Infostat system). bunq's controls address FIU-NL submission, not the Italian BoI supervisory reporting portal (SARA/Infostat).",
+    "obligation_quote": "Send reports according to the modalities specified in Annex 2 (BoI AML supervisory reporting provision).",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-073abedd8954e260ab2f49c9",
+        "quote": "Daily batch submission of all FIU reporting files: a designated reporting officer downloads all daily reporting files as a ZIP file and uploads them to the FIU Reporting Portal.",
+        "rationale": "Reporting submission process exists but for FIU-NL portal, not Italian BoI SARA/Infostat system."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Clear jurisdiction delta: Italian BoI AML supervisory reporting (aggregate SARA reporting) is a distinct obligation from Dutch FIU-NL STR submission. bunq's controls do not cover Italian aggregate supervisory reporting modalities."
+  },
+  {
+    "obligation_id": "OBL-80f64208503356b43a0becb2",
+    "coverage_status": "partial",
+    "acceptable_control_ids": ["CTRL-27214caf0f861b74287573ad", "CTRL-a10ef2f76458d7300960017b", "CTRL-c8d5b0d6c278b8b33bf5aa63", "CTRL-2fa82d47b9edb79aacc34f85"],
+    "required_control_combo": ["CTRL-27214caf0f861b74287573ad", "CTRL-a10ef2f76458d7300960017b"],
+    "missing_delta": "D.Lgs. 231/2007 Article 25 specifically requires prior authorization from holders of management/administrative powers before establishing/continuing relationships with high-risk third countries. bunq has risk-based country controls and enhanced monitoring but no control explicitly requiring board/management-level authorization before entering a high-risk country relationship.",
+    "obligation_quote": "Obtain authorization from holders of administrative or management powers or their delegates before establishing, continuing or maintaining an ongoing relationship involving high-risk third countries.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-27214caf0f861b74287573ad",
+        "quote": "Onboarding risk scorecard scores country of residence using bunq's AML Risk Ratings; automatic Reject-level scores for countries outside the acceptance policy.",
+        "rationale": "High-risk country onboarding is controlled at the risk scorecard level but not via explicit management authorization."
+      },
+      {
+        "control_id": "CTRL-a10ef2f76458d7300960017b",
+        "quote": "The Country AML Risk Ranking List is reviewed on a quarterly basis.",
+        "rationale": "Country risk maintained but the Article 25 management authorization step is absent."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "bunq controls high-risk country exposure through scoring and rejection, but D.Lgs. 231/2007 Article 25 requires explicit management/board authorization as a procedural gate — a substantive gap beyond mere risk scoring."
+  },
+  {
+    "obligation_id": "OBL-e521592cd13f54b3ef3297a5",
+    "coverage_status": "substantially_covered",
+    "acceptable_control_ids": ["CTRL-4a1a736d77f39025c5d1e837", "CTRL-f7adc6a7cc1b026e02773d0b", "CTRL-8bc257391bab11737782014a", "CTRL-96271a8b9880a1b6b4aa210b"],
+    "required_control_combo": ["CTRL-4a1a736d77f39025c5d1e837", "CTRL-f7adc6a7cc1b026e02773d0b"],
+    "missing_delta": "The Italian obligation requires formal 'client attestation' acquisition as a distinct step. bunq's controls perform EDD and SOF/SOW checks but may not have a formal client attestation document process specifically labeled as such.",
+    "obligation_quote": "Acquire client attestation and verify information based on reliable independent sources for ongoing relationships with PEPs.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-4a1a736d77f39025c5d1e837",
+        "quote": "Mandatory three-step approach to establish PEP source of wealth: (1) obtain net worth, (2) obtain origin of net worth, (3) verify where risk is high or doubts exist.",
+        "rationale": "Information acquisition and verification from independent sources for PEPs is covered."
+      },
+      {
+        "control_id": "CTRL-f7adc6a7cc1b026e02773d0b",
+        "quote": "All PEP-labelled users subject to mandatory annual review covering PEP-status check, standard EDD measures, open-source adverse media check, transaction behaviour review against source of wealth/funds.",
+        "rationale": "Ongoing PEP review with SOW verification covers the ongoing relationship monitoring requirement."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "PEP EDD and SOW/SOF controls are robust. Formal 'attestation' as a specifically named Italian regulatory step may not be documented separately. Substantially covered; minor formalism gap."
+  },
+  {
+    "obligation_id": "OBL-ece18e96758324833c31bcbb",
+    "coverage_status": "substantially_covered",
+    "acceptable_control_ids": ["CTRL-be64b5973bb9315c6470836b", "CTRL-d9701126afb4abce33f237e2", "CTRL-bc40a7e2966c822b23492deb", "CTRL-27214caf0f861b74287573ad", "CTRL-a10ef2f76458d7300960017b"],
+    "required_control_combo": ["CTRL-be64b5973bb9315c6470836b", "CTRL-d9701126afb4abce33f237e2"],
+    "missing_delta": "The Italian BoI provision specifies EDD for 'occasional operations' (one-off transactions) involving high-risk third countries as a distinct category. bunq's EDD controls focus on relationship onboarding and re-review rather than ad-hoc occasional transaction EDD.",
+    "obligation_quote": "Apply enhanced due diligence to relationships and occasional operations involving high-risk third countries.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-be64b5973bb9315c6470836b",
+        "quote": "Mandatory manual review with more extensive checks for medium-risk companies, and enhanced due diligence (EDD) for high-risk companies, triggered by the automated risk score.",
+        "rationale": "EDD for high-risk scenarios is covered; high-risk country flag triggers elevated risk score leading to EDD."
+      },
+      {
+        "control_id": "CTRL-d9701126afb4abce33f237e2",
+        "quote": "EDD for high-risk user companies includes additional docs, adverse media, SOF/SOW checks, business activity examination, transaction profile analysis.",
+        "rationale": "Comprehensive EDD process exists for high-risk users."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "EDD for high-risk country customers is substantially covered. The specific Italian BoI framing of 'occasional operations' as a distinct EDD trigger may not be explicitly addressed but the risk-based EDD framework would capture this in practice."
+  },
+  {
+    "obligation_id": "OBL-363d3439954c7bd4d22e9363",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "Italian UIF Annex 1 Section 2.2.4 requires SOS reports to include aggregated historical account movement data by operation type and sign (annual totals, number, time period). This is a specific Italian UIF report format requirement. bunq's FIU-NL reporting controls generate XML reports in Dutch format without this Italian aggregate data structure.",
+    "obligation_quote": "Aggregate historical account movement data on an annual basis by operation type and sign, specifying total amount, number of operations, and time period.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Pure jurisdiction delta: Italian UIF SOS-report Annex 1 Section 2.2.4 aggregate account movement data format has no equivalent in bunq's FIU-NL reporting controls."
+  },
+  {
+    "obligation_id": "OBL-e2cfd4dfe0302899da19daef",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-7cf016821cb72fc6448f5d60", "CTRL-78a70357fed8e70d8dd2d41b", "CTRL-073abedd8954e260ab2f49c9", "CTRL-f963a93403b49416188409e7"],
+    "required_control_combo": [],
+    "missing_delta": "D.Lgs. 231/2007 Article 35 requires filing SOS reports to the Italian UIF and cooperating with UIF information requests. bunq's controls cover FIU-NL reporting and cooperation. The Italian UIF is a distinct authority requiring separate reporting channel and cooperation procedures.",
+    "obligation_quote": "File suspicious operation reports to UIF containing data, information, description of operations and reasons for suspicion; cooperate with UIF by responding promptly to requests for further information.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-7cf016821cb72fc6448f5d60",
+        "quote": "Structured FIU reporting workflow in Retool CRM requiring analysts to select transactions, indicator, and description before filing.",
+        "rationale": "STR filing process exists but targets FIU-NL, not UIF."
+      },
+      {
+        "control_id": "CTRL-f963a93403b49416188409e7",
+        "quote": "The operational compliance team is designated as the responsible owner for responding to FIU information requests in a timely and proper manner.",
+        "rationale": "FIU cooperation process exists but for FIU-NL, not Italian UIF."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Core STR/SAR filing and FIU cooperation controls are present, but they all target FIU-NL. Italian UIF reporting is a separate regulatory obligation requiring Italy-specific procedures. Jurisdiction delta."
+  },
+  {
+    "obligation_id": "OBL-92ea32f22214bd94c4f33ae6",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "[FULLY EMPTY — no subject, no action, no regulation, no article, no risk category]",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Obligation record contains no content whatsoever. Complete extraction failure. Cannot be evaluated against any control."
+  },
+  {
+    "obligation_id": "OBL-b3147c067ecd37e4e41267e7",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "[EMPTY action — subject identifies banks/EMIs/payment institutions/Poste Italiane but no action is specified]",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "While the subject correctly identifies bunq's entity type (EMI/payment institution), the action field is completely empty. No extractable obligation to evaluate. Extraction failure — likely a paragraph header without substantive content."
+  },
+  {
+    "obligation_id": "OBL-3cec6b45820a3f7e367603dd",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-af80fa6e164e96c546905e17", "CTRL-b264af9342ab58ee5e8d24be"],
+    "required_control_combo": [],
+    "missing_delta": "Italian UIF instruction requires that when a suspicious transfer operation is reported, obliged entities must NOT communicate this to the Italian Ministry of Economy (MEF) — a tipping-off exemption specific to the Italian reporting framework. bunq's tipping-off controls address FIU-NL, not the Italian MEF/UIF channel.",
+    "obligation_quote": "Do not communicate to the Ministry when the communication concerns a transfer operation reported as suspicious.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-af80fa6e164e96c546905e17",
+        "quote": "When a report is filed with FIU Netherlands, the user is never informed of the filing under any circumstances, including during account termination, to prevent tipping-off.",
+        "rationale": "Tipping-off prohibition exists but covers user notification, not communication with Italian Ministry."
+      },
+      {
+        "control_id": "CTRL-b264af9342ab58ee5e8d24be",
+        "quote": "All bunq staff prohibited from disclosing to users or any third party that an unusual transaction report is being considered or filed.",
+        "rationale": "Broad tipping-off prohibition, but doesn't specifically address Italian Ministry communication rules."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "The broad tipping-off prohibition in bunq's controls may effectively cover this, but the Italian-specific rule about Ministry communication (distinct from the UIF channel) is not explicitly addressed. Jurisdiction delta."
+  },
+  {
+    "obligation_id": "OBL-0b892ea7714a4f3b1bf73039",
+    "coverage_status": "substantially_covered",
+    "acceptable_control_ids": ["CTRL-9cfda614f21290a614b51227", "CTRL-be64b5973bb9315c6470836b", "CTRL-bc387f4787a3084910e8230c", "CTRL-b890bf2a54aaa5ac0df89104"],
+    "required_control_combo": ["CTRL-9cfda614f21290a614b51227", "CTRL-be64b5973bb9315c6470836b"],
+    "missing_delta": "The Italian obligation specifies a €15,000 threshold for cash/bearer securities transfers triggering CDD when acting as intermediary. bunq's controls cover CDD broadly but the specific €15,000 cash transfer CDD threshold in an intermediary role is not explicitly codified (bunq is primarily digital and may not handle physical cash in this way).",
+    "obligation_quote": "Observe customer due diligence obligations when acting as intermediaries or parties in cash or bearer securities transfers of EUR 15,000 or more.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-9cfda614f21290a614b51227",
+        "quote": "Mandatory collection of personal identification data from every user during the onboarding identification phase.",
+        "rationale": "CDD is performed on all customers; covers the identification requirement."
+      },
+      {
+        "control_id": "CTRL-be64b5973bb9315c6470836b",
+        "quote": "Mandatory manual review with more extensive checks for medium-risk companies, and EDD for high-risk companies.",
+        "rationale": "Enhanced CDD for higher-risk transactions."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "bunq performs CDD on all customers. The Italian-specific cash/bearer securities intermediary scenario at €15,000 is a niche context. As a digital bank, bunq may not act as a cash intermediary in this way, making the obligation scope questionable for bunq's business model. Substantially covered for standard transactions; residual gap for cash intermediary role."
+  },
+  {
+    "obligation_id": "OBL-cbaa1081ffb0f815d5f00e05",
+    "coverage_status": "substantially_covered",
+    "acceptable_control_ids": ["CTRL-1f0228f3cbe70c469038c283", "CTRL-fc450fc7cf8d941d20a08e6b", "CTRL-a2883f2cc5c3e2a540a69d65"],
+    "required_control_combo": ["CTRL-1f0228f3cbe70c469038c283"],
+    "missing_delta": "The Italian BoI obligation requires a formally constituted 'funzione antiriciclaggio' with specific organizational attributes per BoI Provision 2019. bunq's controls demonstrate a three-lines-of-defense governance model for AML but the formal BoI-defined AML function structure (with specific Italian governance requirements) may not be explicitly documented.",
+    "obligation_quote": "Establish an anti-money laundering function responsible for preventing and combating money laundering operations.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-1f0228f3cbe70c469038c283",
+        "quote": "Three-lines-of-defense governance model for screening with defined roles: First Line conducts alert investigations, Second Line (Compliance Officers) monitors controls and reviews complex cases, Head of Compliance approves material changes, CRO holds ultimate accountability, Managing Board provides strategic oversight.",
+        "rationale": "A formal AML function structure with defined roles at multiple governance levels is documented."
+      },
+      {
+        "control_id": "CTRL-fc450fc7cf8d941d20a08e6b",
+        "quote": "Annual review cycle for the FIU Reporting Procedure, owned by the Compliance department.",
+        "rationale": "Compliance ownership of AML processes evidences an AML function."
+      }
+    ],
+    "label_confidence": "medium",
+    "adjudicator_notes": "bunq demonstrably has an AML function (Compliance department, second-line Compliance Officers, defined governance). The Italian BoI-specific formal structure requirements (specific Italian AML function charter, resource requirements) are partially a jurisdiction delta."
+  },
+  {
+    "obligation_id": "OBL-41433a0c6a067bb35ae97bfb",
+    "coverage_status": "jurisdiction_delta",
+    "acceptable_control_ids": ["CTRL-a2883f2cc5c3e2a540a69d65", "CTRL-1f0228f3cbe70c469038c283"],
+    "required_control_combo": [],
+    "missing_delta": "Italian BoI Provision Parte Seconda, Sezione III-bis requires the 'esponente responsabile per l'antiriciclaggio' (AML responsible representative) to specifically assist the strategic supervision body in organizational and resource allocation evaluations for the AML function. This is a specific Italian governance role requirement with no equivalent in bunq's documented controls.",
+    "obligation_quote": "Assist the strategic supervision body in evaluations concerning organizational articulation and resource allocation of the anti-money laundering function.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-a2883f2cc5c3e2a540a69d65",
+        "quote": "Formal escalation hierarchy: policy changes require Managing Board approval.",
+        "rationale": "Generic governance hierarchy exists but does not address this specific Italian AML representative advisory role."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "Italian-specific governance role ('esponente responsabile per l'antiriciclaggio') advising board on AML function structure. No equivalent Italian-specific governance control exists. Clear jurisdiction delta."
+  },
+  {
+    "obligation_id": "OBL-8752b2ac07bd3f1f15b08393",
+    "coverage_status": "missing",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "No control addresses verification that cash transport companies can provide identification data of persons from whom cash was collected/delivered, collection/delivery location details, amounts and banknote denominations. bunq is a digital bank and likely does not use cash transport companies, but this CDD obligation (BoI EDD Section for cash-intensive businesses) has no mapped control.",
+    "obligation_quote": "Verify that cash transport companies can provide identification data of persons from whom cash was collected or delivered and details of collection/delivery location, amounts and banknote denominations.",
+    "control_evidence": [],
+    "label_confidence": "medium",
+    "adjudicator_notes": "Niche obligation for institutions dealing with cash transport companies under BoI EDD provisions. As a fully digital bank, bunq likely does not engage cash transport companies — making this obligation potentially inapplicable. However, no control exists and no exclusion is documented. Missing/potentially inapplicable; SME review recommended."
+  },
+  {
+    "obligation_id": "OBL-20d98062faff10fd2bc6e598",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "Operator shall modify, delete, or integrate imported data using the 'Edit' function.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "This is a UI/form-field instruction from the Infostat-UIF SARA aggregate reporting tool user manual (v1.3). It describes how to use a software button ('Edit' function) in a reporting tool interface. Not a substantive regulatory obligation. Clear extraction error — technical user manual instruction captured as regulatory obligation."
+  },
+  {
+    "obligation_id": "OBL-3cf65f63192c795369bfd61c",
+    "coverage_status": "covered",
+    "acceptable_control_ids": ["CTRL-be64b5973bb9315c6470836b", "CTRL-bc40a7e2966c822b23492deb", "CTRL-22ef5c79543d712eed1ee948", "CTRL-f2a8586114d78ee624c1abfc", "CTRL-abb127c7393bb4fe33355444"],
+    "required_control_combo": ["CTRL-22ef5c79543d712eed1ee948", "CTRL-f2a8586114d78ee624c1abfc"],
+    "missing_delta": "",
+    "obligation_quote": "Perform customer due diligence for new customers and re-perform it for existing customers when appropriate due to increased money laundering or terrorist financing risk.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-22ef5c79543d712eed1ee948",
+        "quote": "Automated risk scoring of every user-person following screening; a high-risk classification automatically triggers the Enhanced Due Diligence requirement.",
+        "rationale": "Automatic EDD trigger when risk increases — covers the 're-perform CDD on increased risk' requirement."
+      },
+      {
+        "control_id": "CTRL-f2a8586114d78ee624c1abfc",
+        "quote": "Risk-based periodic re-review schedule for user companies: Low risk every 48–60 months, Medium risk every 30 months, High risk every 12 months.",
+        "rationale": "Ongoing CDD re-performance schedule is explicitly documented."
+      },
+      {
+        "control_id": "CTRL-be64b5973bb9315c6470836b",
+        "quote": "Mandatory manual review with more extensive checks for medium-risk companies, and EDD for high-risk companies, triggered by the automated risk score.",
+        "rationale": "CDD depth scales with risk level."
+      }
+    ],
+    "label_confidence": "high",
+    "adjudicator_notes": "This is a fundamental CDD obligation well-covered by bunq's risk-based CDD and periodic re-review controls. The gap report flagging this as missing appears to be a false positive."
+  },
+  {
+    "obligation_id": "OBL-5021c0dac70e2d83df589116",
+    "coverage_status": "extraction_error",
+    "acceptable_control_ids": [],
+    "required_control_combo": [],
+    "missing_delta": "",
+    "obligation_quote": "Comitato di sicurezza finanziaria shall propose to the Minister of Economy and Finance national measures for designation and freezing of funds.",
+    "control_evidence": [],
+    "label_confidence": "high",
+    "adjudicator_notes": "Obligation is on the Italian 'Comitato di sicurezza finanziaria' (Financial Security Committee) — an Italian government inter-ministerial body. This is a public authority obligation, not an obligation on bunq. Cannot be satisfied by any bunq control."
+  },
+  {
+    "obligation_id": "OBL-4e8260587ea1b5b678dab97f",
+    "coverage_status": "partial",
+    "acceptable_control_ids": ["CTRL-9cfda614f21290a614b51227", "CTRL-be64b5973bb9315c6470836b", "CTRL-bfec54be7f41685a144e96f7"],
+    "required_control_combo": [],
+    "missing_delta": "The obligation specifically addresses CDD for insurance benefit recipients and actual recipients of liquidated benefits — a product-specific CDD step applicable to insurance products (life insurance, etc.). bunq is not an insurance company; however, if bunq acts as a payment institution for insurance disbursements, this could apply. No control specifically addresses beneficiary CDD for insurance products.",
+    "obligation_quote": "Apply due diligence measures to insurance benefit recipients and actual recipients of liquidated benefits and their beneficial owners.",
+    "control_evidence": [
+      {
+        "control_id": "CTRL-9cfda614f21290a614b51227",
+        "quote": "Mandatory collection of personal identification data from every user during the onboarding identification phase.",
+        "rationale": "General CDD covers identification of account holders but not specifically insurance beneficiaries."
+      }
+    ],
+    "label_confidence": "low",
+    "adjudicator_notes": "Insurance-specific CDD obligation. bunq does not offer insurance products, so this obligation may be inapplicable to bunq's business model. No control exists. Partial coverage through general CDD controls if bunq processes insurance payments. SME review needed to determine applicability."
+  }
+]

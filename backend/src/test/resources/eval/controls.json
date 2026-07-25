@@ -1,0 +1,3386 @@
+[
+  {
+    "id": "CTRL-9195ef606aedc8a6f8351f4c",
+    "description": "A mandatory two-month notice period must be provided to users following a final account closure decision, allowing them time to transfer funds and secure alternative banking arrangements.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-f5bbffac50349df019e14b91",
+    "description": "Accounts opened for Dutch 'in oprichting' companies are placed on hold pending receipt of supplementary official incorporation documentation confirming full registration and UBO information before final approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-c681dfee8341284b0b9faba7",
+    "description": "Every termination notice must receive prior approval from a designated agent (as specified in procedure or HTFDI), who also reviews the letter for fairness, accuracy, and clarity before it is sent to the user.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2c347f487f0a2ac7cefadfdd",
+    "description": "Mandatory request for the last 2 tax returns and last 2 audited financial reports as part of source of funds assessment during the transaction activity re-review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-35b7e820f96543e1ff5df554",
+    "description": "A structured risk scorecard (Annex I) is automatically applied to every new business user at onboarding to calculate a composite risk score across multiple weighted indicators (company info, company activities, expected use), determining the user's initial risk classification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9cc4a3bef77818babaae91f8",
+    "description": "Automated flag for high-risk business activities (e.g., crypto, investments, passive income) declared by the user, based on a predefined acceptance policy, triggering review before account opening.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ddedf84ae2bd13b284b34732",
+    "description": "Data Team Adam performs quarterly quality checks on the risk scoring model to verify correct implementation and identify any users incorrectly scored.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d6d0764968150a70f2d0f7b5",
+    "description": "Every transaction monitoring or filtering hit is subject to mandatory manual analyst assessment before a reporting decision is made, ensuring that legitimate transactions with plausible explanations are not incorrectly reported to the FIU.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2d87f5d19df958618ec6e9ed",
+    "description": "Examination of SWIFT messages and international payment instructions to detect indicators of sanctioned parties or territories involved in transactions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ca0d3a3d3f0a7f8f28afc1f1",
+    "description": "Automated resolution of KVK data discrepancies: user file is either auto-updated or escalated to manual review depending on the nature of the discrepancy.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-408fe0cae8074ad049d0052a",
+    "description": "The combined risk score calculation applies a time-based weighting schedule that progressively shifts weight from the onboarding score (starting at 100%) to the dynamic score (reaching 70% beyond week 5), ensuring the risk profile becomes increasingly behaviour-based over time.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6bdbc18912465617d0efc705",
+    "description": "In-house transaction screening system integrated with Dow Jones data, screening all incoming and outgoing transactions at initiation for sanctions risks across payer/beneficiary names, financial institutions, payment descriptions, and country of origin/destination.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b890bf2a54aaa5ac0df89104",
+    "description": "Mandatory collection of a copy of the identification document from all directors and representatives to verify their identity during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a2883f2cc5c3e2a540a69d65",
+    "description": "A formal escalation hierarchy is in place: uncertain decisions escalate one layer up; process deviations require Team Lead approval; policy deviations require CRO approval; policy changes require Managing Board approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2f424ddb360ceb74e1bb88cd",
+    "description": "For Spanish resident user-persons, collection of employment status confirmation during onboarding; for those assigned a high-risk score, additional evidence of professional or business activity is requested.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0bb8718a594be79a6bcb578e",
+    "description": "When additional information is required to process a complaint, the resolution deadline is reset to the date the requested information is received. If the complainant does not respond within 1 month, the complaint is formally closed as resolved, ensuring the complaint queue remains current and unresolved items are not left open indefinitely.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-8bc257391bab11737782014a",
+    "description": "Annual re-review of PEPs and RCAs under the Enhanced Due Diligence (EDD) process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0ac7ce16ac6e84d802827e3d",
+    "description": "For companies with multi-layer corporate structures, independent source verification must be performed on every entity in the structure to identify UBOs.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6f80d8e814c0ca821094f6ae",
+    "description": "An automated risk scoring model is applied to gathered onboarding information to assign a risk classification to each user company.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-979b75e23c32d078b5b1466d",
+    "description": "First Line assessment and general off-boarding of users identified as Special Interest Persons (SIPs) during the relationship, per the Off-boarding Procedure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-6db256476b88842d1b3ead40",
+    "description": "Employment controls: confirmed sanctions matches result in non-hiring of prospective employees and contract termination of current employees.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-1c7c1f2b6eca23157c6ae48a",
+    "description": "Account opening is blocked unless the reviewer fully knows and understands the ownership and control structure. If unclear, additional information must be requested or the structure must be mapped manually before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-49b721e43cb8446bca872656",
+    "description": "Four-eyes review by a dedicated second-line Compliance Officer (FinCrime) for all risk score changes, confirming quality and alignment with regulatory requirements and internal policies before approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-31d81d0d488423b2fa77d0a7",
+    "description": "Automated check verifying that the user's last-used IP address resolves to a country within the European Economic Area (via Maxmind), flagging users whose IP is outside the EEA.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6f7193b40d362339a30e3772",
+    "description": "When Incode does not return a positive result, agents must manually assess ID image quality and authenticity against defined criteria (darkness, blur, readability, glare, angle, brightness, physical document vs. copy/screen) and cross-reference fraud pattern resources before making an onboarding decision.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6be5d01849d0be53333a7b21",
+    "description": "Automated auto-deny rules are applied during onboarding to block users in high-risk scenarios (e.g., failed facial similarity checks); new or changed rules require approval by the Head of Compliance and CRO.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9c050b5e898b45dfa5a3fac6",
+    "description": "Users whose activity is linked to illegal conduct (e.g. human trafficking, illegal adult sites, structured cash deposits suggesting criminal activity, third-party account use) are offboarded and reported to FIU-NL.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-f4844ec11c9d896ce70c06a4",
+    "description": "Manual review process initiated via CRM notification when automated KVK matching fails or company is non-Dutch; analyst reviews available information and determines further action.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9a04e41ec82a32abcd0135c7",
+    "description": "Daily download of Dow Jones PEP/RCA, SIP, adverse media, and sanctions list data; automated phonetic-matching screening of every user against these lists, with alerts generated in the CRM system (Admin) and investigated by compliance analysts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-fad02b7b86287d9cea903b44",
+    "description": "Automated trade name matching against KVK records; database is automatically updated to reflect the current registered name if a discrepancy is found.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-e149330942ef207e210d755a",
+    "description": "Automated risk scorecard calculation for every registering user at onboarding, incorporating multiple risk indicators derived from historical and publicly available risk data, to determine the user's initial risk profile.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-67b49ded1702e2d682043b48",
+    "description": "Automated risk score check that blocks onboarding when a user's risk score reaches 'Reject Risk' level; the approval must be rejected and the user cannot be onboarded.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4efebdc1ed48abd27dc23a1a",
+    "description": "Users classified as 'Reject' (score ≥ 200) are rejected at onboarding or off-boarded as a general rule; exceptions require explicit CRO approval before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d240f8e3b9634f3357eb8abf",
+    "description": "Mandatory collection of a jointly signed statement (using the official bunq template) from all directors when a director holds only joint authority, confirming approval of account opening and independent management authorization.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6ba9ba0a46b1984984404421",
+    "description": "Special Interest Persons must be rejected at onboarding without exception.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f1508bd939635c7097ed1613",
+    "description": "bunq configures its screening tools and escalation procedures in accordance with the DNB Leidraad Wwft en SW (2020), which defines supervisory expectations for sanctions and AML screening.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7204ff17c37d0de0a83631bf",
+    "description": "All onboarding documentation is stored in the internal Retool system; deviations, additional research, and relevant notes are recorded in GitLab (linked in user notes) or directly in user notes to maintain an audit trail.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-7d9936261a55f4a4703d0761",
+    "description": "Automated check comparing the country derived from the user's last-used IP address (via Maxmind) against the user's registered physical address country to detect address inconsistencies.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ed559f0124d149aec9018775",
+    "description": "Agents manually assess user-company behaviour against a defined list of risk indicators (e.g. payments not matching stated business activities, crypto/cash funding, high-risk country payments, unusual volume for business size) and initiate SOF inquiries where appropriate.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-0d63040d1374568fbdc05aef",
+    "description": "Onboarding staff/systems must check whether a user has been previously blocked by compliance or onboarding and reject such users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-db53b64fcb98a6092b3732e1",
+    "description": "When the Address Country IP/Geolocation check fails, agents must review the existing Proof of Residence; a new one is only requested if the existing document is invalid or needed to resolve suspicions about the user's address.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-03e02645e15062cc031a4b95",
+    "description": "Screening of intermediary and correspondent banks across the full transaction chain to ensure none are located in sanctioned countries or territories.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-af80fa6e164e96c546905e17",
+    "description": "When a report is filed with FIU Netherlands, the user is never informed of the filing under any circumstances, including during account termination, to prevent tipping-off in line with AML/CFT obligations.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a6701c849c3c5c553c15e016",
+    "description": "Dedicated process for users who failed Customer Due Diligence (CDD) to identify and report all suspicious transactions to the FIU, even when the individual is no longer (or not yet) a customer.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-a4fe612c375114f177fb32c3",
+    "description": "bunq performs real-time screening of SEPA instant transfers against EU sanctions lists in compliance with the EU Instant Payments Regulation (EU) 2024/886.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5874aef053aaf018756ce784",
+    "description": "Dynamic risk scoring model incorporates transaction monitoring hit history from the previous 6 months, adding weighted score increments per reported hit (+45), confirmed no-action hit (+10), and cleared hit (+1) to the user's behaviour risk score.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-bea9f5cdda1222372b34195b",
+    "description": "In the Belgian branch, only Eenmanszaak and Besloten Vennootschap legal forms are accepted. Any other legal form or structural change requires explicit CRO approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0f64ae8a427231e9ddd5b09b",
+    "description": "When a U.S. person indicator is present and the user cannot provide proof of non-U.S. status, the bank must obtain a U.S. tax number from the user or close the account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-ae2b2810be4b0122824b26ad",
+    "description": "Automated insolvency check against the Centraal Insolventieregister (Dutch insolvency register) to detect potential matches on the company name and prevent onboarding of insolvent entities.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a19d4546973953cf0c3482c6",
+    "description": "Any applicant whose identity information is deemed unreliable must be rejected during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b3df565a8e38a9c64b00a058",
+    "description": "Agents (Superguides) are required to escalate any suspected sex-related services activity to ComOps for review, and further to the User Review team when specific conditions are met (e.g. indication of sex-related services, refusal to provide documents, adverse media suggesting coercion/trafficking, unclear SOF); all actions must be documented in the case file.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-09f1ee7bea5ce2c30cf6fac9",
+    "description": "A Unique check is performed against the existing account database to automatically detect and flag duplicate accounts during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-60a727d67c864fc095afdbf3",
+    "description": "bunq applies the Dutch Sanctiewet 1977 to prohibit direct and indirect provision of services to sanctioned entities, and triggers account blocking or asset freeze actions upon identification of a sanctioned party.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3ab599ad82fbcc487a5eaf1c",
+    "description": "The risk scoring system is linked to the transaction monitoring system so that more stringent monitoring thresholds are automatically applied to high-risk users, including PEPs.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-3df92f30a30889f00224191c",
+    "description": "Automated download of KvK (Chamber of Commerce) excerpt via API to compare company-provided information against official registry data during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6f4bb334e9328c159760d613",
+    "description": "Screening and investigation of UBO ownership structures to identify indirect sanctions exposure, including application of sanctions to companies where a sanctioned individual holds ≥50% ownership.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2ec62bcc14e6aeb0a85bd246",
+    "description": "Upon account closure, remaining funds are returned to the user via bunq.me or transferred to a named alternative account; if no alternative is provided, funds are held without interest pending user instructions, ensuring proper fund disposition.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-db4a6ef4872666532480d5e0",
+    "description": "When there is strong suspicion that a person claiming to be a parent/guardian is not, bunq requests documentary proof of relationship (birth register copy or authority register extract) before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-03685ddb1fcfd84b18830d67",
+    "description": "Rejection of prospective users (including their UBOs and directors/representatives) confirmed as sanctions true positives during onboarding screening.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5f03db564648091485acefc7",
+    "description": "For Spanish resident user-persons, SOF documentation is only required when the user has maintained a high-risk score for at least two consecutive months, preventing false-positive SOF requests driven solely by dynamic risk scoring.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-96271a8b9880a1b6b4aa210b",
+    "description": "When a user is identified as a PEP or RCA, their account is blocked until they provide source of funds and source of wealth information.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c3d78ccecb14d007df1f68e2",
+    "description": "A standardised notification template (Annex 2) must be used when informing users of a potential account closure, ensuring the communication is clear, consistent, and legally compliant.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2418d9709d680e58cfaa4d5b",
+    "description": "Tiered model change governance: material changes (scorecard category additions/removals/significant updates) require CRO approval; non-material changes (score fine-tuning) require risk model owner discretion. Both types must be supported by documented data analysis covering user base impact and risk appetite implications.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0c34b7fac8819d5175ecbd7e",
+    "description": "Automated check of all devices associated with a new user to identify whether any other users registered on the same device are blocked.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ef8492ba273b56133d8a5d2b",
+    "description": "A standardised information-request template (Annex 1) is used for all user information requests during the offboarding process, ensuring requests are clear, consistent, and specify what is needed and why.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b143219bc6ae45ea289e46ce",
+    "description": "Automated check of every new user against the Dutch insolvency database (rechtspraak.nl, updated each working day); account opening is blocked if the user is listed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-92ec6df4bf6652661dda077f",
+    "description": "Retrospective review of a user's prior transaction history to identify potential links to money laundering, terrorist financing, or sanctions evasion when a transaction screening alert is confirmed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-b7a7f41f92b90ab49e1cfea2",
+    "description": "Automated company structure checks (Dutch companies) flag Stichting/non-auto-approvable legal forms, non-natural-person UBO owners, and BVs with more than one UBO for manual review and UBO identity verification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bcf83881f382ed270558687b",
+    "description": "Non-EU driver's licenses, non-EU identity cards, and documents issued by high-risk countries are rejected as valid identity documents for onboarding verification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d9a62fdc8ce2fc8c2a5d88ac",
+    "description": "A structured four-screen in-app workflow collects SOF information from users: main income source(s), average monthly income, maximum expected balance, and documentary proof upload; the type of proof requested is dynamically determined by the income source selected.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-be64b5973bb9315c6470836b",
+    "description": "Mandatory manual review with more extensive checks for medium-risk companies, and enhanced due diligence (EDD) for high-risk companies, triggered by the automated risk score.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bd9382261bc89f595317d4f5",
+    "description": "All information requests sent to users during the offboarding fact-gathering step must be reviewed and approved by a ComOps officer before dispatch, ensuring accuracy and consistency.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-97d08e1fe105a998ed5d45f0",
+    "description": "Automated check for authorisation forms for jointly authorized directors; missing forms are automatically requested, and responses trigger manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a742d5e71755d40e87a14350",
+    "description": "Every new user is automatically screened against the Dutch insolvency database at onboarding; users found in the register must be rejected by agents.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-db80f8155e8f251e2eb5a4c6",
+    "description": "When the Name Person Blacklisted check fails, agents must verify the user's name against the provided ID document to determine if it is fake or real before proceeding with onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-f223c34e071485b459c118ef",
+    "description": "Automated backend system continuously monitors all user-persons against peer-group thresholds for monthly income and total balance; when a user exceeds the applicable threshold for two consecutive months, a source-of-funds inquiry is automatically triggered.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d0ede26e4a6a4a03805ef0ad",
+    "description": "All users, including PEPs, are subject to a periodic screening process that checks for negative news mentions (adverse media).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-2af6d25db4f62d46af73a7f4",
+    "description": "Agent scoreboard used during enhanced due diligence that mandates one of three outcomes — approval, escalation to senior agents, or denial — based on screening results and risk factors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-74b572ba6c35df032e9df6ac",
+    "description": "System restriction preventing address changes to non-EEA countries post-onboarding; automated proof of residency request triggered for EEA address changes.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0d3a1af2128f759a63e72990",
+    "description": "Agents verify ownership and control structure information against independent and reliable sources including deeds of incorporation, articles of association, partnership contracts, chamber of commerce excerpts, and shareholder registers.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8eca3db0e8f4745e1d84acd7",
+    "description": "Individual risk model components are evaluated for discriminatory power; components with low discriminatory power are flagged for improvement or removal in the next model iteration.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-78695311b179f6ee4d68b452",
+    "description": "Document number check screens Dutch ID documents against a police database of stolen/lost documents and validates document number syntax/format against country-specific patterns. Failures result in requesting a different document, better quality image, or correcting a typo.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4f0d57dfb50d6695486711cd",
+    "description": "Dynamic risk scoring model adds +50 points for users in the top 5th percentile and +100 points for users in the top 1st percentile of their peer group (segmented by age and income country) across categories including crypto-related payments, incoming payments, cash withdrawals, money sent/received from outside the EU, total balance, and cash deposits.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-69819b6447ec1d3c5a06621a",
+    "description": "Formal complaints must be submitted exclusively through the designated online form (or, for Spain, a dedicated email address). The Support chat is explicitly prohibited from processing formal complaints, ensuring complaints are routed directly to the complaints team and not lost in general support channels.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-88e8c670ec37bc0b308cb194",
+    "description": "Auto-deny rules require approval by the Head of Compliance and CRO before implementation, ensuring governance oversight of automated denial decisions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-16bad5cfff0c74a07d10dc3c",
+    "description": "Any exceptional onboarding of a new PEP after April 2022 must be justified, documented, and formally approved under the Onboarding Escalation Guidelines.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5b79e9e6838ffa987b031635",
+    "description": "Agents must explicitly select documented data point mismatches from a checklist before clearing a watchlist hit, ensuring a structured and auditable rationale for each non-match determination.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5e4245dd412ce72da0a6fe65",
+    "description": "Companies with complex ownership structures are prohibited from being onboarded, as defined in bunq's Acceptance Policy.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8a3b6e396b5e85a7813aa5f5",
+    "description": "Policy deviations and all policy changes require formal approval from the Managing Board before implementation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c4c59a9d2751e32517af9e74",
+    "description": "Mandatory storage of director and representative identity data collected during onboarding to enable ongoing screening of directors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-926cfc9b735ce9c4d8a802a1",
+    "description": "Stichting Derdengelden (third-party funds foundations) are categorically rejected during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0a52ef849be190c6afc751d6",
+    "description": "An automated check blocks auto-approval for companies with a high risk score, ensuring they are routed to manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b98c62e397355617b69789cc",
+    "description": "Automated risk behaviour check via Sardine that flags users with High or Very High risk scores; agents must open the Sardine platform via the 'Sardine Risk Score' button and conduct a detailed fraud pattern review before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-598ac0da7c4f0c07b67c5d46",
+    "description": "Analysts must verify a true positive by searching the exact term that triggered the transaction monitoring/transaction filtering (TM/TF) hit directly within the applicable Council Regulation, using only the initiating search term.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9f123c484bfcbc9a3e11ad55",
+    "description": "A standardised termination notice (Annex 3) must be issued to the user upon final offboarding decision, detailing the specific reasons for closure and the rationale for not accepting the user's response.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-b8b424aa3bfa08fa93956f7a",
+    "description": "Quarterly quality checks performed by Data Team Adam on the risk scoring model to verify correct implementation and identify any incorrectly scored users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-fc450fc7cf8d941d20a08e6b",
+    "description": "Annual review cycle for the FIU Reporting Procedure, owned by the Compliance department, with all changes requiring approval by the Chief Risk Officer (CRO).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5c4c18a904d678889b104807",
+    "description": "Daily (Mon-Fri) retrieval of insolvency cases from rechtspraak.nl; automated matching of user last name, date of birth, and fuzzy full-name search against insolvency records, generating a hit if a match is found.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9c9a8c27e465ad4222dd8f48",
+    "description": "For non-EU TINs, staff manually verify the logical validity of the number using Google and the OECD website.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-b264af9342ab58ee5e8d24be",
+    "description": "Tipping-off prohibition: all bunq staff are prohibited from disclosing to users or any third party that an unusual transaction report is being considered, has been filed, that information has been shared with the FIU, or that an ML/TF investigation is underway.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-491ff31c261219d7cf816a21",
+    "description": "Analysts must search the US Department of State press release database using the true positive hit term to identify the specific articles of sanction restrictions applicable to the designated entity.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5c0ff08fc6dc538dbdc20007",
+    "description": "A screening system is used to identify whether a user-person, director, or UBO of a user-company is a PEP or RCA at onboarding and during ongoing monitoring.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f77b2e252e723a1d6b85d317",
+    "description": "New PEP and RCA applications are automatically assigned a 'Blocked Reason Dow Jones Politically Exposed Person' label, preventing their onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e1165408c4e89d4295beb8f3",
+    "description": "Mandatory video-based facial biometric verification using hybrid AI: the KYC Third Party Provider performs face comparison, liveness detection, and spoofing detection, comparing the video face to the identity document photo to confirm the document belongs to the user.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-cc5c5c69919c37000503c751",
+    "description": "The transaction monitoring system uses each user's risk score as an input to apply differentiated, more stringent monitoring thresholds to higher-risk users, increasing the likelihood of generating monitoring hits and triggering more frequent reviews.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a754ba6935842a38cb52d9d7",
+    "description": "Requirement to obtain a signed authorization form or power of attorney (signed by a Chamber of Commerce-listed person) before allowing a non-listed representative to open a business account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c18958f8b25c209ce5fd2edb",
+    "description": "Onboarding risk scorecard adds +50 points when a user claims EEA residence but presents a non-EEA phone number, flagging the inconsistency as a higher-risk indicator.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e55add72e6ea4b0079ea58c3",
+    "description": "Classification of every onboarded user-person into one of 12 peer groups based on payment and balance risk drivers, with assigned monitoring thresholds for each group to determine the purpose and intended nature of the business relationship.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d1ecb9d0f9d70207e4d0a9bf",
+    "description": "Automatic status update of reported transactions to 'REPORTED_TO_FIU' in the system upon report creation, providing a clear audit trail of reported transactions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-fa2e9189aaf301354be9a5e2",
+    "description": "Agents verify the guardian-minor relationship by checking for matching surnames and an age difference of at least 16–18 years. If either criterion is not met or doubt exists, additional documentary proof (birth certificate, adoption documents, court order, or official government document) must be requested.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5b0995d59a4944e225d131b5",
+    "description": "The Source of Funds procedure is owned by the Compliance department, reviewed at least annually, and any changes require approval by the Chief Risk Officer (CRO).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-1770b91075500fa5f41bf09b",
+    "description": "Retention of all FIU-reported unusual transaction records for five years, including transaction reconstruction data, report copies, FIU confirmation notices, and any additional information exchanged — stored in a retrievable format.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-3ac721efd12c08d2c4b4c155",
+    "description": "Mandatory review of at least the last 3 months of transactions (extended to 6+ months if transaction volume is low) as part of the transaction activity check during re-review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-32947dbc85dcdb0524d47de7",
+    "description": "For special cases (e.g., PEPs, high net worth users), labels are either automatically or manually assigned to enforce high-risk classification by the risk models, regardless of other scoring factors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-176dba9f37babab72356f7d7",
+    "description": "Before finalising an offboarding decision, users must be given a minimum two-week period to respond to the proposed account closure notification, extendable for valid reasons.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8a8317b7aa8b372de66a1699",
+    "description": "Reviewers must verify that the company's trade name is consistent with its stated activities and SBI codes. Any mismatch triggers a mandatory clarification request to the user.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-61ce619d8607c7edacde4856",
+    "description": "Following CRO approval, the Risk Scoring Model owner is required to implement approved changes into the risk model in a timely manner.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-22ef5c79543d712eed1ee948",
+    "description": "Automated risk scoring of every user-person following screening; a high-risk classification automatically triggers the Enhanced Due Diligence requirement.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-1fcb90b57481ba5803da9df0",
+    "description": "Off-boarding of user companies when the re-review process cannot be successfully completed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-4521fc5e96310a2a2ea56daf",
+    "description": "Automated API connection to the Dutch Chamber of Commerce (KvK) and Markaaz for non-Dutch companies is used to retrieve and verify company registration data during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d98f74a9bb63710dba1b2c69",
+    "description": "Automated keyword screening of company name and trade name to detect references to high-risk activities (e.g., gold, investment, real estate, crypto).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a8475c98a87069908e3f5712",
+    "description": "Mandatory prohibition on opening accounts for companies (or any parent company in the ownership structure) that are deregistered, in insolvency proceedings, or scheduled for future deregistration.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ce7f7d7f162a874562c7b9ad",
+    "description": "When the UBO register is inaccessible, user companies are required to self-declare current UBO information as a compensating measure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-64c21041ae4c9ffe6dbdf499",
+    "description": "Quality Assurance team monitors accuracy and consistency of screening investigations, with QA findings reviewed quarterly by the Regulatory Compliance team to ensure policy alignment.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5b9e54346cd02aa555372a31",
+    "description": "Three-step escalation process for confirmed sanctions hits: Compliance Operations escalates via GitLab to Second Line, further escalation using the Sanctions Investigation Template, followed by mandatory reporting to DNB without delay.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-e6e4723cc500df42ff30e68a",
+    "description": "AI model-based user fraud prediction check that compares onboarding data against offboarded users; agents must review fraud indicators and provide feedback ('Good explanation'/'Bad explanation') to the AI model to support continuous improvement.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-468f5051e50094e712fcec58",
+    "description": "A dynamic risk scoring model runs automatically on a weekly interval (starting one week after sign-up) to recalculate and update each user's risk profile based on current behavioural data.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-4383e0872e24e448d4b8a5ee",
+    "description": "Automated KvK number match detects when a sole director attempts to create a duplicate business account and redirects them to their existing account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-abb127c7393bb4fe33355444",
+    "description": "Ongoing continuous monitoring obligation for all company users post-onboarding, requiring documented understanding of each company's activities to support effective transaction and behaviour monitoring.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e6903a8549a6f237dcd1f708",
+    "description": "Policy deviations require a formal written request to the CRO including justification. The CRO (or delegated senior employee) may only approve if there are no legal objections, the situation justifies deviation, and the risk is acceptable.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fec49ace91c600100ff8fcd4",
+    "description": "Existing users identified as PEPs or RCAs after onboarding are assigned specific PEP-labels in the system to flag their elevated risk status.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-c75807caf160f415e46342ab",
+    "description": "Analysts gather additional information from the user or other sources as needed during transaction investigations to support the determination of unusual activity.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9edd8887db38f42ba8382fbd",
+    "description": "Individual risk model component performance is assessed by measuring each component's discriminatory power between off-boarded and active users; components with low discriminatory power are flagged for improvement or removal in the next model iteration.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-35a06a1c729e6808b1eba0ad",
+    "description": "Automated check against the Dutch insolvency database and KvK company status blocks account opening for companies that are insolvent or deregistered.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-50b10eaca65e603c247f55dd",
+    "description": "Proof of residence is verified using a defined list of accepted documents with maximum age limits (e.g., utility bill max. 3 months, rental agreement max. 6 months). Agents must confirm that name, address, and date are clearly visible on the submitted document.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6ec98f2cd3c55da87c28cb50",
+    "description": "Users subject to a SOF review have 14 calendar days to submit required documentation via the app; failure to comply results in account access restriction until sufficient SOF documentation is provided.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-ac62f059775fe52088276bd8",
+    "description": "Automated verification check confirming that at least one director or representative has completed full identity verification before a business account can proceed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8c64c3f990382a771677a227",
+    "description": "Analysts must consult the specific article of the applicable legislation to determine the exact type of sanction restriction before taking action, to prevent unjust freezing or blocking of users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-244a6231aaf138742d685add",
+    "description": "A structured internal appeal process is in place: complainants may appeal within 1 month by replying with 'Appeal' in the subject line. Appeals are subject to a 15-business-day SLA (up to 35 business days / 6 weeks in exceptional cases), with mandatory notification if the deadline is breached.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-27214caf0f861b74287573ad",
+    "description": "Onboarding risk scorecard scores country of residence using bunq's AML Risk Ratings (0 for low risk to 100 for high risk countries), with automatic Reject-level scores (200) assigned for countries outside the acceptance policy or unknown/missing residence.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e8b4fa0421f8fb0128f47b7b",
+    "description": "For complainants residing in Spain, a mandatory enhanced data collection requirement is enforced at intake, including identity verification details, business registration information (for companies), confirmation of no parallel legal proceedings, and a signed declaration — ensuring compliance with Spanish local regulations before processing.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e32d08656d8d59503089297f",
+    "description": "Automated dynamic risk scoring model executed on a weekly interval (starting one week after sign-up), linked to the user's transaction profile and transaction monitoring system, to keep the risk profile continuously up-to-date.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-b5d73747e3be218484480374",
+    "description": "Identity verification of new UBOs via ID copy, mandatorily verified by a bunq employee or reliable third party (e.g., notary), regardless of risk level.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0de89b9758dbaec1f812a295",
+    "description": "Annual re-review of crypto exchange companies with mandatory questionnaire completion, subject to the Crypto Due Diligence Guide.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-91f11c405ae3a5c23b1b44ce",
+    "description": "Analysts apply risk labels to investigation cases following review; these labels can trigger a change in the user's risk classification within the system.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-21256a9cf6c3a2cd2ca1a338",
+    "description": "Risk scoring system linked to transaction monitoring system, applying more stringent monitoring thresholds to higher-risk users to increase review frequency.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a2b9c204167b942484d165c6",
+    "description": "For UK branch PEPs and high-risk users, onboarding is blocked until the UK MLRO provides formal approval, supported by collected and documented evidence.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2fa82d47b9edb79aacc34f85",
+    "description": "Enhanced screening of all users, counterparties, UBOs, and transactions against RU/BY-specific sanctions lists, with enhanced monitoring of Russia/Belarus-linked transactions and mandatory escalation of hits to Compliance for assessment and potential reporting to the Dutch Ministry of Finance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4a1a736d77f39025c5d1e837",
+    "description": "A mandatory three-step approach is applied to establish PEP source of wealth: (1) obtain net worth, (2) obtain origin of net worth, (3) verify where risk is high or doubts exist.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e7710ab6603563f895e9a392",
+    "description": "Analysts are required to record any relevant post-onboarding developments for PEP users in the Gitlab system via comments, maintaining an up-to-date audit trail.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-566241e3a0867f24b1d01d9e",
+    "description": "When the automated lookup queue fails to execute checks (e.g., Legal Guardianship, Insolvency, Watchlist/DowJones), agents must manually run the user's details through the relevant external websites before proceeding with the approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-3657cb23dc1027247d799f02",
+    "description": "Company registration number and name are automatically verified against the KvK API (Dutch companies) or Brex/Markaaz API (non-Dutch companies); if the check fails, a manual registration excerpt download is required.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fb5ac96d844564c97f5ec24a",
+    "description": "Minors cannot open an account without explicit legal guardian approval via the guardian's own bunq account. If the guardian is not an existing customer, their identity must be verified. Minor and guardian profiles are permanently linked in the internal administration system, and the minor is labelled 'user minor'.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ef431f67e2f38766ef0a972d",
+    "description": "Every three months, model KPIs are reviewed through a KPI dashboard to assess risk model classification performance. Based on the outcome (level 0, 1, or 2), no action is taken or specific scorecard/component updates are initiated.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-2ce5d38ab5cd21e6001d76f2",
+    "description": "Analysts are instructed to gather additional information (e.g., user activity answers, corporate structure details) during onboarding and incorporate expert judgment into the risk assessment, supplementing the automated scorecard score.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-517361fc7e19a17a92d41cb5",
+    "description": "Phonetic matching logic is applied during Watchlist screening to detect matches even when names are recorded with slight variations, including transliterations of non-western names.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-12b10ed0ae775dba07cb8cf1",
+    "description": "Onboarding risk scorecard automatically assigns a Reject classification when the registering user's device was previously used by a user with Blocked/None or Frozen/Blocked status, preventing account opening by individuals linked to previously blocked users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a8e3aa729e73a5f591a9d452",
+    "description": "Supervised Machine Learning Model (Finn for TM) that analyses Transaction Monitoring hits and recommends follow-up actions (report and offboard, warn the user, or clear) to assist analyst investigation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-29fa3af98e58a10e58eeaf2c",
+    "description": "Automated address matching against trade register; address auto-updated in database with user notification, or escalated to manual review if country has changed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-784423e5cc061bb9cfb9d26c",
+    "description": "Automated check of every new NL user against the Dutch legal guardianship database (Curatele & Bewindregister API) by last name and date of birth; account opening is blocked if the user is listed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-553f91a2d70550ea2305d862",
+    "description": "A suite of automated fraud-prevention checks (including fraud email mismatch, risk behaviour check, name person blacklisted, and fraud prediction result) is applied during onboarding to flag potentially fraudulent users for mandatory manual review before approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e2a94c36196fc60608661139",
+    "description": "Compliance analysts investigate screening alerts by comparing user data against Dow Jones information via the Dow Jones web portal and Admin CRM; additional online sources may be used to resolve doubtful matches.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-78a70357fed8e70d8dd2d41b",
+    "description": "Automated generation of FIU reports in the required XML reporting format, incorporating all mandatory data fields (client identity, UBO, transaction nature, amounts, and circumstances) from the Retool CRM system.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-aa6674bb08654e26fc4cb75e",
+    "description": "Prohibition on accepting cross-border corporate structures (companies or UBOs in different countries), with a narrow exception for directors residing within approximately 80 km of the company's registered seat.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ab2a66ca1be9579a565075ab",
+    "description": "Automatic risk level increase for users identified as PEPs after onboarding, applied in line with the Risk Scoring Person Procedure and Risk Scoring Company Procedure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-549ce21dda0f4f3697d01c48",
+    "description": "Automated check for presence of identification documents for all directors, representatives, and UBOs; missing documents are automatically requested, and responses trigger manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-06fcbaec1dc4187f29c6b5e9",
+    "description": "When a business account has multiple directors and the verifying director lacks unlimited authority, a written joint authorisation form must be obtained before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f963a93403b49416188409e7",
+    "description": "The operational compliance team is designated as the responsible owner for responding to FIU information requests in a timely and proper manner, including both written and oral responses in urgent cases.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-6a225388d6f8f92e3528f4a8",
+    "description": "Automated IP-address geolocation check during onboarding that blocks direct approval if the user's IP-derived location does not match their stated country of residence.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-368af8d3f6c476dac276472d",
+    "description": "Automated identity document verification via KYC Third Party Provider (Incode), performing police record checks, compromised document database checks, data comparison, data validation, visual authenticity checks (font, security features, tampering), and image integrity checks on every uploaded identity document.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fb1b0b3c066c14b1ad1362ec",
+    "description": "During onboarding, agents actively check for FATCA indicators (US place of birth, US residence, US nationality). US persons must provide a valid SSN before being onboarded; if a US indicator exists and the user cannot provide proof of non-US status or a US tax number, the account must be closed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3cb20c256ced84d308acd4b4",
+    "description": "Automated IP address check using Maxmind verifies that the user's IP is within bunq's core markets and flags accounts where the IP is outside core markets, unresolvable, or associated with a VPN.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9a5a2055f0efd24062965e48",
+    "description": "Accounts where risks are not sufficiently clear or specific to justify offboarding must be placed under continued monitoring and investigation, with further user inquiries, until the account activity is fully understood.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e4287b2e80487af62834b690",
+    "description": "Automated duplicate account detection check screening for matching name/date of birth, document number, TIN, alias, or device; any match triggers a mandatory agent review and resolution workflow before onboarding can proceed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a10ef2f76458d7300960017b",
+    "description": "The Country AML Risk Ranking List, which categorises all countries as High/Medium-High/Medium/Low risk using sanctions lists, FATF grey list, Basel AML Index, and EU high-risk third-country list, is reviewed on a quarterly basis.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-fc485288ad7c25e0c4e3fd53",
+    "description": "The onboarding procedure is owned by the Compliance department, subject to at least annual review, and any changes require approval by the Chief Risk Officer (CRO).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3410a97463349797d1b784d6",
+    "description": "Users whose score on any individual onboarding sub-scorecard exceeds 200 are automatically classified as 'reject', preventing acceptance of users falling outside the risk appetite.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9f12ce65c5988cbb3d5a53d0",
+    "description": "When a user company indicates risk-increasing intended account use, EDD is triggered and the onboarding must be manually performed by agents rather than automated.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b267a382e43be517f7c427f8",
+    "description": "User companies are screened against sanctions lists as a mandatory step during the onboarding CDD process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bfec54be7f41685a144e96f7",
+    "description": "UBO identification begins with app-provided data and must be verified against independent sources (Chamber of Commerce, UBO register, shareholders register) before onboarding is approved.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-204ee323dc6d914d9e11c0bb",
+    "description": "Complaints related to the Stocks feature are assigned to Ginmon, and complaints related to the Crypto feature are assigned to Kraken, each with a 2-week resolution target (up to 6 weeks for complex cases), ensuring specialist ownership and defined accountability for product-specific complaints.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-9df0d85db1eb215b7ca3c250",
+    "description": "Face similarity scoring applies defined cut-off thresholds: scores 0–0.25 result in automatic rejection; 0.25–0.45 trigger manual review; 0.45–0.8 result in automated pass; 0.8–1.0 trigger referral to a manual Incode agent for suspected photo reuse.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0f9dea6ee0ae055d647e3f70",
+    "description": "Supervised machine learning model applied to every new user at onboarding to identify potential fraudster accounts; flagged users are routed to manual agent review for approval or denial.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d160c2504c6ed5ac7115381c",
+    "description": "Automated holding company approval process approves holding companies when the downstream operational company is already verified; if the automation fails, a manual review is initiated.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-67f9eff0b59047eb9f342f88",
+    "description": "Trimonthly (every 3 months) KPI dashboard review of risk model performance, with a defined three-level action framework (Level 0: no action; Level 1: scorecard update; Level 2: component update) to trigger corrective steps when needed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-4cf5eed06cd22a669d218885",
+    "description": "Enhanced Due Diligence (EDD) must be completed for all PEP and RCA users prior to verification, in accordance with EDD Guidelines.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a09f3f021688af939f87422e",
+    "description": "Manual review of Onfido video quality for fraud indicators; agents must document a justification note when proceeding with onboarding despite prior failed Onfido attempts, with heightened scrutiny required for face mismatch failures.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1c4c95ea32ea896c53937d7c",
+    "description": "Mandatory red flag notation and user inquiry when a discrepancy of €50,000 or more is identified between declared transaction amounts and actual account flows.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-92bd617b68441ab24936b762",
+    "description": "Defined categories of users are excluded from automated SOF triggers on a risk-based approach, including: unverified users, low/medium-risk users with a linked business account, low/medium-risk Easy Savings account holders (DE/NL, <2 months), bunq employees, users with a SOF check in the past 6 months, and low/medium-risk users with a salary-labelled incoming payment in the past 30 days.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6969fd977ac860b7e2e8a80d",
+    "description": "Automated check that flags discrepancies between the user-declared expected transaction volume and the typical volume for the entity type, triggering further review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-752446ecd9d2a4e8a5e18501",
+    "description": "Proof of UBO registration in the Dutch UBO-register must always be obtained during onboarding; the register may be used as an additional source but cannot be the sole basis for UBO identification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b4a35b16daa16273db321902",
+    "description": "Reject any corporate structure where companies or UBOs span multiple countries, unless the director lives within 80 km of the company seat. This geographic consistency check is applied during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-19af1d953cda48d496665b10",
+    "description": "Staff must escalate uncertain decisions to the next layer of management (following the defined hierarchy: Operational Team → Team Lead → Managing Board), preventing unauthorized or incorrect decisions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-78510e8bfce921a0fcc1fbbf",
+    "description": "SBI codes recorded in the system feed into the automated scoring engine; companies whose SBI codes conflict with the acceptance policy are automatically rejected.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-edea2cf5717a0431e84e2ce2",
+    "description": "Model effectiveness is measured by comparing user off-boarding status and active status against model-assigned risk classifications, using off-boarded users as indicators of expected high-risk classification and active users as indicators of expected low-to-medium risk.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6ffdb08c098232d84c907337",
+    "description": "Service provision is blocked until the full CDD process is successfully completed and the user company is confirmed to fall within bunq's Risk Appetite and Acceptance Policy.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2146009d7dea5254fe848b39",
+    "description": "Any deviation from documented processes requires prior written approval from the Compliance Officer.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5dfddcb795e6707a2816a629",
+    "description": "Automated approval checks are run for every new user at sign-up; accounts are only automatically activated if all checks pass. Any check failure triggers a 'pending approval' status requiring mandatory manual review before activation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-355bcd145552112c64fcb36b",
+    "description": "Daily automated check to identify user companies due for periodic re-review, based on risk score and time elapsed since last review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-7b5dc79f6ae2255d963a1418",
+    "description": "Automated check for minor users verifying that their legal guardian is an adult, was an adult at the time of the minor's birth, and shares the same last name as the minor.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3661e6187f7c0e1e9385cdab",
+    "description": "Mandatory OSINT research during re-review covering LinkedIn profiles, adverse media, and social media for the user company and its UBOs/directors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-2f42d138c88ac2d515665331",
+    "description": "The automated SOF monitoring system checks whether a user has already received an automated SOF inquiry within the past 6 months; if so, no new automated inquiry is generated, preventing duplicate requests.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ca716bcb5a1aaa0743071466",
+    "description": "The system generates risk-based hits for user-persons exhibiting combinations of manual risk indicators (e.g. non-salary funding, crypto/cash deposits, high-risk country payments, unusual volume for age/socioeconomic status); agents investigate these hits and may manually trigger the SOF inquiry workflow.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-46b0f7ace89ed845d903bcc2",
+    "description": "Automated transaction review for HIGH RISK companies: triggered when average monthly transaction volume exceeds €50,000 since last re-review, even in the absence of a monitoring alert.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5cce359713f1d8c910fd89ac",
+    "description": "All applicants must be screened against sanctions lists; any match results in mandatory rejection.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6d71eaeb6d751d7cca965d72",
+    "description": "Event-driven reviews triggered by transaction monitoring hits, user complaints, or authority inquiries (FIOD, police, FIU).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-2c50e0b2a8444da7a698b823",
+    "description": "During the notice period following an offboarding decision, specific services may be restricted, including refusing certain transactions or blocking incoming payments, to manage ongoing risk exposure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0cacd38a64fec8494294a97e",
+    "description": "Spanish resident users must confirm their employment status during onboarding. High-risk Spanish users must additionally provide documentation evidencing their professional/business activity and source of funds; approval is blocked until sufficient documentation is on file.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ef36be82b33c04bfc5753b86",
+    "description": "BPMN-based automation pre-requests KYC information and missing documents/open questions for certain activities upon approval creation, reducing manual review cycles.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-817dcd5bb7fd8a1843f1d970",
+    "description": "Biannual review of risk models covering material change assessment, individual component and scorecard performance analysis, CRO feedback and approval, backend implementation of approved changes, and setting of automated reminders for the next iteration.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-1b84ef52d48009f536dd5797",
+    "description": "Insolvency register check against rechtspraak.nl; onboarding is blocked until ComOps assesses the hit. Confirmed matches result in account closure, account freezing, and monetary account blocking.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4df6f9c4c1762a6ee4c5e5d7",
+    "description": "An API is used to automatically validate the structure and syntax of EU Tax Identification Numbers (TINs) provided by users during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9df4d0c81014f18d54a186a5",
+    "description": "Manual agent review of company documentation and excerpts from local chamber of commerce providers for non-Dutch markets where automated KvK download is not available.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-de5e595b10a588cc7216f98a",
+    "description": "Onboarding risk scorecard adds escalating score increments based on the number of identity verification attempts: +25 for 10–15 attempts, +50 for 15–20 attempts, and +100 for more than 20 attempts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c92b73807e431ea74982cf1c",
+    "description": "Automated check flags directors with U.S. nationality; on failure, a manual inquiry is triggered to collect the director's tax information for FATCA compliance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-84b30a32ca94ef97c4fe0528",
+    "description": "Screening of identification numbers (passport numbers, company registration numbers, tax IDs) in addition to names to detect sanctioned individuals or entities using aliases or name variations.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f9f90884fd39cf8fa825614f",
+    "description": "Agents may deviate from the manual SOF inquiry guidelines only under a 'comply or explain' principle, requiring them to clearly document and record their reasoning for any deviation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f1ee62591070095f27b44e76",
+    "description": "The bank maintains a policy prohibiting any correspondent banking relationship with shell banks or institutions known to allow shell banks to use their accounts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-766a6e009e48ca9be9004529",
+    "description": "Automated check flags companies that select high-risk or 'reject' SBI codes during sign-up; all foreign companies are additionally subject to manual agent review comparing declared activities against Markaaz data.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d0124274c50ad47ce442bef6",
+    "description": "Legal guardianship check via the rechtspraak.nl Curatele- en bewindregister; agents must search using the user's last name and date of birth, and close the account if a confirmed match is found.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6f9ccd56576f406e143d9c2f",
+    "description": "All changes to the risk scoring model require explicit approval from the Chief Risk Officer (CRO) before being deployed ('going-live') in the risk model on Retool, enforced through a formal approval procedure initiated by the Compliance Officer.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7c01dda6588a7f858af2f055",
+    "description": "When an onboarding agent is in doubt about a user's identity or trustworthiness, a mandatory second opinion must be obtained from a more experienced onboarding agent before a final decision is made.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-48ba47f4eb47f7bf227ff08d",
+    "description": "Complainants who remain unsatisfied after the internal appeal process are formally directed to escalate to the Netherlands Financial Services Complaints Tribunal (KiFiD) within 90 days, or to pursue civil court action, providing a defined external redress mechanism.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-4b468ba6bf9020503ba9fcc2",
+    "description": "Agents verify ID authenticity by checking that MRZ data matches the rest of the document, that the MRZ font is correct, and in suspicious cases by using a tool to validate MRZ check numbers.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e5b0eb0684f215030025d173",
+    "description": "Establishment or continuation of any relationship with a PEP requires formal approval from the Head of Compliance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-94928c635d43f7f6ba688848",
+    "description": "Automated eligibility check cross-referencing new user data against existing user records and a known fraudster list; account opening is blocked if the user already has an active account or is linked to a known fraudster.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9420bf863dc3324cd2df7bb9",
+    "description": "Mandatory CRO approval (via escalation through Head of Compliance) required for all risk scoring changes before they go live in the risk model on Retool.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5a28a362f7ccfb15bc4724d5",
+    "description": "Automated redirection of transactions triggering a Transaction Filtering (TF) alert to a suspense account before the transaction reaches the intended payee, allowing analyst review prior to execution.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bc40a7e2966c822b23492deb",
+    "description": "For higher-risk companies, Enhanced Due Diligence (EDD) is mandatory, including independent source verification of UBOs and review of available online resources.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-de1304f36a72a744e6c88b2c",
+    "description": "Mandatory immediate reporting of confirmed sanctions hits to DNB via the Digitaal Loket Toezicht notification form, including identifying data, frozen asset details, actions taken, and applicable sanctions regulations, concurrent with fund freezing and service suspension.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-da78a231b1bbebfe79eac4db",
+    "description": "Automated fraud email mismatch check (by system 'Finn') that flags email-to-legal-name mismatches and bot-generated emails; confirmed fraudulent emails trigger offboarding via the 'Suspicious Email' subprocess, while cleared checks require a documented agent note.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-cb0914411eed84f77104e1cc",
+    "description": "A dedicated second-line Compliance Officer performs a four-eyes review of all risk score changes to confirm quality and ensure alignment with regulatory requirements and internal policies before changes are implemented.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fdc58da805d6f99bd4388286",
+    "description": "Mandatory escalation to Compliance Operations and SAR filing with the FIU for transactions confirmed as involving suspicious dual-use goods under the EU Dual-Use Regulation and Wassenaar Arrangement.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-7883cff5919bbe2d985c38ef",
+    "description": "Mandatory 24-hour decision deadline for Compliance Operations to assess and resolve sanction-related transaction screening alerts, in line with regulatory requirements.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-bc387f4787a3084910e8230c",
+    "description": "Automated customer screening at onboarding via Incode/ComplyAdvantage against sanctions, TF, PEP, SIP, and adverse media lists for all users, directors, UBOs, and representatives.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d27c3bddfbb8dd10e67301be",
+    "description": "Automated intended activity check flags accounts where the user declares high-risk intended uses (e.g., passive income collection, crypto payments) during onboarding, preventing auto-approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0637a8e92cbd80d7250fa270",
+    "description": "Material changes to the risk model (addition, removal, or significant update to a scorecard category) require CRO approval and must be supported by a documented data analysis assessing the impact on the user base and risk appetite. Non-material changes require data analysis but can be made at the risk model owner's discretion.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5faaf346df7791790b006e3e",
+    "description": "Blanket prohibition on accepting new PEPs since April 2022; exceptions require formal Deviation of Acceptance Policy process with approval from the Head of Compliance or CRO.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-15294b339fc96d0d1eee4be6",
+    "description": "A TIN check is performed at onboarding: users without an EEA TIN are given up to 90 days to provide one or a valid exemption reason; US persons are blocked from onboarding until a valid SSN is provided.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6223b6f24634a023420d5f1d",
+    "description": "Automated validation of identity document numbers against country-specific patterns (or a default pattern) to detect invalid or fraudulent document numbers.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e549495e75570d8aa73a4da1",
+    "description": "Analysts must confirm a true positive OFAC hit by verifying the sanctioned party's presence on the identified list within the Dow Jones Risk & Compliance extract before proceeding with further assessment.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a6c7978914b87b795f828c3b",
+    "description": "All offboarding decisions and their supporting assessments must be fully documented and retained in accordance with bunq's data retention policy, creating an auditable record of every termination.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-346ba61be2c66c3ef66cb0cf",
+    "description": "Automated monitoring on the system responsible for periodically downloading the Dow Jones sanctions data file to ensure list currency.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d5f2b82ddfe83db468bb470a",
+    "description": "Automated uniqueness check prevents duplicate accounts by verifying company name and Chamber of Commerce number; if a duplicate is detected, either the new or old account is automatically denied.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-41775ceddc51cc06517deaeb",
+    "description": "When the User Suspected Nobility check fails, agents must conduct a Google search on the user's full name to assess noble descent; confirmed nobility results in mandatory rejection of the approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-64a348629c5365204c8499a6",
+    "description": "The risk scoring model owner is formally responsible for periodic evaluation and optimisation of the risk scoring models, ensuring ongoing model performance and accuracy.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-e9a71714ab311773ccb08fbd",
+    "description": "Mandatory approval by the Head of Compliance or CRO for decisions involving deviations from standard screening procedures, including acceptance of users with complex ownership structures or processing of high-risk transactions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-81d43e01b89ed9aec2e98f65",
+    "description": "Automated address reuse check that flags when a user's address matches at least 10 other users; agents apply tiered responses: pass if a legitimate shared address (e.g., asylum center), request Proof of Residence if no clear connection or low offboarding rate, or offboard the user if a high proportion of linked users are offboarded.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-054b61cf0ccc2df53ad98d0e",
+    "description": "Onboarding risk scorecard adds +25 points when the user's email address does not contain any part of their name, flagging the mismatch as a potential indicator of identity fraud.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4c442457647cef29b98e5395",
+    "description": "Manual identity verification review requiring agents to assess ID validity, legibility, selfie authenticity (including deepfake and spoofing detection), and contextual suspicion indicators when the automated identity check fails.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ddec9f9372ac37f96be8e22d",
+    "description": "6-month moratorium on re-review for the same trigger following completion of an EDD review, to prevent over-reviewing.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e6fbed55466597eeeede991b",
+    "description": "Automated uniqueness checks compare new user data (name/date-of-birth combination, ID number, TIN, and device) against the existing database to detect duplicate accounts, re-onboarding of denied/offboarded users, and links to fraudulent users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-4b1e948916c7f6e023799b4c",
+    "description": "An internal investigation is mandatorily initiated whenever unusual transaction behaviour is observed during a PEP periodic review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-6afa6be551aa174a429cf1b8",
+    "description": "Risk-score-driven differentiated transaction monitoring thresholds: higher-risk users are subject to more stringent thresholds, increasing the likelihood of generating monitoring hits and triggering more frequent reviews.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ced1d48f61b95b6ac89c47f1",
+    "description": "Belgian branch managers are assigned responsibility for escalating any discrepancies identified in the Belgian UBO register.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-398e7d965ca6b7b961756920",
+    "description": "Automated API-based retrieval and matching of Dutch Chamber of Commerce (KVK) data against internal company records during re-review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1f0138b48bab68998c83ad10",
+    "description": "Onboarding risk scorecard integrates Telesign phone risk scores with defined scoring thresholds: scores 401–900 add +50 points and scores 901–1000 add +100 points to the user's onboarding risk score.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a811634c1581ec399f2ba919",
+    "description": "Automated document number legitimacy check during onboarding; if the system cannot validate the document number, the approval is blocked pending manual agent review and verification against the original document.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-91eccc36a4711deffb41a383",
+    "description": "Automated uniqueness checks verifying that the user's device, document number, tax identification number, and name/date-of-birth combination have not been previously registered by another user, to prevent duplicate or fraudulent accounts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-666c8a3fd47a267deab196dc",
+    "description": "A transaction monitoring system monitors user transaction behavior and generates alerts for unusual activity, which appear in the CRM system ('Admin') and are investigated by analysts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9732c6bc8b6c1e43aff3682c",
+    "description": "Automated deny rules (AUTO_DENY) automatically reject users at onboarding who meet specific high-risk criteria, including facial similarity failure, phone/nationality mismatch, device linked to blocked users, identity provider suspect flag, legal guardianship status, and high-risk SBI business activity codes.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b79a49022687d23cc81d6e3f",
+    "description": "Automated notifications are sent to users at 30, 60, and 85 days after account activation to collect CRS tax information. If tax information is not provided within 90 days, the system automatically places the account in RECOVERY status, temporarily freezing the monetary account until the information is supplied.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-c511f8339e9684cdcd8970eb",
+    "description": "U.S. persons must provide a valid Social Security Number (SSN) as part of identity verification before account approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c8d5b0d6c278b8b33bf5aa63",
+    "description": "SOF monitoring thresholds for users from high-risk countries are set to €0 for both monthly incoming transactions and total balance, ensuring that any activity by such users generates an immediate SOF inquiry trigger.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ade21a51da51a7cfd797e002",
+    "description": "Automated unique-user check that screens for duplicate entity names and Chamber of Commerce numbers to prevent duplicate or conflicting company account creation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-baafe56f103d0dadd5017097",
+    "description": "Re-verification requirement triggered when a CDD third-party provider or document check returns an actual hit: the user is prompted through verification again and onboarding is blocked until at least one director/representative holds a fully verified personal account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-26c8a6b9c060dff72edadae7",
+    "description": "Identity verification is performed via third-party provider Incode, which conducts automated document checks (visual security features, MRZ, data validation), face similarity scoring, and liveness/spoofing detection on uploaded ID pictures and live video. Failed automated checks trigger manual review by an Incode agent.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-425c19cf1badc897559b4455",
+    "description": "Automated blocked-director check prevents account opening when a director attempting to open an account was previously off-boarded by bunq.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-db220128e814fb90ecb985dc",
+    "description": "Daily automated ongoing monitoring of all users against updated sanctions, PEP, SIP, TF, and adverse media lists via Incode/ComplyAdvantage.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1cf65537b633aeaad9082dff",
+    "description": "Automated IP address reuse check that flags shared IP usage; agents apply tiered responses: pass if only IP is shared, request Proof of Residence if address also matches without a common link, or offboard directly if the user is linked to blocked/offboarded users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ff4b09e4d1369bf453ce454b",
+    "description": "Automated transaction volume check flags companies whose expected annual transaction volume meets or exceeds defined thresholds (EUR 1M for Dutch Eenmanszaak and non-Dutch/other legal forms; EUR 5M for Dutch Stichting and BV) for manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3597b79e25629e0decc02bcc",
+    "description": "Upon automated SOF inquiry trigger, the user receives an in-app notification and has seven days to respond; non-response within seven days results in automatic account freezing.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-001d42f7925b47d4cbd2faac",
+    "description": "UBO identity is verified by obtaining a copy of a valid identity document; when risks or difficulties are identified, a certified copy of the identity document is required as an additional measure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c32829d7d60db6787b236918",
+    "description": "Automatic HIGH risk classification override triggered by any EDD label (including PEP, SIP, sanction list, victim reports, police/FIU/FIOD/bank inquiry labels), immediately overriding all other risk scoring factors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7f4835a2765ef88f93ed96af",
+    "description": "Analysts are instructed to use the user's risk score as the starting point for reviews and investigations, with higher risk scores requiring more careful and thorough examination.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-4aeb53909bf4cc5e89af9576",
+    "description": "Dutch Fraud Registry (EVR) hits must be escalated by junior Verification Agents to senior User Verification agents via the #verification-fam workflow channel; junior agents are prohibited from handling these approvals independently.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7cf016821cb72fc6448f5d60",
+    "description": "Structured FIU reporting workflow in the Retool CRM system requiring analysts to select the unusual transaction(s), select the applicable indicator, and write a description of the reason for reporting before a report is filed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-073abedd8954e260ab2f49c9",
+    "description": "Daily batch submission of all FIU reporting files: a designated reporting officer downloads all daily reporting files as a ZIP file and uploads them to the FIU Reporting Portal at the end of each business day.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-f2a8586114d78ee624c1abfc",
+    "description": "Risk-based periodic re-review schedule for user companies: Low risk every 48–60 months, Medium risk every 30 months, High risk every 12 months.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-09b874ba3f2a9798a313f0c0",
+    "description": "Download of KVK excerpt and UBO register excerpt during re-review; when UBO register is unavailable, user company is required to provide current UBO information (e.g., organogram).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-95d942c76b10c75943404869",
+    "description": "Mandatory audit trail maintained for all screening alert investigations, decisions, escalations, and regulatory reports (SAR/FIU, DNB notifications), in compliance with the Data Retention and Disposal Policy.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-aa03d23851f4b71575b9094e",
+    "description": "An automated risk-scoring system calculates a risk score and assigns all onboarding users to risk classes as the starting point of the onboarding process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1a03e76e90c110286d72a32b",
+    "description": "A structured four-question factual analysis must be completed for each sanctions case to determine whether the user's activity constitutes a sanctioned act under the applicable legislation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-28af9abcde07002ed7284a64",
+    "description": "The dynamic scoring model automatically increases a user's risk score when transaction behaviour exceeds defined thresholds (e.g., incoming volume >€11,000, outgoing >€10,000, cash withdrawals >€1,000/month, >20 international transactions, >10 transactions to high-risk countries, >5 active cards, >5 registered devices, >100 outgoing/incoming transactions, etc.), flagging anomalous activity.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1f0228f3cbe70c469038c283",
+    "description": "Three-lines-of-defense governance model for screening with defined roles and responsibilities: First Line conducts alert investigations, Second Line (Compliance Officers) monitors controls and reviews complex cases, Head of Compliance approves material changes, CRO holds ultimate accountability, and Managing Board provides strategic oversight.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-728ce68b9be1fd9c79e15b17",
+    "description": "Minors may only be onboarded if legal guardian permission is obtained and the legal guardian's identity is independently verified.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d4919e38e3a18e3d94c91c8e",
+    "description": "Analysts are explicitly instructed to disregard secondary sanctions risk indicators displayed in the OFAC Sanctions List Search tool, preventing incorrect sanction restrictions from being applied.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-2e02c65b8369c75c80660ca7",
+    "description": "When the risk score check fails due to an unsupported document type, agents must return the user to redo identity verification with a supported document, provided no other issues exist with the approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-86fd086d709eab73d3f10016",
+    "description": "If a user fails to respond to a SOF review within 14 days, the account is placed into 'Recovery' status, blocking all outgoing transactions until the user provides a SOF document and the status is changed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-05bf8cf5ca5b6073b659bacc",
+    "description": "When a Watchlist screening hit is generated during onboarding, agents must verify whether the user's name matches the Watchlist entry, conduct extensive EDD for confirmed or similar matches, and may only proceed with onboarding if the hit is clearly false.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6f08022f16599f2d4adad565",
+    "description": "Companies with a HIGH or REJECT risk SBI (industry) code are automatically placed into HIGH or REJECT risk classification immediately, bypassing standard scoring logic.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-b17411c5e97c089946b2fc81",
+    "description": "Mandatory FIU reporting of blocked (non-executed) transactions where Transaction Filtering investigation identifies indications of money laundering or terrorism financing, ensuring unexecuted suspicious transactions are captured in reporting.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-f498a5f8d5bd18e38b4c3d2b",
+    "description": "Non-Dutch companies that have not completed full incorporation are categorically rejected during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7a859e9d3d9765f84f941cc3",
+    "description": "Only specific, pre-approved corporate legal forms are accepted for onboarding in each EU country (Netherlands, Germany, Belgium, France, Austria, Spain, Italy, Ireland, Portugal), restricting eligibility to defined entity types.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c2d4b6352bf074b273a956cf",
+    "description": "When no identifiable UBO exists, all statutory directors must be designated as pseudo-UBOs. Companies presenting with no UBOs must be double-checked before approval can be granted.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-84770fab242c751f8102f1c5",
+    "description": "Termination or rejection of onboarding/business relationships with third parties (vendors, service providers, payment counterparties) confirmed as true sanctions matches.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-d856afb4508ff3c8f9e67c22",
+    "description": "EDD label applied and user classified as high risk upon EDD trigger; agent must evaluate and take one of three defined actions: offboard, request additional information, or confirm low-risk and revert classification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-0bb8b52fb2b070b8e53ea0a0",
+    "description": "Mandatory knowledge requirement for all onboarding staff, enforced through a testing framework of exam questions to verify understanding of the onboarding knowledge base.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a832965431482a2732510e5f",
+    "description": "The user's risk score determines the frequency of periodic reviews; higher-risk users are reviewed more frequently. Analysts are instructed to use the risk score as a starting point and apply greater care and thoroughness for higher-risk users during reviews and investigations.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-db53daf2a4000b6b2a00fbbf",
+    "description": "In higher-risk scenarios, source of funds and/or source of wealth analysis is conducted per the Enhanced Due Diligence Processes Execution Guideline, which specifies the questions to ask and documentation to request.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5d4c24507b7cdc8a54d1e9b4",
+    "description": "Passive Non-Financial Entities (NFEs) may only be accepted after the business user submits a completed Passive Income self-certification form during signup.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-86e5ac00e736b0468299e9b9",
+    "description": "Every formal complaint received is logged into a complaints management system, creating an auditable record and triggering specialist assignment for investigation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-fa4cec0cfaa9cf37641e8266",
+    "description": "The PEP Procedure is owned by the Compliance department, subject to at least annual review, and any changes require CRO approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-e89d3570412151cb8f244c4d",
+    "description": "Regardless of the company's risk score, valid ID documents must be collected for all statutory directors, authorised representatives, and UBOs within the corporate structure before account approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0e2219ed92f5217d653b4b6e",
+    "description": "BPMN-based automation scans the onboarding queue for companies with outstanding document requirements and automatically requests missing documents without manual agent intervention.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-de3efb2fdf8d9f282fe216cc",
+    "description": "All dynamic and onboarding risk scores are logged and stored in the system for audit purposes, maintaining a historical record of risk score changes for each user.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-f659d0eb41d9fff967d6844c",
+    "description": "Mandatory PostNL address verification check that blocks user progression in the onboarding flow until the address is confirmed.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-05a22db4dc1df48f6f7c7516",
+    "description": "Account closure is prohibited when the user has no alternative bank account and has been rejected by at least two other banks, acting as a mandatory exception gate in the offboarding decision process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-839590826a8e37be4ae79704",
+    "description": "Foreign (non-Dutch) corporate structures with more than 2 ownership layers that do not terminate in a natural person are rejected as too complex for the bank's risk appetite.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-5038aed3f46c4d63e2a6af0e",
+    "description": "Accounts for minors may only be opened with explicit parental/legal guardian permission and declaration of authority; identity verification of the parent/guardian is required if no existing business relationship exists.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-c5bcb835d2024913caff3ae7",
+    "description": "The onboarding system checks device history and automatically blocks acceptance of new sign-ups from devices previously associated with blocked users.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a13050ef9ce8bc42ade2b339",
+    "description": "When a company's SBI code description is broad, vague, possibly incorrect, or incomplete, a mandatory clarification request must be sent to the user before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-28a5b2cb28b15a1f39e381c5",
+    "description": "Active monitoring of identification document expiry dates for ES-resident users and non-ES-resident users holding ES monetary accounts, currently conducted manually by 1st line.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a839ba490b91683d7dc546e8",
+    "description": "Reviewers must check all available signals (e.g., email address, website) for indications of undisclosed activities beyond the stated SBI codes, and request clarification when such signals are found.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ce1ea2f21d77fe52ad1e64d8",
+    "description": "Analysts must identify the applicable Annex (and its associated legislation) for a sanctioned entity by scrolling to the top of the relevant sanctions table, ensuring the correct legal basis is applied to each case.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-13c527f7dfc5cc0796d68f8c",
+    "description": "For Belgian clients, the Belgian UBO register is consulted to verify UBO information. Discrepancies between the register and information held by the bank must be reported to the Treasury Administration.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-80492c112be693698c769d19",
+    "description": "Analyst ability to freeze or reverse a diverted transaction via the Transaction Filtering system when investigation indicates likely involvement in illegal activities.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-b0054e2c085c6a79fb524a3e",
+    "description": "Automatic freezing of transaction funds in a suspense account upon detection of a potential sanctions match, with funds held until the alert is cleared, the designation is lifted, or an exemption is granted; return of funds is prohibited while the match remains active.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-0e0e75091ab3244084fe8056",
+    "description": "Onboarding risk scorecard integrates Maxmind risk scores with defined scoring thresholds: scores 61–90 add +50 points and scores 90–99 add +100 points to the user's onboarding risk score.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bc177c28a8e84b6ec864c390",
+    "description": "The dynamic scoring model incrementally increases a user's risk score for each terms and conditions warning received (+10 for first, up to +50 for fifth warning), with a maximum of +50 per user, escalating risk classification for repeat policy violators.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-183267f2eaa0168d2b3d38bb",
+    "description": "Automated screening system (Dow Jones) checks the company, all directors, and all UBOs against PEP, SIP, adverse media, and sanctions lists during onboarding; any match fails the auto-approval check and triggers manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3e67f22efc56d29df246fead",
+    "description": "Analysts must complete a mandatory Gitlab EDD template before onboarding a PEP; the completed template is stored and linked to the user's profile to document the due diligence investigation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7d5c11d6b35d9fbcef3011e3",
+    "description": "Automated watchlist screening against PEP, SIP, RCA, and Sanctions databases during user onboarding; any potential match triggers a mandatory manual review by the onboarding agent before approval proceeds.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3c9654b9b4b0412df619cc7f",
+    "description": "The risk scoring model automatically classifies all PEPs, RCAs, and SIPs at a minimum of high risk, ensuring enhanced scrutiny is applied to these categories regardless of other scoring factors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ef62045d046e09062ffafc43",
+    "description": "Analysts must search the OFAC Sanctions List Search tool using only the exact term that triggered the TM/TF hit to confirm the true positive on the SDN List or other OFAC-administered lists.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e7cc17bbe4a445e8c466aab8",
+    "description": "The Offboarding Policy is subject to annual review and update, approved by the Management Board with input from Compliance and Legal, with a defined annual deadline, ensuring ongoing governance and relevance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a3b32d9ea3dfadd77860adbf",
+    "description": "For medium and high risk companies, user-provided information must be independently verified by retrieving data directly from reliable sources such as Chamber of Commerce providers.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d2c37ddeedad038d52176291",
+    "description": "When a TIN fails the validity check, staff contact the user to request additional information or proof, and/or cross-verify the TIN against other online sources.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-546971852313932f80bb1646",
+    "description": "Automated device check that flags onboarding attempts from devices previously associated with blocked users; agents are mandated to offboard the flagged user through the defined offboarding process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-aea22d77a6c6a432b8374c29",
+    "description": "Immediate account blocking and asset freezing for existing users confirmed as sanctions matches during ongoing monitoring, with access restrictions maintained until the designation is lifted, an exemption is granted, or formal instructions are received from the Ministry of Finance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-c7313d0d6fa839db83a6eb7e",
+    "description": "For high-risk companies, source-of-funds verification is performed, requiring submission of the most recent annual report or tax return to confirm funds originate from a plausible business source.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-395b2cf8d9f88a194be435ba",
+    "description": "An IP address and geolocation check is performed at sign-up: if the IP country differs from the stated residential address, the user must provide proof of residence; users attempting to sign up from unsupported/non-EEA countries are directly blocked.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d8ec27f2e5530e6870c544e4",
+    "description": "All complaint responses are sent exclusively to the email address used for submission, ensuring responses are directed to the verified complainant and maintaining a documented communication trail.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a2b0be75088c261f95743207",
+    "description": "Automated check using a persistent unique device identifier (retained across app reinstalls) to detect whether any blocked user has been associated with the same device, preventing circumvention via app reinstallation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-65ed344a3d969d55eb5b434e",
+    "description": "Automated check of company active status in the trade register; inactive companies are immediately blocked, notified of account closure, and remaining funds are refunded.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-de848a44b43f2ea7833bec10",
+    "description": "Automated cross-check of director name, address, and trade name against the downloaded KvK excerpt, including verification of whether the director holds limited or unlimited authority.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-49597a22b3bf439239231075",
+    "description": "Dynamic risk scoring model automatically adds +30 points to a user's behaviour risk score when the user has not made or received any transactions in the last 30 days, flagging inactivity as a risk indicator.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-f4260ac16dcb5eb289d8b956",
+    "description": "Automated risk scoring model that calculates a risk score for each onboarding company and classifies them into four categories (low, medium, high, reject) to determine the level of due diligence required.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-80ca80d6b9e425352cdb0661",
+    "description": "First Line analyst review of adverse media hits, including assessment of account activity alignment with identified issues, with mandatory approval by the Head of Compliance before deciding on continuation of the relationship.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-5b727d5efefbfe9f937641dc",
+    "description": "Automated TIN validation check during onboarding; if the system cannot identify the TIN, the agent must manually verify it against the user's document and either pass or delete the TIN before proceeding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-195a2682a32f2ecfdb2db9f3",
+    "description": "Automated SBI-code activity matching against user files with risk-differentiated responses: auto-overwrite for low-risk activities, automated user questionnaire for medium/high-risk activities, and manual review escalation for reject-classified activities.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-7cf1f74cee4bf30b8f184eb7",
+    "description": "Automated Dow Jones screening of UBOs, companies, and directors/representatives against sanctions, PEP, and adverse media databases during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-6b533171e639345b7ec2bebd",
+    "description": "Automated transaction filtering that redirects potentially sanctioned transactions to a suspense account, preventing payment execution until analyst investigation is complete.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0512b932fd9e3767f9473043",
+    "description": "Any user assigned a designated high-risk label (including sanctions list, PEP, SIP, victim reports, police/FIOD/FIU inquiries, crypto company labels, etc.) is immediately and automatically classified as HIGH risk, overriding all other scoring factors. The check extends to all legal directors, UBOs, and executives.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-22dbc52fde32f750d263f0ee",
+    "description": "Automated industry risk score checks (using KvK SBI codes for Dutch companies and a separate check for non-Dutch companies) fail high-risk industries and ensure they are onboarded only through manual review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-abd7f5aedba12b9bb87d2fb9",
+    "description": "Users must present an eligible, authentic, and valid identity document and pass all onboarding checks before account acceptance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4eb68b0c55f83698bb110244",
+    "description": "Valid identification documents are collected from all executives; in joint-authority situations, all jointly authorized executives must approve the account opening and have their identities verified.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8c5eed019ad47331eca19cfd",
+    "description": "Dynamic risk scoring model combines onboarding and behaviour risk scores using time-based weighting rates (e.g., week 1: onboarding ×1.0 / behaviour ×0.0; stabilising at onboarding ×0.3 / behaviour ×0.7 after five weeks), progressively shifting reliance from onboarding to behavioural data.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-8e6c368075035f19fdfedef4",
+    "description": "Fuzzy matching logic applied in both customer and transaction screening systems to detect name variations, aliases, phonetic similarities, and transliterations against sanctions and other risk lists.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-05d3be7faa25158c6ba83b32",
+    "description": "Annual review of PEPs onboarded before April 2022 under the PEP Procedure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9336c90d5e91e758eb4777e7",
+    "description": "When a discrepancy is found between identified UBO information and the UBO register, a discrepancy report is filed with the Dutch Chamber of Commerce and a record of the report is retained.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-d9701126afb4abce33f237e2",
+    "description": "Enhanced Due Diligence (EDD) is applied to high-risk user companies and includes: requesting additional documents, online/adverse media searches, source of funds/wealth checks, business activity examination, transaction profile analysis, license verification, AML/CTF policy review, and annual audit report review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-4c6c09ec9abf68bf22b6c47c",
+    "description": "Designated document owner responsible for maintaining and updating the onboarding knowledge base, with version history and approvals recorded in the colophon.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fc6705ba6734f310437cd0fb",
+    "description": "Automated director matching against KVK records; new directors added, departed directors removed, and manual review triggered if no verified director holds both legal and executive director roles simultaneously.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-983fc5fd98c658e1600690c0",
+    "description": "Mandatory manual investigation by a compliance analyst for every Transaction Monitoring alert generated; the ML model's output is advisory only and does not substitute the analyst's own assessment.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-24920e6f7c3ee43e6bc3b80b",
+    "description": "Dynamic risk scoring model applies escalating score increments (+10 to +50) based on the cumulative number of terms and conditions warnings received by a user (up to five warnings, maximum +50 per user), reflecting increasing risk from repeated policy breaches.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a73d06562d2452f9abd875dd",
+    "description": "All UK branch users must be screened against the CIFAS fraud database prior to onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f7c1e18207aa3bc461196bbb",
+    "description": "Mandatory adherence to a defined acceptance policy by all onboarding staff, specifying which company types are accepted or rejected, with staff required to know the policy by heart.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-cde5e46c0d5c4aec419a0a84",
+    "description": "The onboarding procedure is owned by the Compliance department, subject to at least annual review, with all changes requiring approval by the Chief Risk Officer (CRO).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-369e786f219f93b5fd724a36",
+    "description": "A defined resolution SLA of 15 business days (up to 35 business days / 6 weeks in exceptional cases) is enforced for all formal complaints. If the 15-business-day deadline cannot be met, the complainant must be proactively notified, creating a breach-detection and escalation obligation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-908c514422d4ec4cc5fdf12f",
+    "description": "User risk class is displayed on the user's profile page in the internal CRM system ('Admin'), providing agents with immediate visibility of risk classification during customer interactions and reviews.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-7fe2a6bdb87e9fee707c565f",
+    "description": "When a minor user turns 18, an automated in-app event is triggered requiring them to complete identity verification with their own identity document before continuing to use the account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-39eec5143fc1a7a424aab7bb",
+    "description": "Each user's risk class is displayed on their profile page within the internal CRM system ('Admin'), providing agents and analysts with immediate visibility of the user's current risk classification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-388114c95383f5c5afbbf38e",
+    "description": "Automated check verifying that the user's last-used IP address is not shared with a blocked user or a user with a blocked monetary account.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-65a96dd7c33e8b4603b81e34",
+    "description": "All data analyses supporting risk model changes are stored in a dedicated GitLab repository (Risk Models - Data Analysis from 2025 onwards), ensuring traceability and auditability of model change decisions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-ad67ec35074069a5093fd9db",
+    "description": "The executive's authorization to represent the company is verified against the Chamber of Commerce extract; if not listed, a signed authorization form from a listed person is required before account opening.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d2d55a8ad5b9897936bb5417",
+    "description": "Dow Jones screening labels (PEP, SIP, sanction list, and related categories) are manually assigned by agents only after a true positive Dow Jones check result has been verified, ensuring human confirmation before label application.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-72066920785780c06c978bbe",
+    "description": "Model effectiveness measurement framework using user off-boarding status as a high-risk ground truth indicator and active status as a low-to-medium risk indicator; special labels (automatically or manually assigned) enforce high-risk classification for PEPs and high net worth users to validate model performance.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-4173e2427b43a92f3d1ecc12",
+    "description": "Agents must individually handle each flagged duplicate account via the 'Handle' workflow and confirm completion via 'Finish check' before the uniqueness check is cleared, ensuring no duplicate is left unresolved.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-9cfda614f21290a614b51227",
+    "description": "Collection of mandatory personal identification data (name, DOB, nationality, residential address, phone number, email, tax residency/TIN, phone ID, and IP address) from every user during the onboarding identification phase.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-3c6836cba99194ae25a71b0a",
+    "description": "Address confirmation required from user persons at each payment card order (cycle of up to 4 years); address is validated upon card activation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-81da6af5e3672830cbb9e115",
+    "description": "All users with a PEP-label, and user-companies with a PEP as director or UBO, are automatically classified as high risk by the risk scoring models.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-20c57ac8ba95189f2e482859",
+    "description": "During CDD, UBO register / trade register data must be cross-referenced against at least one additional independent source or documentation to confirm accuracy and completeness.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e6a46656eda3075951094e72",
+    "description": "When a user provides an illegitimate or unacceptable SOF response in combination with other risk indicators or suspicious account behaviour, bunq terminates the client relationship and proceeds with offboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-f7adc6a7cc1b026e02773d0b",
+    "description": "All PEP-labelled users are subject to a mandatory annual review covering: PEP-status check, standard EDD measures, open-source adverse media check, transaction behaviour review against source of wealth/funds, and additional source of funds/wealth inquiry if concerns arise.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-35483e2bad296dbd36214db2",
+    "description": "When KYC document checks fail, a tiered response is triggered: immediate rejection, request for re-upload, or escalation to manual review by an onboarding team employee.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-1829c9618473fec4398aa008",
+    "description": "Politically Exposed Persons (PEPs) must not be accepted during onboarding, as governed by the PEP Procedure.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d4e02ba29b907896920350e6",
+    "description": "A valid, non-expired physical ID document (not a scan, photocopy, or screen picture) showing all information including the face photo is mandatory for every UBO before account approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-529cbf0621c2c07361cbb568",
+    "description": "Automated risk scoring system calculates a risk score for every new user at onboarding using a scorecard of risk indicators, classifying users into low, medium, high risk, or reject categories to determine the level of due diligence required.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-294709a148be1b84ffd541ab",
+    "description": "Onboarding is restricted to residents of the European Economic Area (EEA); non-EEA residents must be rejected.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-fc5a4e80cf774defd5f1bce6",
+    "description": "Analysts must identify the specific Executive Order governing the OFAC sanction program for each true positive hit, to ensure the correct legal basis and restrictions are applied.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1bfc129d5d4ee67abe5e0cfa",
+    "description": "Weekly (every Monday) import of Dow Jones database data; automated name-matching check against user nationality, country of birth, country of residence, and TIN as part of the auto-approval process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-569ba89ef3e5ceceb4422f5e",
+    "description": "bunq conducts customer due diligence (CDD), ongoing monitoring, UBO screening, and regulatory reporting in accordance with the Dutch Wwft (Anti-Money Laundering and Counter-Terrorist Financing Act).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-143df40db292b6531624a882",
+    "description": "When the Country check fails (IP-based location indeterminate), agents must review the existing Proof of Residence to confirm the user's address; a new Proof of Residence is only requested if the existing one is invalid or suspicions require further verification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-68fa9efdf01aa878f079888b",
+    "description": "Upon completion of a sanctions assessment, analysts are required to notify the Compliance Officer or Head of Compliance, ensuring appropriate escalation and oversight of sanctions decisions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-314de067e54e558d6a105d03",
+    "description": "Any exception to the rejection of users classified as 'reject' requires explicit approval from the Chief Risk Officer (CRO) before the user can be accepted or retained.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0a49eeee68e345bdb8a44462",
+    "description": "SOF monitoring thresholds are set at the 99.5th percentile (95th for minors, 97th for high-risk countries) and are subject to mandatory review at least annually and through continuous data monitoring, with the latest values documented in Annex I.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-b8f4ca62196705d25f9f1a3d",
+    "description": "A structured five-question factual analysis (including assessment of US nexus elements) must be completed for each OFAC sanctions case to determine whether the user's activity constitutes a sanctioned act.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-037447e96cdf1a74a0e76c3c",
+    "description": "Re-review procedure owned by the Compliance department, subject to at least annual review, with all changes requiring CRO approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-54e562a5f8855dee2cbfcbdf",
+    "description": "Automated age check on directors/representatives to prevent account opening for companies with an underage (under 18) director.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-61c81bdd9bce0f82488586a0",
+    "description": "Automated risk score update by the risk scoring system following re-review, with manual adjustment for identified red flags.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-b590788121d17c279906c2d6",
+    "description": "Victim report and law enforcement inquiry labels (police, FIOD, FIU, bank inquiry) are automatically assigned to user accounts when an agent manually adds a user note following the prescribed template, ensuring systematic escalation of risk classification upon receipt of external inquiries or victim reports.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-f963b38ce7d5c5c5a38b6136",
+    "description": "TIN validity is checked via an API for EU TINs (structure and syntax validation); for non-EU TINs, external online sources are used. When a TIN fails validation, agents contact the user for additional information or proof.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-d48a5115c891d20308c2f2b0",
+    "description": "Every user-person is assigned at onboarding to a peer group defined by country-of-residence income level (high/low), country AML risk (high/medium-high/medium/low), and age bracket (<18, 19–25, 26–35, 36–45, 46–65, 65+), with differentiated SOF thresholds applied to each group.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-bbf4b68782c7c399f3ccbe94",
+    "description": "Enhanced Due Diligence (EDD) is mandatorily performed and documented in user notes or a GitLab issue for all users classified as high risk, PEP, SIP, or on a sanctions list before any onboarding decision is made.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-e6dbf6527fb249af7835d83a",
+    "description": "An IP Address Reuse Check procedure is in place to identify accounts sharing IP addresses, flagging potential linked or fraudulent accounts.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-142e0efce92013caccf5fb47",
+    "description": "A mandatory three-question risk assessment (risk specificity, risk reducibility, and user's need to retain the account) must be completed before any offboarding decision is escalated to the user notification step.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-88c78534b73b3a6af78019c1",
+    "description": "Persons identified on a sanctions list are categorically rejected at onboarding and may never be accepted. For existing users found on a sanctions list, accounts and payments must be immediately blocked.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-7adbc81073cd58fa11a87500",
+    "description": "Daily batch re-screening of all user and transaction data against sanctions, PEP, SIP, and adverse media lists as part of ongoing due diligence.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-71402328444b5fe7e46147c1",
+    "description": "Automated age check compares the director's date of birth to the current date and blocks account opening if the director is a minor.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-a1240b7cb03285f8c004085b",
+    "description": "Periodic internal audit of the bunq screening system as part of the internal audit universe.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-3daf9e77a756398aee799c37",
+    "description": "A specific PEP monitoring rule in the transaction monitoring system generates an alert when a PEP makes or receives a single payment exceeding €10,000 (low-risk country), €5,000 (medium-risk country), or €2,500 (high-risk country), using the Country AML Risk Ranking for categorisation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-94d1549b8347d63a8f07520b",
+    "description": "UBO data will be accessed via a dedicated, secure KvK portal where all searches are logged and auditable, ensuring traceability of UBO lookups.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-f3a18eba9b999f52522bd635",
+    "description": "Watchlist data (sourced from Comply Advantage via Incode) is downloaded daily and used to screen: (i) every new user at onboarding, (ii) the entire user base upon each datafile update including UBOs, and (iii) certain payments post-verification by Compliance operations.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a52a6fd52d319e2a5491cf2e",
+    "description": "Onboarding risk scorecard for Spanish resident users incorporates professional activity information (collected via a mandatory onboarding flow), scoring unemployed users +10 and students +5 based on FIU reporting rate data, in compliance with Spanish AML regulations.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-0928eacd3d15032bf5b8c65f",
+    "description": "When a user escalates an offboarding dispute to Kifid or initiates legal proceedings, the Legal team is mandatorily engaged to manage and guide the response process.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-a7e81c0bd046adbca95383eb",
+    "description": "Continuous training programme for transaction monitoring analysts comprising: (i) regular meet-ups on new developments, (ii) a knowledge framework resource, and (iii) periodic knowledge exams to verify competence.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-455a8303acf60206e484a601",
+    "description": "Automated authorization check (Dutch non-sole-proprietorship companies) verifies the account opener is a legal director or solely authorized via KvK data; failures and all non-Dutch companies are routed to manual director verification.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-f5ce2b41d456c1fbddb67af0",
+    "description": "Automated company name check flags companies whose names contain words associated with increased risk profiles; for non-Dutch sole proprietorships, also flags mismatches between company name and director name.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-1157dd1aa47a5feda2883dc5",
+    "description": "Screening of transaction origin and destination countries, with mandatory flagging and blocking of transactions to or from sanctioned jurisdictions (e.g., Russia, Belarus, North Korea) or partially sanctioned territories (e.g., Crimea).",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-42b03cc90952ecbd31a84756",
+    "description": "Acceptance policy rule prohibiting companies without shares from appearing in any layer other than the first layer of a corporate structure; violations result in denial.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-82e5346ae0c644dc197af5df",
+    "description": "The KYC system provides a dedicated Approval Checks section within each user's KYC History, enabling agents to view all failed checks for every approval, supporting auditability and structured review.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-a837486534691a3fdf95ec30",
+    "description": "Automated and manual check to identify US persons among directors and UBOs, requiring a verified Social Security Number (SSN) and supporting documentation before account approval.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-8488cd70a21b66aed09bacb8",
+    "description": "For every Dutch company onboarded, a Dutch UBO register extract is retrieved. If the register is unavailable, a Chamber of Commerce confirmation of UBO registration is requested as a fallback.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-6c67c02ada49c046aa1f7ed0",
+    "description": "FIU reports filed due to failed CDD must include a description of the reasons for the CDD failure alongside the suspicious transaction details, ensuring complete and informative reporting in such cases.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "corrective"
+  },
+  {
+    "id": "CTRL-ce8ee899cdc0b34a6f1c7c85",
+    "description": "Manual initial eligibility assessment by onboarding agents reviews all failed auto-approval checks to identify show-stoppers and determine whether to deny the application or proceed to the structure assessment.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  },
+  {
+    "id": "CTRL-7f53cedbe0a91f4ba6c39367",
+    "description": "STAKs (Stichting Administratiekantoor) and any company that has a STAK anywhere in its ownership structure are categorically rejected during onboarding.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-d723ce475c5466d8ef3df094",
+    "description": "Mandatory regular training on financial crime risks, sanctions regulations, and screening procedures for all personnel involved in screening and alert investigation.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-9737c977b65a218be8ebec58",
+    "description": "Analysts must use the most recent version (amendment) of the applicable sanctions legislation/list to avoid acting on entries that have been removed, preventing false positive sanctions actions.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-1a9f62af5c87f5ed4a0684f8",
+    "description": "Automated legal guardianship check (Dutch companies) blocks account opening if the director is under legal guardianship.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-ae66ec31a8d2d7e957078803",
+    "description": "Acceptance policy rule limiting corporate structures to a maximum of two layers, requiring the third layer to consist exclusively of natural persons; companies exceeding this are denied.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-642968fd67ada702a62a247e",
+    "description": "Automatic classification of PEPs, RCAs, and SIPs as at least high risk by the risk scoring model, regardless of other scoring factors.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "preventive"
+  },
+  {
+    "id": "CTRL-62b22973489778c20d03a03d",
+    "description": "During new account opening, staff must actively screen for U.S. person indicators including U.S. place of birth, U.S. current residence, and U.S. nationality to identify potential U.S. tax liability.",
+    "mappedStandards": null,
+    "owner": null,
+    "controlType": null,
+    "category": "detective"
+  }
+]

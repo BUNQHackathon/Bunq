@@ -25,6 +25,8 @@ import com.bunq.javabackend.repository.MappingRepository;
 import com.bunq.javabackend.repository.ObligationRepository;
 import com.bunq.javabackend.repository.SanctionHitRepository;
 import com.bunq.javabackend.repository.SessionRepository;
+import com.bunq.javabackend.service.pipeline.CoverageSummary;
+import com.bunq.javabackend.service.pipeline.GapCoverage.CoverageStatus;
 import com.lowagie.text.FontFactory;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
@@ -71,6 +73,16 @@ public class ProofPackService {
 
     @Value("${aws.s3.uploads-bucket}")
     private String uploadsBucket;
+
+    /** Display order for coverage statuses across the executive and findings PDFs. */
+    private static final List<CoverageStatus> COVERAGE_ORDER = List.of(
+            CoverageStatus.SATISFIED,
+            CoverageStatus.SUBSTANTIALLY_COVERED,
+            CoverageStatus.PARTIAL,
+            CoverageStatus.JURISDICTION_DELTA,
+            CoverageStatus.NEEDS_REVIEW,
+            CoverageStatus.CONTROL_MISSING
+    );
 
     private static final Map<String, String> JURISDICTION_NAMES = Map.of(
             "NL", "Netherlands",
@@ -206,9 +218,93 @@ public class ProofPackService {
             safePdf(doc, new Paragraph(" "));
         }
 
-        if (!gaps.isEmpty()) {
-            safePdf(doc, new Paragraph("Unresolved gaps:", subFont));
-            var sortedGaps = gaps.stream()
+        var oblById = new HashMap<String, Obligation>();
+        for (var o : obligations) if (o.getId() != null) oblById.put(o.getId(), o);
+        var controlById = new HashMap<String, Control>();
+        for (var c : controls) if (c.getId() != null) controlById.put(c.getId(), c);
+
+        boolean hasSemantics = CoverageSummary.hasSemantics(gaps);
+        var statusCounts = CoverageSummary.countByStatus(gaps, mappings);
+
+        // ---- 1. Coverage summary table ----
+        if (hasSemantics) {
+            int totalAssessed = obligations.size();
+            safePdf(doc, new Paragraph("Coverage summary:", subFont));
+            if (totalAssessed > 0) {
+                for (var status : COVERAGE_ORDER) {
+                    int c = statusCounts.getOrDefault(status, 0);
+                    double pct = 100.0 * c / totalAssessed;
+                    safePdf(doc, new Paragraph(
+                            "• " + humanizeStatus(status) + " — " + c + " ("
+                                    + String.format(java.util.Locale.ROOT, "%.1f", pct) + "%)", normalFont));
+                }
+            }
+            safePdf(doc, new Paragraph(" "));
+        }
+
+        // ---- 2. Existing controls recognised ----
+        var satisfiedMappings = mappings.stream()
+                .filter(m -> m.getObligationId() != null && m.getControlId() != null
+                        && m.getMappingConfidence() != null && m.getMappingConfidence() >= 75)
+                .sorted(Comparator.comparingDouble((Mapping m) -> -m.getMappingConfidence()))
+                .toList();
+        if (!satisfiedMappings.isEmpty()) {
+            var seenObligations = new java.util.HashSet<String>();
+            var entries = new java.util.ArrayList<String>();
+            for (var m : satisfiedMappings) {
+                if (entries.size() >= 15) break;
+                if (!seenObligations.add(m.getObligationId())) continue;
+                var obl = oblById.get(m.getObligationId());
+                var ctrl = controlById.get(m.getControlId());
+                if (obl == null || ctrl == null) continue;
+                String oblLabel = obl.getSource() != null
+                        ? safeStr(obl.getSource().getRegulation()) + " " + safeStr(obl.getSource().getArticle())
+                        : safeStr(obl.getId());
+                String snippet = obl.getAction() != null && !obl.getAction().isBlank() ? obl.getAction() : obl.getSubject();
+                if (snippet != null && !snippet.isBlank()) {
+                    oblLabel += " — " + truncate(snippet, 100);
+                }
+                entries.add("• " + oblLabel + "  —  Evidence: " + truncate(safeStr(ctrl.getDescription()), 140));
+            }
+            if (!entries.isEmpty()) {
+                safePdf(doc, new Paragraph("Existing controls recognised:", subFont));
+                for (var line : entries) {
+                    safePdf(doc, new Paragraph(line, smallFont));
+                }
+                safePdf(doc, new Paragraph(" "));
+            }
+        }
+
+        // ---- 3. Jurisdiction deltas ----
+        var deltaGaps = gaps.stream()
+                .filter(g -> CoverageSummary.parseStatus(g) == CoverageStatus.JURISDICTION_DELTA)
+                .toList();
+        if (!deltaGaps.isEmpty()) {
+            safePdf(doc, new Paragraph(
+                    "Jurisdiction deltas (generic control present — " + jName + "-specific requirement not evidenced):", subFont));
+            int topN = Math.min(15, deltaGaps.size());
+            for (int i = 0; i < topN; i++) {
+                var g = deltaGaps.get(i);
+                var obl = g.getObligationId() != null ? oblById.get(g.getObligationId()) : null;
+                String title = obl != null && obl.getSource() != null
+                        ? safeStr(obl.getSource().getRegulation()) + " " + safeStr(obl.getSource().getArticle())
+                        : safeStr(g.getObligationId());
+                String conf = g.getMetadata() != null ? g.getMetadata().get("best_mapping_confidence") : null;
+                safePdf(doc, new Paragraph("• " + title + "  best_confidence=" + safeStr(conf), smallFont));
+            }
+            if (deltaGaps.size() > 15) {
+                safePdf(doc, new Paragraph("... and " + (deltaGaps.size() - 15) + " more jurisdiction deltas (see gaps.pdf)", smallFont));
+            }
+            safePdf(doc, new Paragraph(" "));
+        }
+
+        // ---- 4. Missing controls (restricted to control_missing; falls back to all gaps for older sessions without gap_semantics) ----
+        var missingGaps = hasSemantics
+                ? gaps.stream().filter(g -> CoverageSummary.parseStatus(g) == CoverageStatus.CONTROL_MISSING).toList()
+                : gaps;
+        if (!missingGaps.isEmpty()) {
+            safePdf(doc, new Paragraph("Missing controls:", subFont));
+            var sortedGaps = missingGaps.stream()
                     .sorted(Comparator
                             .comparing((Gap g) -> Boolean.TRUE.equals(g.getEscalationRequired()) ? 0 : 1)
                             .thenComparingDouble(g -> -(g.getResidualRisk() != null ? g.getResidualRisk() : 0.0))
@@ -217,7 +313,7 @@ public class ProofPackService {
             int topN = Math.min(20, sortedGaps.size());
             for (int i = 0; i < topN; i++) {
                 var g = sortedGaps.get(i);
-                var obl = g.getObligationId() != null ? obligationRepository.findById(g.getObligationId()).orElse(null) : null;
+                var obl = g.getObligationId() != null ? oblById.get(g.getObligationId()) : null;
                 String title = obl != null && obl.getSource() != null
                         ? safeStr(obl.getSource().getRegulation()) + " " + safeStr(obl.getSource().getArticle())
                         : safeStr(g.getObligationId());
@@ -227,8 +323,18 @@ public class ProofPackService {
                 safePdf(doc, new Paragraph("• " + title + "  " + sev, smallFont));
             }
             if (sortedGaps.size() > 20) {
-                safePdf(doc, new Paragraph("... and " + (sortedGaps.size() - 20) + " more unresolved gaps (see gaps.pdf)", smallFont));
+                safePdf(doc, new Paragraph("... and " + (sortedGaps.size() - 20) + " more missing-control gaps (see gaps.pdf)", smallFont));
             }
+            safePdf(doc, new Paragraph(" "));
+        }
+
+        // ---- 5. Needs review ----
+        int needsReviewCount = statusCounts.getOrDefault(CoverageStatus.NEEDS_REVIEW, 0);
+        if (needsReviewCount > 0) {
+            safePdf(doc, new Paragraph(
+                    "Needs review: " + needsReviewCount
+                            + " obligation(s) with degraded retrieval or unrecorded confidence — not claimed as covered or missing.",
+                    normalFont));
             safePdf(doc, new Paragraph(" "));
         }
 
@@ -392,8 +498,28 @@ public class ProofPackService {
             }
         }
 
-        // ---- One page per gap ----
-        for (var gap : sorted) {
+        // ---- One page per gap, grouped by coverage classification ----
+        var groups = new java.util.LinkedHashMap<String, List<Gap>>();
+        for (var status : COVERAGE_ORDER) {
+            if (status == CoverageStatus.SATISFIED) continue; // SATISFIED obligations never produce a Gap
+            groups.put(humanizeStatus(status), new java.util.ArrayList<>());
+        }
+        groups.put("Other / unclassified findings", new java.util.ArrayList<>());
+        for (var g : sorted) {
+            var status = CoverageSummary.parseStatus(g);
+            String key = status != null ? humanizeStatus(status) : "Other / unclassified findings";
+            groups.get(key).add(g);
+        }
+
+        for (var group : groups.entrySet()) {
+            var groupGaps = group.getValue();
+            if (groupGaps.isEmpty()) continue;
+
+            doc.newPage();
+            safePdf(doc, new Paragraph(group.getKey() + " (" + groupGaps.size() + ")", titleFont));
+            safePdf(doc, new Paragraph(" "));
+
+            for (var gap : groupGaps) {
             doc.newPage();
 
             var obl = gap.getObligationId() != null ? oblById.get(gap.getObligationId()) : null;
@@ -458,6 +584,7 @@ public class ProofPackService {
 
             safePdf(doc, new Paragraph("Target date: " + targetDate(gap), normalFont));
             safePdf(doc, new Paragraph("Rerun history: Run #1 — first detected — current", normalFont));
+            }
         }
 
         doc.close();
@@ -587,6 +714,22 @@ public class ProofPackService {
 
     private String fmt(Double d) {
         return d != null ? String.format(java.util.Locale.ROOT, "%.2f", d) : "—";
+    }
+
+    private String truncate(String s, int max) {
+        if (s == null) return "—";
+        return s.length() > max ? s.substring(0, max) + "…" : s;
+    }
+
+    private String humanizeStatus(CoverageStatus status) {
+        return switch (status) {
+            case SATISFIED -> "Satisfied";
+            case SUBSTANTIALLY_COVERED -> "Substantially covered";
+            case PARTIAL -> "Partial";
+            case JURISDICTION_DELTA -> "Jurisdiction delta";
+            case NEEDS_REVIEW -> "Needs review";
+            case CONTROL_MISSING -> "Control missing";
+        };
     }
 
     private String verdictEmoji(String verdict) {
