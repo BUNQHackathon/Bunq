@@ -1,4 +1,4 @@
-// bunq Compliance Portal — Typed Mock Data
+// Compliance Portal — Typed Mock Data
 
 export type CountryStatus = 'active' | 'watchlist' | 'restricted' | 'inactive';
 
@@ -103,15 +103,15 @@ export const countryDetails: Record<string, CountryDetail> = {
 };
 
 export const suggestedQuestions: string[] = [
-  'Is bunq licensed in Germany?',
+  'Are we licensed in Germany?',
   'How are deposits protected?',
-  "What's bunq's crypto policy?",
+  "What's our crypto policy?",
   'Where do I report fraud?',
 ];
 
 export const sampleAnswer: SampleAnswer = {
-  question: 'Is bunq licensed in Germany?',
-  answer: 'Yes. bunq operates in Germany through its EU banking passport — derived from the full banking license granted by De Nederlandsche Bank (DNB) in the Netherlands. This single license authorises bunq to offer banking services across all 30 EU/EEA member states. In Germany, BaFin serves as the local supervisory authority, while DNB remains the primary regulator.',
+  question: 'Are we licensed in Germany?',
+  answer: 'Yes. We operate in Germany through our EU banking passport — derived from the full banking license granted by De Nederlandsche Bank (DNB) in the Netherlands. This single license authorises us to offer banking services across all 30 EU/EEA member states. In Germany, BaFin serves as the local supervisory authority, while DNB remains the primary regulator.',
   sources: [
     { title: 'DNB Banking License Certificate', date: 'Mar 2024' },
     { title: 'EU Passport Notification — Germany', date: 'Nov 2023' },
@@ -176,7 +176,7 @@ export const chats: Chat[] = [
     id: 'c5',
     title: 'Cookie policy draft v3',
     timestamp: 'Yesterday',
-    snippet: 'Draft v3 aligns cookie categories with IAB TCF 2.2 and adds a legitimate-interest ground for analytics cookies. Legal review pending before publication on bunq.com.',
+    snippet: 'Draft v3 aligns cookie categories with IAB TCF 2.2 and adds a legitimate-interest ground for analytics cookies. Legal review pending before publication on our website.',
     citedDocIds: ['8', '3'],
   },
   {
@@ -307,11 +307,11 @@ export const docContent: Record<string, DocSection[]> = {
   '4': [
     {
       title: '1. Scope & Regulatory Authority',
-      body: 'This AML & KYC Policy Framework applies to all customer relationships and transactions processed by bunq B.V., operating under the <cite id="dnb">DNB Banking License</cite>. All procedures are designed to satisfy <cite id="fatf">FATF Recommendations</cite>, AMLD5 as transposed into Dutch law via the <cite id="wwft">WWFT</cite>, and applicable EU sanctions regulations.',
+      body: 'This AML & KYC Policy Framework applies to all customer relationships and transactions processed by the bank, operating under the <cite id="dnb">DNB Banking License</cite>. All procedures are designed to satisfy <cite id="fatf">FATF Recommendations</cite>, AMLD5 as transposed into Dutch law via the <cite id="wwft">WWFT</cite>, and applicable EU sanctions regulations.',
     },
     {
       title: '2. Customer Due Diligence',
-      body: 'bunq applies a risk-based, tiered <cite id="kyc">Know Your Customer</cite> process across three levels: simplified CDD for low-risk profiles, standard CDD for general customer relationships, and enhanced CDD for politically exposed persons, high-risk jurisdictions, and complex ownership structures. Enhanced CDD triggers are detailed in the <cite id="sanctions">Sanctions Screening Procedures Manual</cite>.',
+      body: 'We apply a risk-based, tiered <cite id="kyc">Know Your Customer</cite> process across three levels: simplified CDD for low-risk profiles, standard CDD for general customer relationships, and enhanced CDD for politically exposed persons, high-risk jurisdictions, and complex ownership structures. Enhanced CDD triggers are detailed in the <cite id="sanctions">Sanctions Screening Procedures Manual</cite>.',
     },
     {
       title: '3. Transaction Monitoring & Reporting',
@@ -329,7 +329,7 @@ export const docContent: Record<string, DocSection[]> = {
   '3': [
     {
       title: '1. Legal Basis for Processing',
-      body: 'bunq processes personal data under <cite id="gdpr">GDPR (EU) 2016/679</cite>, primarily on the grounds of contractual necessity (Art. 6.1.b), compliance with a legal obligation (Art. 6.1.c) under the <cite id="dnb">DNB Banking License</cite> conditions, and the Dutch <cite id="wwft">WWFT</cite>. Consent is used only where no other lawful basis applies.',
+      body: 'We process personal data under <cite id="gdpr">GDPR (EU) 2016/679</cite>, primarily on the grounds of contractual necessity (Art. 6.1.b), compliance with a legal obligation (Art. 6.1.c) under the <cite id="dnb">DNB Banking License</cite> conditions, and the Dutch <cite id="wwft">WWFT</cite>. Consent is used only where no other lawful basis applies.',
     },
     {
       title: '2. Categories of Personal Data',
@@ -337,35 +337,35 @@ export const docContent: Record<string, DocSection[]> = {
     },
     {
       title: '3. Retention Periods & Data Subject Rights',
-      body: 'Transaction records are retained for seven years in line with AML requirements. Identity documents are retained for five years post-contract termination. Users may exercise <cite id="gdpr">GDPR Arts. 15–22</cite> rights — including access, erasure, portability, and objection — via the bunq in-app Privacy Centre. Erasure requests are assessed against retention obligations before action is taken.',
+      body: 'Transaction records are retained for seven years in line with AML requirements. Identity documents are retained for five years post-contract termination. Users may exercise <cite id="gdpr">GDPR Arts. 15–22</cite> rights — including access, erasure, portability, and objection — via the in-app Privacy Centre. Erasure requests are assessed against retention obligations before action is taken.',
     },
     {
       title: '4. International Transfers',
-      body: 'Where personal data is transferred outside the EEA, bunq relies on Standard Contractual Clauses (SCCs) approved under the GDPR. Transfer impact assessments are conducted for all third-country recipients. A list of sub-processors and their locations is maintained and published in the Privacy Centre.',
+      body: 'Where personal data is transferred outside the EEA, we rely on Standard Contractual Clauses (SCCs) approved under the GDPR. Transfer impact assessments are conducted for all third-country recipients. A list of sub-processors and their locations is maintained and published in the Privacy Centre.',
     },
   ],
   '1': [
     {
       title: '1. Application & Licensing',
-      body: 'These General Terms & Conditions govern all personal accounts held with bunq B.V., a company incorporated in the Netherlands and authorised as a bank by the <cite id="dnb">De Nederlandsche Bank (DNB)</cite>. bunq operates across the EEA under <cite id="eupassport">EU passport rights</cite>. By opening an account you accept these terms in full.',
+      body: 'These General Terms & Conditions govern all personal accounts held with the bank, a company incorporated in the Netherlands and authorised as a bank by the <cite id="dnb">De Nederlandsche Bank (DNB)</cite>. The bank operates across the EEA under <cite id="eupassport">EU passport rights</cite>. By opening an account you accept these terms in full.',
     },
     {
       title: '2. Data & Privacy',
-      body: 'Personal data is processed in accordance with our <cite id="privacy">Privacy Policy & GDPR Statement</cite> and all applicable <cite id="gdpr">GDPR</cite> obligations. Cookie collection and tracking are governed separately by the <cite id="cookie">Cookie Policy</cite>. bunq will never sell personal data to third parties.',
+      body: 'Personal data is processed in accordance with our <cite id="privacy">Privacy Policy & GDPR Statement</cite> and all applicable <cite id="gdpr">GDPR</cite> obligations. Cookie collection and tracking are governed separately by the <cite id="cookie">Cookie Policy</cite>. We will never sell personal data to third parties.',
     },
     {
       title: '3. Fees & Pricing',
-      body: 'All applicable fees are set out in the <cite id="pricing">Personal Account Fee Schedule</cite>, which is updated quarterly. bunq reserves the right to modify fees subject to 30 days advance notice as required by the EU Payment Services Directive (PSD2). Continued use of the account after the notice period constitutes acceptance.',
+      body: 'All applicable fees are set out in the <cite id="pricing">Personal Account Fee Schedule</cite>, which is updated quarterly. The bank reserves the right to modify fees subject to 30 days advance notice as required by the EU Payment Services Directive (PSD2). Continued use of the account after the notice period constitutes acceptance.',
     },
     {
       title: '4. AML & Compliance Obligations',
-      body: 'bunq is required by law to apply a risk-based <cite id="kyc">KYC</cite> process and ongoing monitoring under the <cite id="aml">AML & KYC Policy Framework</cite>. Screening against international sanctions lists is carried out continuously in line with <cite id="fatf">FATF Recommendations</cite> and the Dutch <cite id="wwft">WWFT</cite>. Account access may be suspended pending enhanced due diligence.',
+      body: 'The bank is required by law to apply a risk-based <cite id="kyc">KYC</cite> process and ongoing monitoring under the <cite id="aml">AML & KYC Policy Framework</cite>. Screening against international sanctions lists is carried out continuously in line with <cite id="fatf">FATF Recommendations</cite> and the Dutch <cite id="wwft">WWFT</cite>. Account access may be suspended pending enhanced due diligence.',
     },
   ],
   '5': [
     {
       title: 'License Details',
-      body: 'bunq B.V. holds a full banking license granted by <cite id="dnb">De Nederlandsche Bank (DNB)</cite> under the Dutch Wet op het financieel toezicht (Wft), effective since 2014. The license covers deposit-taking, payment services, and credit provision, and confers <cite id="eupassport">EU passport rights</cite> across all 30 EEA member states.',
+      body: 'The bank holds a full banking license granted by <cite id="dnb">De Nederlandsche Bank (DNB)</cite> under the Dutch Wet op het financieel toezicht (Wft), effective since 2014. The license covers deposit-taking, payment services, and credit provision, and confers <cite id="eupassport">EU passport rights</cite> across all 30 EEA member states.',
     },
     {
       title: 'Regulatory Scope',

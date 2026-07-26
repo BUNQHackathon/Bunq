@@ -112,7 +112,7 @@ function SearchBar({ query, setQuery, onSubmit, disabled, placeholder, kbOptions
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder ?? "Ask about bunq's compliance across the EU…"}
+          placeholder={placeholder ?? "Ask about our compliance across the EU…"}
           className="flex-1 bg-transparent outline-none text-white text-[15px] min-w-0"
           style={{ caretColor: '#ef6a2a' }}
           disabled={disabled}
@@ -402,8 +402,8 @@ export default function AskPage() {
   const { isAuthenticated } = useAuth();
   const { showGate, modal: judgesModal } = useJudgesGate();
   const CHAT_GATE = {
-    title: 'Bunq judges only',
-    message: 'Chat is available to Bunq judges. Please sign in with your access token to continue.',
+    title: 'Judges only',
+    message: 'Chat is available to judges. Please sign in with your access token to continue.',
   };
   const selectedKnowledgeBase = knowledgeBaseOptions.find((option) => option.knowledgeBaseId === selectedKnowledgeBaseId)
     ?? knowledgeBaseOptions.find((option) => option.knowledgeBaseId === null)
@@ -661,7 +661,7 @@ export default function AskPage() {
                       maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
                     }}
                   >
-                    Split every policy
+                    See every policy
                   </h1>
                   <h1
                     className="font-serif font-normal italic text-white leading-[0.95] tracking-tight"
@@ -677,7 +677,7 @@ export default function AskPage() {
                       maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
                     }}
                   >
-                    into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
+                    in a new light<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
                   </h1>
                 </>
               )}

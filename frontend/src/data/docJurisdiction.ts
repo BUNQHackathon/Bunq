@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'bunq.docJurisdictions.v1';
+const STORAGE_KEY = 'compliance.docJurisdictions.v1';
 
 function readMap(): Record<string, string> {
   try {

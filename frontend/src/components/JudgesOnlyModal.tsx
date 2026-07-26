@@ -49,7 +49,7 @@ export default function JudgesOnlyModal({ open, onClose, title, message }: Props
         }}
       >
         <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink-0)' }}>
-          {title ?? 'Bunq judges only'}
+          {title ?? 'Judges only'}
         </div>
         <p style={{ fontSize: 13, color: 'var(--ink-2)', margin: '12px 0 24px' }}>
           {message ?? 'This action requires an access token. Sign in to continue.'}

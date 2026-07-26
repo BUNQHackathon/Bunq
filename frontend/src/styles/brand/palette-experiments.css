@@ -56,11 +56,10 @@
 /* Graph canvas bg dots inherit ink-0 (works on any theme) */
 /* Graph edge dim (non-active) is already var(--line-0/1) now — theme inherits */
 
-/* =============== THEME 1 · BUNQ SIGNAL =====================
-   bunq official green (#309B47) anchors action. Cool near-
-   black. Most "bunq" option.
+/* =============== THEME 1 · SIGNAL ===========================
+   Deep green (#309B47) anchors action. Cool near-black.
    =========================================================== */
-body.theme-bunq-signal {
+body.theme-signal {
   --bg-0: #0a0d0c;
   --bg-1: #111614;
   --bg-2: #171d1b;
@@ -77,17 +76,17 @@ body.theme-bunq-signal {
   --line-1: #273030;
   --line-soft: rgba(238, 242, 240, 0.06);
 
-  --orange: #309B47;       /* bunq deep green */
-  --orange-hi: #61B650;    /* bunq mid green */
-  --orange-deep: #238648;  /* bunq darkest green */
+  --orange: #309B47;       /* deep green */
+  --orange-hi: #61B650;    /* mid green */
+  --orange-deep: #238648;  /* darkest green */
   --orange-ink: #041910;
   --orange-wash: rgba(48, 155, 71, 0.14);
 
-  /* Doc family — from bunq palette */
+  /* Doc family */
   --tc:      #309B47;                    /* Terms — green anchor */
-  --aml:     #E22F30;                    /* AML — bunq red */
-  --priv:    #3395D8;                    /* Privacy — bunq blue */
-  --lic:     #3DBAAC;                    /* Licensing — bunq teal */
+  --aml:     #E22F30;                    /* AML — signal red */
+  --priv:    #3395D8;                    /* Privacy — signal blue */
+  --lic:     #3DBAAC;                    /* Licensing — signal teal */
   --concept: #8aa098;                    /* Concept — cool stone */
 
   --success: #61B650;
@@ -163,9 +162,9 @@ body.theme-prism-mist {
   --line-1: #282d3d;
   --line-soft: rgba(238, 240, 247, 0.06);
 
-  --orange: #2973BB;        /* bunq deep blue as anchor */
-  --orange-hi: #3395D8;     /* bunq mid blue */
-  --orange-deep: #1E5C85;   /* bunq darkest blue */
+  --orange: #2973BB;        /* deep blue as anchor */
+  --orange-hi: #3395D8;     /* mid blue */
+  --orange-deep: #1E5C85;   /* darkest blue */
   --orange-ink: #04101e;
   --orange-wash: rgba(41, 115, 187, 0.12);
 
@@ -188,11 +187,11 @@ body.theme-prism-mist {
   --spectrum-tint-opacity: 0.35;
 }
 
-/* =============== THEME 4 · BUNQ MUTED ======================
-   Warm surfaces retained; bunq green as accent. Smallest
+/* =============== THEME 4 · MUTED ============================
+   Warm surfaces retained; green as accent. Smallest
    visual delta from the original Main Views.
    =========================================================== */
-body.theme-bunq-muted {
+body.theme-muted {
   --bg-0: #0c0a09;
   --bg-1: #141110;
   --bg-2: #1c1815;
@@ -234,11 +233,11 @@ body.theme-bunq-muted {
   --spectrum-tint-opacity: 0.2;
 }
 
-/* =============== THEME 5 · BUNQ PRISM (full palette) =======
-   Uses the WHOLE official bunq palette as document family.
+/* =============== THEME 5 · PRISM (full palette) =============
+   Uses the whole palette as document family.
    Green anchor, deep navy surfaces. Most vibrant option.
    =========================================================== */
-body.theme-bunq-prism {
+body.theme-prism {
   --bg-0: #0a0e11;
   --bg-1: #11171c;
   --bg-2: #171f26;
@@ -255,18 +254,18 @@ body.theme-bunq-prism {
   --line-1: #262f36;
   --line-soft: rgba(239, 243, 244, 0.06);
 
-  --orange: #309B47;       /* bunq green anchor */
+  --orange: #309B47;       /* green anchor */
   --orange-hi: #61B650;
   --orange-deep: #238648;
   --orange-ink: #041910;
   --orange-wash: rgba(48, 155, 71, 0.14);
 
-  /* Every doc type = a different official bunq color */
+  /* Every doc type = a different palette color */
   --tc:      #88CC53;      /* Terms — bright green */
-  --aml:     #E22F30;      /* AML — bunq red */
-  --priv:    #3395D8;      /* Privacy — bunq blue */
-  --lic:     #3DBAAC;      /* Licensing — bunq teal */
-  --concept: #F28827;      /* Concepts — bunq orange */
+  --aml:     #E22F30;      /* AML — signal red */
+  --priv:    #3395D8;      /* Privacy — signal blue */
+  --lic:     #3DBAAC;      /* Licensing — signal teal */
+  --concept: #F28827;      /* Concepts — signal orange */
 
   --success: #61B650;
   --warning: #F5C836;
@@ -278,11 +277,11 @@ body.theme-bunq-prism {
   --spectrum-brightness: 1;
 }
 
-/* =============== THEME 6 · BUNQ FOREST =====================
+/* =============== THEME 6 · FOREST ===========================
    Deep forest green surfaces (drawn from #1E5C85 cousin).
    Bold, brand-forward, unexpected.
    =========================================================== */
-body.theme-bunq-forest {
+body.theme-forest {
   --bg-0: #0a1210;
   --bg-1: #111b17;
   --bg-2: #17231e;
@@ -299,7 +298,7 @@ body.theme-bunq-forest {
   --line-1: #24322c;
   --line-soft: rgba(238, 244, 240, 0.06);
 
-  --orange: #88CC53;       /* bright bunq green */
+  --orange: #88CC53;       /* bright green */
   --orange-hi: #a7dc72;
   --orange-deep: #61B650;
   --orange-ink: #0a1f0c;
