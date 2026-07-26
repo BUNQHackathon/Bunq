@@ -392,7 +392,7 @@ export default function DocPage() {
               </div>
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-wide text-white/30">Owner</p>
-                <p className="mt-0.5 text-[12px] text-white/70">Compliance · bunq B.V.</p>
+                <p className="mt-0.5 text-[12px] text-white/70">Compliance</p>
               </div>
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-wide text-white/30">Status</p>
@@ -435,7 +435,7 @@ export default function DocPage() {
 
               {/* Subtitle */}
               <p className="mt-2 text-[12px] text-[#999]">
-                bunq B.V. · Amsterdam · Updated {formattedDate}
+                Amsterdam · Updated {formattedDate}
               </p>
 
               {/* Divider */}

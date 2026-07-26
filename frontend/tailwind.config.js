@@ -30,7 +30,7 @@ export default {
           reports: '#E05050',
           concept: '#445566',
         },
-        // Bunq design system tokens
+        // Design system tokens
         'bg-0': '#0c0a09',
         'bg-1': '#141110',
         'bg-2': '#1c1815',
@@ -42,16 +42,16 @@ export default {
         'ink-4': '#3a3631',
         'line-0': '#241f1b',
         'line-1': '#2e2823',
-        'bunq-orange': '#ef6a2a',
-        'bunq-orange-hi': '#ff7a3a',
-        'bunq-orange-deep': '#c44b17',
+        'brand-orange': '#ef6a2a',
+        'brand-orange-hi': '#ff7a3a',
+        'brand-orange-deep': '#c44b17',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         serif: ['"Instrument Serif"', '"Playfair Display"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
         ui: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        'mono-bunq': ['Geist Mono', 'JetBrains Mono', 'ui-monospace', 'monospace'],
+        'mono-brand': ['Geist Mono', 'JetBrains Mono', 'ui-monospace', 'monospace'],
         'serif-display': ['"Noto Serif Display"', '"Noto Serif"', 'Georgia', 'serif'],
       },
       borderRadius: {

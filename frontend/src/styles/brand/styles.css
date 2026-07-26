@@ -1,5 +1,5 @@
 /* ============================================================
-   bunq compliance — foundations
+   compliance — foundations
    ============================================================ */
 
 :root {
@@ -22,7 +22,7 @@
   --line-1: #2e2823;
   --line-soft: rgba(246, 241, 234, 0.06);
 
-  /* Brand orange — slightly warmer than bunq's stock to keep it original */
+  /* Brand orange — warm, original */
   --orange: #ef6a2a;
   --orange-hi: #ff7a3a;
   --orange-deep: #c44b17;
@@ -37,8 +37,8 @@
   --concept: oklch(0.55 0.02 60);        /* warm neutral */
 
   /* Status */
-  --success: #5eb86a;       /* from bunq green */
-  --warning: #d9b03d;       /* from bunq yellow, desaturated */
+  --success: #5eb86a;       /* success green */
+  --warning: #d9b03d;       /* warning yellow, desaturated */
   --danger:  #d94a4a;
 
   /* Radii */

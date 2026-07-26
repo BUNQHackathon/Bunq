@@ -71,7 +71,7 @@ function JurisMapPanel({
           <span className="juris__map-eyebrow">
             Compliance map · {total} markets
           </span>
-          <span className="juris__map-h">Where bunq operates</span>
+          <span className="juris__map-h">Where we operate</span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
