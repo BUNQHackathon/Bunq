@@ -661,7 +661,7 @@ export default function AskPage() {
                       maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
                     }}
                   >
-                    Split every policy
+                    See every policy
                   </h1>
                   <h1
                     className="font-serif font-normal italic text-white leading-[0.95] tracking-tight"
@@ -677,7 +677,7 @@ export default function AskPage() {
                       maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
                     }}
                   >
-                    into its colours<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
+                    in a new light<span className="not-italic" style={{ color: '#ef6a2a' }}>.</span>
                   </h1>
                 </>
               )}
