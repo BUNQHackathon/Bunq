@@ -63,6 +63,25 @@ class ObligationControlMatcherBatchTest {
         return root;
     }
 
+    /** Same as {@link #batchToolResponse} but also populates the jurisdiction-delta fields. */
+    private JsonNode batchToolResponseWithJurisdictionFields(String oblId, String controlId, double score,
+                                                              String reason, String mappingType,
+                                                              String meetsJurisdictionSpecifics, String missingSpecific) {
+        ObjectNode root = om.createObjectNode();
+        ArrayNode obligations = root.putArray("obligations");
+        ObjectNode oblNode = obligations.addObject();
+        oblNode.put("obligation_id", oblId);
+        ArrayNode matches = oblNode.putArray("matches");
+        ObjectNode match = matches.addObject();
+        match.put("control_id", controlId);
+        match.put("match_score", score);
+        match.put("reason", reason);
+        match.put("mapping_type", mappingType);
+        match.put("meets_jurisdiction_specifics", meetsJurisdictionSpecifics);
+        match.put("missing_specific", missingSpecific);
+        return root;
+    }
+
     // ── tests ──────────────────────────────────────────────────────────────────
 
     @Test
@@ -134,6 +153,51 @@ class ObligationControlMatcherBatchTest {
 
         assertTrue(result.containsKey("obl-present"), "obl-present should be in result");
         assertFalse(result.containsKey("obl-missing"), "obl-missing must be absent — caller handles fallback");
+    }
+
+    @Test
+    void matchBatch_withJurisdictionFields_populatesMatchResult() {
+        MatchableObligation obl = new MatchableObligation("obl-3", "subject", "action", "aml", null);
+        MatchableControl ctrl = new MatchableControl("ctrl-3", "description", "aml", List.of());
+
+        when(bedrockService.invokeModel(any(), any(), any(), any()))
+                .thenReturn(phase1Response("analysis text"));
+        when(bedrockService.invokeModelWithTool(any(), any(), any(), any(), any(), any()))
+                .thenReturn(batchToolResponseWithJurisdictionFields("obl-3", "ctrl-3", 95.0,
+                        "same safeguard, wrong retention", "direct",
+                        "no", "policy states five years; the obligation requires ten"));
+
+        Map<String, List<MatchResult>> result = matcher.matchBatch(
+                "session-test", "map_stage",
+                List.of(obl),
+                Map.of("obl-3", List.of(ctrl)),
+                BedrockModel.SONNET);
+
+        MatchResult mr = result.get("obl-3").get(0);
+        assertEquals("no", mr.meetsJurisdictionSpecifics());
+        assertEquals("policy states five years; the obligation requires ten", mr.missingSpecific());
+    }
+
+    @Test
+    void matchBatch_withoutJurisdictionFields_yieldsNullWithoutThrowing() {
+        MatchableObligation obl = new MatchableObligation("obl-4", "subject", "action", "aml", null);
+        MatchableControl ctrl = new MatchableControl("ctrl-4", "description", "aml", List.of());
+
+        when(bedrockService.invokeModel(any(), any(), any(), any()))
+                .thenReturn(phase1Response("analysis text"));
+        // Older-style response — no meets_jurisdiction_specifics/missing_specific fields at all.
+        when(bedrockService.invokeModelWithTool(any(), any(), any(), any(), any(), any()))
+                .thenReturn(batchToolResponse("obl-4", "ctrl-4", 60.0, "reason", "partial"));
+
+        Map<String, List<MatchResult>> result = matcher.matchBatch(
+                "session-test", "map_stage",
+                List.of(obl),
+                Map.of("obl-4", List.of(ctrl)),
+                BedrockModel.SONNET);
+
+        MatchResult mr = result.get("obl-4").get(0);
+        assertNull(mr.meetsJurisdictionSpecifics());
+        assertNull(mr.missingSpecific());
     }
 
     @Test

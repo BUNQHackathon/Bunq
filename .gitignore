@@ -16,3 +16,4 @@ CLAUDE.local.md
 /test
 *.log
 /backend/docs/dev
+*.csv

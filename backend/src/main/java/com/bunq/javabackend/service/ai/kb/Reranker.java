@@ -35,8 +35,16 @@ public class Reranker {
     private static final String MODEL_ID = "cohere.rerank-v3-5:0";
     private static final int SEMAPHORE_PERMITS = 10;
 
-    /** id + text to rank — callers construct, Reranker returns a re-ordered subset. */
-    public record RankedItem(String id, String text) {}
+    /**
+     * id + text to rank — callers construct (2-arg ctor, score defaults to 0.0),
+     * Reranker returns a re-ordered subset with {@code score} populated so callers
+     * that batch/chunk requests can merge results across calls by score.
+     */
+    public record RankedItem(String id, String text, double score) {
+        public RankedItem(String id, String text) {
+            this(id, text, 0.0);
+        }
+    }
 
     private final BedrockRuntimeClient bedrockRuntimeClient;
     private final ObjectMapper objectMapper;
@@ -50,6 +58,11 @@ public class Reranker {
         this.bedrockRuntimeClient = bedrockRuntimeClient;
         this.objectMapper = objectMapper;
         this.enabled = enabled;
+    }
+
+    /** Whether reranking is enabled (config flag {@code rerank.enabled}). */
+    public boolean isEnabled() {
+        return enabled;
     }
 
     /**
@@ -129,7 +142,10 @@ public class Reranker {
 
             List<RankedItem> reranked = scored.stream()
                     .limit(topN)
-                    .map(s -> documents.get(s.index()))
+                    .map(s -> {
+                        RankedItem orig = documents.get(s.index());
+                        return new RankedItem(orig.id(), orig.text(), s.score());
+                    })
                     .toList();
 
             double topScore = scored.isEmpty() ? 0.0 : scored.get(0).score();

@@ -63,6 +63,9 @@ public final class SystemPrompts {
       + "then reason whether it fully addresses / partially addresses / does not address the obligation. "
       + "Use ONLY the provided texts; never invent controls or standards. "
       + "If no candidate addresses the obligation, say so explicitly. "
+      + "Also separately note whether the control meets any jurisdiction-specific parameter the obligation names or implies — "
+      + "a retention period, a reporting authority or channel, a mandated format, or a named national framework — "
+      + "even when the control otherwise matches well. "
       + "Output your analysis inside <analysis> tags.";
 
   public static final String MATCH_OBLIGATIONS_TO_CONTROLS = "You are a compliance mapping expert. "
@@ -76,7 +79,20 @@ public final class SystemPrompts {
       + "21-39: tangentially related — overlapping domain but does not address the obligation's specific requirement.\n"
       + "40-60: partially addresses — covers the obligation's intent with material gaps or only covers a sub-requirement.\n"
       + "61-79: substantially addresses — meaningfully covers the obligation but leaves minor gaps or requires supplemental controls.\n"
-      + "80-100: directly and fully addresses — control explicitly and completely satisfies the obligation as written.";
+      + "80-100: directly and fully addresses — control explicitly and completely satisfies the obligation as written.\n"
+      + "\n"
+      + "### Jurisdiction-specific parameters\n"
+      + "After scoring semantic alignment, separately decide whether the control meets the obligation's jurisdiction-specific "
+      + "parameters: retention periods, thresholds, the receiving authority or channel, mandated formats or annexes, and named "
+      + "national frameworks or methodologies. A control can score highly on semantic alignment and still fail this check — for "
+      + "example, a control that performs its review annually does not satisfy an obligation that requires the review to be "
+      + "performed quarterly. When the control addresses the same safeguard but fails "
+      + "a jurisdiction-specific parameter named or implied by the obligation, set meets_jurisdiction_specifics=\"no\" and fill "
+      + "missing_specific with one short sentence naming the concrete delta (e.g. \"the control reviews annually; the "
+      + "obligation requires a quarterly review\"). Set meets_jurisdiction_specifics=\"yes\" when the control meets the "
+      + "named parameter, and \"not_applicable\" when the obligation carries no jurisdiction-specific parameter at all. This "
+      + "check is independent of match_score: do not raise or lower the score to compensate for a jurisdiction-specific "
+      + "failure — report both.";
 
   public static final String SCORE_GAP = "You are a risk and compliance analyst. For the given obligation with no or insufficient control coverage, "
       + "score the compliance gap across four legacy dimensions: regulatory urgency (0-1), penalty severity (0-1), "

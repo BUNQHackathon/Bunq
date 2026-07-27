@@ -18,11 +18,22 @@ locals {
 }
 
 # Fallback mapping — tainting null_resource.bedrock_kb requires manually refreshing these from the create-knowledge-base output.
+# IMPORTANT: these ids are account-specific. If the AWS account changes or the KBs/data sources are
+# recreated, refresh both maps below from the live account with:
+#   aws bedrock-agent list-knowledge-bases --region eu-central-1 --profile <profile>
+#   aws bedrock-agent list-data-sources --knowledge-base-id <kb-id> --region eu-central-1 --profile <profile>
+# Stale ids here silently break the chat (KB lookups return nothing) — this is the second time it's happened.
 locals {
   kb_ids_static = {
-    regulations = "IUME7XPHRY"
-    policies    = "OFOUYSCIS1"
-    controls    = "YWMXUZULAQ"
+    regulations = "SXHT586EVE"
+    policies    = "Z9EMCSC8BW"
+    controls    = "XCMRABFUTA"
+  }
+
+  kb_data_source_ids_static = {
+    regulations = "OZN63O30JF"
+    policies    = "HOR4M0BVKJ"
+    controls    = "ME6PCFA8HB"
   }
 }
 

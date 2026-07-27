@@ -36,29 +36,28 @@ public class StaleRunSweeper {
 
             for (JurisdictionRun run : all) {
                 if (run.getStatus() != RunStatus.RUNNING) continue;
-                if (run.getLastRunAt() == null) continue;
-                try {
-                    if (Instant.parse(run.getLastRunAt()).isAfter(threshold)) continue;
-                } catch (Exception e) {
-                    log.warn("stale-run-sweeper: unparseable lastRunAt for {}/{}: {}",
-                            run.getLaunchId(), run.getJurisdictionCode(), run.getLastRunAt());
-                    continue;
-                }
+                Instant heartbeat = parseInstant(run.getLastHeartbeatAt(), "lastHeartbeatAt", run);
+                Instant lastRunAt = parseInstant(run.getLastRunAt(), "lastRunAt", run);
+                if (!isStale(heartbeat, lastRunAt, threshold)) continue;
+
                 JurisdictionRun fresh = repository
                         .findByLaunchIdAndCode(run.getLaunchId(), run.getJurisdictionCode())
                         .orElse(null);
                 if (fresh == null || fresh.getStatus() != RunStatus.RUNNING) continue;
-                if (fresh.getLastRunAt() == null) continue;
-                try {
-                    if (Instant.parse(fresh.getLastRunAt()).isAfter(threshold)) continue;
-                } catch (Exception e) {
-                    continue;
-                }
+                Instant freshHeartbeat = parseInstant(fresh.getLastHeartbeatAt(), "lastHeartbeatAt", fresh);
+                Instant freshLastRunAt = parseInstant(fresh.getLastRunAt(), "lastRunAt", fresh);
+                if (!isStale(freshHeartbeat, freshLastRunAt, threshold)) continue;
+
                 fresh.setStatus(RunStatus.FAILED);
                 fresh.setFailedStage(STAGE_ABANDONED);
                 fresh.setLastError("Pipeline run abandoned (likely process restart)");
                 repository.save(fresh);
-                log.info("stale-run-sweeper: flipped {}/{}", fresh.getLaunchId(), fresh.getJurisdictionCode());
+
+                Instant reference = freshHeartbeat != null ? freshHeartbeat : freshLastRunAt;
+                String source = freshHeartbeat != null ? "heartbeat" : "lastRunAt";
+                long minutes = Duration.between(reference, Instant.now()).toMinutes();
+                log.info("stale-run-sweeper: flipped {}/{} (no {} for {} minutes)",
+                        fresh.getLaunchId(), fresh.getJurisdictionCode(), source, minutes);
                 flipped++;
             }
 
@@ -66,5 +65,29 @@ public class StaleRunSweeper {
         } catch (Exception e) {
             log.error("stale-run-sweeper: sweep failed", e);
         }
+    }
+
+    private Instant parseInstant(String value, String fieldName, JurisdictionRun run) {
+        if (value == null) return null;
+        try {
+            return Instant.parse(value);
+        } catch (Exception e) {
+            log.warn("stale-run-sweeper: unparseable {} for {}/{}: {}",
+                    fieldName, run.getLaunchId(), run.getJurisdictionCode(), value);
+            return null;
+        }
+    }
+
+    /**
+     * A run is stale when its most authoritative liveness signal is older than the threshold.
+     * lastHeartbeatAt (refreshed every minute by RunHeartbeatService while the run is active in
+     * this JVM) takes priority when present; lastRunAt (a start timestamp, never refreshed) is
+     * only used as a fallback for rows written before the heartbeat existed. Missing both never
+     * flips a run.
+     */
+    static boolean isStale(Instant lastHeartbeatAt, Instant lastRunAt, Instant threshold) {
+        Instant reference = lastHeartbeatAt != null ? lastHeartbeatAt : lastRunAt;
+        if (reference == null) return false;
+        return reference.isBefore(threshold);
     }
 }
