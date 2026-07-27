@@ -47,14 +47,21 @@ resource "null_resource" "s3_vectors_indexes" {
   provisioner "local-exec" {
     interpreter = ["powershell", "-NoProfile", "-Command"]
     # Titan Embeddings v2 produces 1024-dimensional float32 vectors.
-    # nonFilterableMetadataKeys keeps AMAZON_BEDROCK_TEXT_CHUNK out of the
-    # 2048-byte filterable metadata limit imposed by S3 Vectors — required for
-    # Bedrock KB ingestion of chunks containing more than ~2 KB of text.
+    # nonFilterableMetadataKeys keeps the chunk text out of the 2048-byte
+    # filterable metadata limit imposed by S3 Vectors — required for Bedrock KB
+    # ingestion of chunks containing more than ~2 KB of text.
+    # Bedrock writes the chunk under AMAZON_BEDROCK_TEXT; AMAZON_BEDROCK_TEXT_CHUNK
+    # alone does NOT match it, which silently fails those chunks with
+    # "Filterable metadata must have at most 2048 bytes". Both names are listed
+    # so the index is correct regardless of which key Bedrock emits.
+    # NOTE: metadata config is immutable after creation. The indexes already live
+    # in 810498828757 were created with the old list — correcting them requires
+    # bumping metadata_config_v (destroys the index) and re-running ingestion.
     # JSON passed via temp file to bypass PowerShell native-exe quoting bug
     # (single-quoted JSON arrived at aws.exe with stripped inner double quotes).
     command = <<-EOT
       $tmp = New-TemporaryFile
-      Set-Content -Path $tmp.FullName -Value '{"nonFilterableMetadataKeys":["AMAZON_BEDROCK_TEXT_CHUNK","AMAZON_BEDROCK_METADATA"]}' -Encoding ascii
+      Set-Content -Path $tmp.FullName -Value '{"nonFilterableMetadataKeys":["AMAZON_BEDROCK_TEXT","AMAZON_BEDROCK_TEXT_CHUNK","AMAZON_BEDROCK_METADATA"]}' -Encoding ascii
       aws s3vectors create-index --vector-bucket-name ${local.name_prefix}-vectors --index-name ${each.value}-idx --data-type float32 --dimension 1024 --distance-metric cosine --metadata-configuration "file://$($tmp.FullName)" --region ${var.region} --profile ${var.aws_profile} 2>&1 | Out-Null
       Remove-Item $tmp.FullName
       if ($LASTEXITCODE -ne 0) {

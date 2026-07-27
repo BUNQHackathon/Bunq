@@ -289,8 +289,16 @@ public class ProofPackService {
                 String title = obl != null && obl.getSource() != null
                         ? safeStr(obl.getSource().getRegulation()) + " " + safeStr(obl.getSource().getArticle())
                         : safeStr(g.getObligationId());
-                String conf = g.getMetadata() != null ? g.getMetadata().get("best_mapping_confidence") : null;
-                safePdf(doc, new Paragraph("• " + title + "  best_confidence=" + safeStr(conf), smallFont));
+                String missingSpecific = g.getMetadata() != null ? g.getMetadata().get("missing_specific") : null;
+                String deltaSentence = missingSpecific != null && !missingSpecific.isBlank()
+                        ? GapNarrative.stripMarkdown(GapNarrative.clean(missingSpecific))
+                        : null;
+                if (deltaSentence != null && !deltaSentence.isBlank()) {
+                    safePdf(doc, new Paragraph("• " + title + " — " + deltaSentence, smallFont));
+                } else {
+                    String conf = g.getMetadata() != null ? g.getMetadata().get("best_mapping_confidence") : null;
+                    safePdf(doc, new Paragraph("• " + title + "  best_confidence=" + safeStr(conf), smallFont));
+                }
             }
             if (deltaGaps.size() > 15) {
                 safePdf(doc, new Paragraph("... and " + (deltaGaps.size() - 15) + " more jurisdiction deltas (see gaps.pdf)", smallFont));
@@ -338,18 +346,21 @@ public class ProofPackService {
             safePdf(doc, new Paragraph(" "));
         }
 
-        if (execSummary != null && !execSummary.isBlank()) {
-            safePdf(doc, new Paragraph("Executive Summary", subFont));
-            String cleaned = GapNarrative.clean(execSummary);
-            String stripped = cleaned != null ? GapNarrative.stripMarkdown(cleaned) : null;
-            if (stripped != null && !stripped.isBlank()) {
-                if (stripped.length() > 3000) stripped = stripped.substring(0, 3000) + "…";
-                safePdf(doc, new Paragraph(stripped, normalFont));
-            }
-            safePdf(doc, new Paragraph(" "));
+        safePdf(doc, new Paragraph("Executive Summary", subFont));
+        String cleaned = execSummary != null ? GapNarrative.clean(execSummary) : null;
+        String stripped = cleaned != null ? GapNarrative.stripMarkdown(cleaned) : null;
+        if (stripped != null && !stripped.isBlank()) {
+            if (stripped.length() > 3000) stripped = stripped.substring(0, 3000) + "…";
+            safePdf(doc, new Paragraph(stripped, normalFont));
+        } else {
+            safePdf(doc, new Paragraph("Executive summary unavailable for this run.", normalFont));
         }
+        safePdf(doc, new Paragraph(" "));
 
-        safePdf(doc, new Paragraph("Owner / Contact: compliance@bunq.com", normalFont));
+        String ownerContact = firstSuggestedOwner(gaps);
+        if (ownerContact != null) {
+            safePdf(doc, new Paragraph("Owner / Contact: " + ownerContact, normalFont));
+        }
         doc.close();
 
         return bos.toByteArray();
@@ -471,15 +482,17 @@ public class ProofPackService {
                 highResidual + " elevated/high residual, " + other + " other", normalFont));
         safePdf(doc, new Paragraph(" "));
 
-        if (execSummary != null && !execSummary.isBlank()) {
-            safePdf(doc, new Paragraph("Executive Summary", subFont));
-            String cleaned = GapNarrative.stripMarkdown(GapNarrative.clean(execSummary));
-            if (cleaned != null) {
-                if (cleaned.length() > 4000) cleaned = cleaned.substring(0, 4000) + "…";
-                safePdf(doc, new Paragraph(cleaned, normalFont));
-            }
-            safePdf(doc, new Paragraph(" "));
+        safePdf(doc, new Paragraph("Executive Summary", subFont));
+        String cleanedSummary = execSummary != null && !execSummary.isBlank()
+                ? GapNarrative.stripMarkdown(GapNarrative.clean(execSummary))
+                : null;
+        if (cleanedSummary != null && !cleanedSummary.isBlank()) {
+            if (cleanedSummary.length() > 4000) cleanedSummary = cleanedSummary.substring(0, 4000) + "…";
+            safePdf(doc, new Paragraph(cleanedSummary, normalFont));
+        } else {
+            safePdf(doc, new Paragraph("Executive summary unavailable for this run.", normalFont));
         }
+        safePdf(doc, new Paragraph(" "));
 
         safePdf(doc, new Paragraph("Priority findings", subFont));
         if (sorted.isEmpty()) {
@@ -554,6 +567,13 @@ public class ProofPackService {
             safePdf(doc, new Paragraph(" "));
 
             safePdf(doc, new Paragraph("Gap type: " + (gap.getGapType() != null ? gap.getGapType().name() : "—"), normalFont));
+            String gapMissingSpecific = gap.getMetadata() != null ? gap.getMetadata().get("missing_specific") : null;
+            if (gapMissingSpecific != null && !gapMissingSpecific.isBlank()) {
+                String gapDeltaSentence = GapNarrative.stripMarkdown(GapNarrative.clean(gapMissingSpecific));
+                if (gapDeltaSentence != null && !gapDeltaSentence.isBlank()) {
+                    safePdf(doc, new Paragraph("Jurisdiction delta: " + gapDeltaSentence, normalFont));
+                }
+            }
             String narr = GapNarrative.stripMarkdown(GapNarrative.clean(gap.getNarrative()));
             if (narr != null && !narr.isBlank()) {
                 safePdf(doc, new Paragraph("Narrative: " + narr, normalFont));
@@ -714,6 +734,19 @@ public class ProofPackService {
 
     private String fmt(Double d) {
         return d != null ? String.format(java.util.Locale.ROOT, "%.2f", d) : "—";
+    }
+
+    /** Returns the first non-blank suggested owner found across all gaps' recommended actions, or null. */
+    private String firstSuggestedOwner(List<Gap> gaps) {
+        for (var g : gaps) {
+            if (g.getRecommendedActions() == null) continue;
+            for (var a : g.getRecommendedActions()) {
+                if (a.getSuggestedOwner() != null && !a.getSuggestedOwner().isBlank()) {
+                    return a.getSuggestedOwner();
+                }
+            }
+        }
+        return null;
     }
 
     private String truncate(String s, int max) {

@@ -91,6 +91,9 @@ public class NarrateStage implements Stage {
             String overallSeverity = determineOverall(gaps, sanctionHits);
             List<String> topRisks = extractTopRisks(gaps);
             String narrative = generateNarrative(gaps, mappings, overallSeverity, ctx.getSessionId());
+            if (narrative == null || narrative.isBlank()) {
+                log.warn("NarrateStage: narrative came back blank for session {}; executive summary will be marked unavailable", ctx.getSessionId());
+            }
 
             sessionRepository.findById(ctx.getSessionId()).ifPresent(session -> {
                 session.setExecutiveSummary(narrative);
@@ -198,12 +201,14 @@ public class NarrateStage implements Stage {
             }
             JsonNode content = response.path("content");
             if (content.isArray() && !content.isEmpty()) {
-                return content.get(0).path("text").asText("");
+                String text = content.get(0).path("text").asText("");
+                return text.isBlank() ? null : text;
             }
-            return "Compliance analysis complete. See gaps and mappings for details.";
+            log.warn("Narrative generation returned no content for session {}", sessionId);
+            return null;
         } catch (Exception e) {
-            log.warn("Narrative generation failed: {}", e.getMessage());
-            return "Compliance analysis complete. " + gaps.size() + " gap(s) identified.";
+            log.warn("Narrative generation failed for session {}: {}", sessionId, e.getMessage());
+            return null;
         }
     }
 }

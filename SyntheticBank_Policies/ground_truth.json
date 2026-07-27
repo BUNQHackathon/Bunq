@@ -1,0 +1,272 @@
+[
+  {
+    "id": "GT-01",
+    "obligation_summary": "The customer must be identified and their identity verified, on the basis of reliable and independent documents, before a business relationship or occasional transaction is established.",
+    "regulation": "D.Lgs 231/2007 Art. 17-19 (obblighi di adeguata verifica della clientela)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "01_customer_due_diligence_and_onboarding.md",
+    "planted_control_quote": "The Compliance Officer must ensure that no business relationship is established until the customer's identity has been identified and verified using a valid government-issued identity document or a qualified electronic identification means.",
+    "rationale": "Northwind's CDD policy directly requires identity verification before the relationship is established, matching the generic (non-jurisdiction-specific) core of the Art. 17-19 obligation. Nothing in this particular obligation depends on an Italy-specific parameter."
+  },
+  {
+    "id": "GT-02",
+    "obligation_summary": "The beneficial owner of a corporate or legal-entity customer must be identified and their identity verified before the business relationship is established.",
+    "regulation": "D.Lgs 231/2007 Art. 18, comma 1, lett. b)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "01_customer_due_diligence_and_onboarding.md",
+    "planted_control_quote": "Before establishing a business relationship, Customer Onboarding staff must identify the beneficial owner of any corporate or legal-entity customer and verify that identity on the basis of documents, data, or information obtained from a reliable and independent source.",
+    "rationale": "Directly matches the Art. 18(1)(b) requirement to identify and verify the beneficial owner before the relationship is established; the underlying duty carries no Italy-specific parameter here (the register cross-check delta is captured separately in GT-18)."
+  },
+  {
+    "id": "GT-03",
+    "obligation_summary": "Establishing or continuing a business relationship with a politically exposed person requires prior written authorisation from senior management.",
+    "regulation": "D.Lgs 231/2007 Art. 25, comma 4, lett. a)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "02_enhanced_due_diligence_and_peps.md",
+    "planted_control_quote": "A member of Northwind's senior management must approve, in writing, the establishment or continuation of any business relationship with a customer, beneficial owner, or beneficiary identified as a politically exposed person before the relationship is opened or continued.",
+    "rationale": "Near word-for-word match to the Art. 25(4)(a) requirement to obtain authorisation from persons holding management/administration powers before starting, continuing, or maintaining a relationship with a PEP. The approval requirement itself is jurisdiction-neutral."
+  },
+  {
+    "id": "GT-04",
+    "obligation_summary": "Enhanced due diligence measures must be applied wherever a customer, relationship, or transaction presents a high risk of money laundering or terrorist financing.",
+    "regulation": "D.Lgs 231/2007 Art. 24, comma 1",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "02_enhanced_due_diligence_and_peps.md",
+    "planted_control_quote": "The Customer Risk Engine must apply enhanced due diligence measures to any customer, relationship, or transaction assessed as high risk of money laundering or terrorist financing.",
+    "rationale": "Directly implements the general Art. 24(1) EDD trigger; the trigger itself is a universal risk-based principle with no Italy-specific calibration required."
+  },
+  {
+    "id": "GT-05",
+    "obligation_summary": "Payments must be screened against applicable sanctions and asset-freezing lists at the moment of initiation, before execution.",
+    "regulation": "D.Lgs 109/2007 Art. 4 (misure di congelamento) read with EU sanctions regulations",
+    "source_file": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "03_sanctions_screening_and_asset_freezing.md",
+    "planted_control_quote": "The Watchlist Screening Service must screen every payment, at the moment of initiation, against the consolidated EU and UN sanctions and asset-freezing lists before the payment is released.",
+    "rationale": "The screening obligation itself (screen at initiation against EU/UN lists) is EU-regulation-driven and jurisdiction-neutral, so the control satisfies it directly. The Italy-specific escalation duty that follows a confirmed hit is captured separately as a delta in GT-16."
+  },
+  {
+    "id": "GT-06",
+    "obligation_summary": "Customer transactions must be monitored on an ongoing basis to ensure consistency with the customer's known profile and risk rating.",
+    "regulation": "D.Lgs 231/2007 Art. 18, comma 1, lett. d) (controllo costante)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "04_transaction_monitoring.md",
+    "planted_control_quote": "The Customer Risk Engine must continuously monitor all customer transactions throughout the business relationship to ensure they are consistent with Northwind's knowledge of the customer, its business, and its risk profile.",
+    "rationale": "Directly matches the generic 'controllo costante' ongoing-monitoring duty; no Italy-specific parameter is required to satisfy this particular obligation (the UIF anomaly-indicator layer is addressed separately in GT-27)."
+  },
+  {
+    "id": "GT-07",
+    "obligation_summary": "Staff who suspect a transaction may relate to money laundering or terrorist financing must escalate it internally to the responsible function without delay.",
+    "regulation": "D.Lgs 231/2007 Art. 35, comma 1 and Art. 36, comma 2",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "05_suspicious_activity_reporting.md",
+    "planted_control_quote": "Every employee who knows, suspects, or has reasonable grounds to suspect that a transaction is related to money laundering or terrorist financing must report it to the MLRO without delay through the internal SAR Referral Form.",
+    "rationale": "Matches the internal escalation duty in Art. 36(2) (branch/office manager must communicate suspicious operations without delay to the competent function). The internal escalation channel itself is jurisdiction-neutral; the external UIF submission channel is where the delta lies (GT-14)."
+  },
+  {
+    "id": "GT-08",
+    "obligation_summary": "The intensity of customer due diligence measures must be proportionate to the assessed money-laundering and terrorist-financing risk.",
+    "regulation": "D.Lgs 231/2007 Art. 17, comma 3",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "01_customer_due_diligence_and_onboarding.md",
+    "planted_control_quote": "The intensity and frequency of due diligence measures must be proportionate to the money-laundering and terrorist-financing risk score assigned by the Customer Risk Engine at onboarding and reassessed at each periodic review.",
+    "rationale": "Directly implements the risk-based proportionality principle of Art. 17(3); this is a generic risk-based-approach principle with no Italy-specific parameter."
+  },
+  {
+    "id": "GT-09",
+    "obligation_summary": "An internal whistleblowing channel must exist for employees to report actual or suspected breaches of AML rules, with confidentiality and anti-retaliation protection.",
+    "regulation": "D.Lgs 231/2007 Art. 48",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "08_aml_governance_and_internal_controls.md",
+    "planted_control_quote": "Northwind must maintain a confidential and, where requested, anonymous whistleblowing channel through which employees can report actual or suspected breaches of anti-money laundering policy without fear of retaliation.",
+    "rationale": "Matches the Art. 48 requirements for confidentiality, anti-retaliation protection, and an anonymous/independent reporting channel; these features are jurisdiction-neutral."
+  },
+  {
+    "id": "GT-10",
+    "obligation_summary": "An AML function / officer with sufficient seniority and independence must be appointed to oversee the AML/CTF programme.",
+    "regulation": "D.Lgs 231/2007 Art. 16, comma 2, lett. b)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "08_aml_governance_and_internal_controls.md",
+    "planted_control_quote": "The Management Board must appoint a Money Laundering Reporting Officer with sufficient seniority, independence, and resources to oversee Northwind's anti-money laundering and counter-terrorist financing programme.",
+    "rationale": "Directly implements the Art. 16(2)(b) obligation to designate a responsabile della funzione antiriciclaggio with appropriate seniority and independence; the requirement is jurisdiction-neutral."
+  },
+  {
+    "id": "GT-11",
+    "obligation_summary": "Employees must receive recurring anti-money laundering and counter-terrorist financing training.",
+    "regulation": "D.Lgs 231/2007 Art. 16, comma 3",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "09_training_and_awareness.md",
+    "planted_control_quote": "All employees must complete Northwind's anti-money laundering and counter-terrorist financing training on the Northwind Learning Hub within thirty days of joining and at least once every twelve months thereafter.",
+    "rationale": "Matches the Art. 16(3) duty to run permanent training programmes for all staff; the training cadence and existence requirement is jurisdiction-neutral (the Italy-specific curriculum content gap is captured separately in GT-20)."
+  },
+  {
+    "id": "GT-12",
+    "obligation_summary": "Correspondent banking relationships must not be opened or maintained, directly or indirectly, with shell banks.",
+    "regulation": "D.Lgs 231/2007 Art. 25, comma 3",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "satisfied",
+    "planted_control_doc": "02_enhanced_due_diligence_and_peps.md",
+    "planted_control_quote": "Northwind must not open or maintain, directly or indirectly, correspondent banking relationships with a shell bank or with a respondent institution known to permit its accounts to be used by a shell bank.",
+    "rationale": "Direct match to the Art. 25(3) prohibition ('e' fatto divieto ... aprire o mantenere ... conti di corrispondenza con banche di comodo'); this prohibition is jurisdiction-neutral."
+  },
+  {
+    "id": "GT-13",
+    "obligation_summary": "Customer due diligence and transaction records must be retained for 10 years from the end of the business relationship or the occasional transaction.",
+    "regulation": "D.Lgs 231/2007 Art. 31, comma 3",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "06_record_retention_and_data_management.md",
+    "planted_control_quote": "Customer due diligence records, transaction records, and internal SAR referrals must be retained for a period of five years from the end of the business relationship or the date of the occasional transaction.",
+    "rationale": "A retention control exists, but the retained period (five years, reflecting Northwind's Dutch/generic EU-style policy) is five years short of the 10-year period mandated by Art. 31(3) of the Italian AML decree ('conservati per un periodo di 10 anni')."
+  },
+  {
+    "id": "GT-14",
+    "obligation_summary": "Suspicious transaction reports must be filed with the Italian Financial Intelligence Unit (UIF) using the prescribed SOS channel/format and a registered UIF referent.",
+    "regulation": "D.Lgs 231/2007 Art. 35-36; UIF Instructions 18 December 2025 (rilevazione e segnalazione delle operazioni sospette)",
+    "source_file": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "05_suspicious_activity_reporting.md",
+    "planted_control_quote": "Where the MLRO determines that a suspicious activity report is warranted, the MLRO must file the report with the Financial Intelligence Unit-Netherlands (FIU-Nederland) through its goAML portal.",
+    "rationale": "The generic external-reporting control exists, but it routes exclusively to the Dutch FIU via goAML. There is no UIF/INFOSTAT-UIF submission channel, no adoption of the UIF SOS data/field format, and no registered UIF referent -- the Italy-specific reporting parameter is entirely absent from an otherwise-functioning control."
+  },
+  {
+    "id": "GT-15",
+    "obligation_summary": "The ML/TF risk assessment must determine residual risk using Banca d'Italia's two-axis methodology (inherent risk x control-system vulnerability), which then drives the intensity of due diligence and controls.",
+    "regulation": "D.Lgs 231/2007 Art. 15-16 (risk assessment and mitigation duty), operationalised via BoI Provision 26 March 2019, Sez. VI residual-risk matrix",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf (context: 04d_BoI-residual-risk-matrix_transcription.md)",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "07_ML_TF_risk_assessment.md",
+    "planted_control_quote": "The enterprise-wide risk assessment must assign each business line an overall risk rating of low, medium, or high, which feeds into the Customer Risk Engine's scoring model.",
+    "rationale": "A risk assessment and rating control exists (Art. 15-16 duty is addressed), but it uses a generic three-tier low/medium/high scale rather than the mandatory Banca d'Italia two-axis matrix that combines inherent risk (1-4) with control-system vulnerability (1-4) to derive one of four residual-risk levels."
+  },
+  {
+    "id": "GT-16",
+    "obligation_summary": "Confirmed sanctions or asset-freezing matches involving Italian activity must be reported to the Italian Comitato di Sicurezza Finanziaria (Financial Security Committee).",
+    "regulation": "D.Lgs 109/2007 Art. 3-4 (Comitato di sicurezza finanziaria; misure di congelamento)",
+    "source_file": "02_Legislative-Decree-109-2007_CTF-and-freezing-measures_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "03_sanctions_screening_and_asset_freezing.md",
+    "planted_control_quote": "The Head of Sanctions & Screening must notify Northwind's home-state supervisory authorities, being De Nederlandsche Bank and the Dutch Ministry of Finance, of any confirmed asset freeze within the timeframe prescribed by Dutch sanctions law.",
+    "rationale": "The freeze-and-notify control exists, but escalation is routed only to Dutch authorities (DNB and the Dutch Ministry of Finance). D.Lgs 109/2007 requires notification to the Italian Comitato di Sicurezza Finanziaria, which is entirely absent from the control's escalation chain."
+  },
+  {
+    "id": "GT-17",
+    "obligation_summary": "Customer due diligence must be triggered for occasional transactions of EUR 15,000 or more (EUR 1,000 or more for fund/crypto-asset transfers), not the generic EU threshold of EUR 10,000.",
+    "regulation": "D.Lgs 231/2007 Art. 17, comma 1, lett. b)",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "01_customer_due_diligence_and_onboarding.md",
+    "planted_control_quote": "Customer Due Diligence must be performed on any occasional transaction, or linked series of transactions, equal to or exceeding EUR 10,000, regardless of whether the transaction is executed in a single operation or in several operations that appear to be linked.",
+    "rationale": "The occasional-transaction CDD trigger exists, but it uses the generic EU AMLD threshold of EUR 10,000 rather than the Italian statutory threshold of EUR 15,000 (or EUR 1,000 for fund/crypto-asset transfers) set out in Art. 17(1)(b)."
+  },
+  {
+    "id": "GT-18",
+    "obligation_summary": "Beneficial ownership verification should be supported by a check against Italy's Central Register of Beneficial Owners (the dedicated section of the Registro delle Imprese).",
+    "regulation": "D.Lgs 231/2007 Art. 21",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "01_customer_due_diligence_and_onboarding.md",
+    "planted_control_quote": "The customer must complete a Beneficial Ownership Declaration Form identifying all natural persons who ultimately own or control the customer, which the Customer Risk Engine cross-checks against sanctions and PEP databases.",
+    "rationale": "A beneficial ownership identification control exists (customer declaration cross-checked against sanctions/PEP databases), but it makes no reference to the Italian Central Register of Beneficial Owners that Art. 21 makes accessible to obligated entities as a support to CDD."
+  },
+  {
+    "id": "GT-19",
+    "obligation_summary": "Obligated entities must not execute a transaction giving rise to suspicion until the suspicious transaction report has been filed, save for narrow statutory exceptions.",
+    "regulation": "D.Lgs 231/2007 Art. 35, comma 2",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "05_suspicious_activity_reporting.md",
+    "planted_control_quote": "Where a transaction is flagged as potentially suspicious, the MLRO may place the transaction under review for up to five business days before releasing or rejecting it, unless a legal or regulatory obligation requires it to proceed.",
+    "rationale": "A hold-and-review control exists, but it is a discretionary five-business-day review window after which the transaction may be released regardless of whether a report has been filed. Art. 35(2) imposes an absolute duty not to execute the operation until the STR has been submitted (subject only to narrow statutory exceptions), which this control does not reproduce."
+  },
+  {
+    "id": "GT-20",
+    "obligation_summary": "AML/CTF training must cover Italy-specific regulatory content, including UIF-published anomaly indicators and the Italian STR/SOS regime.",
+    "regulation": "D.Lgs 231/2007 Art. 16, comma 3, read with UIF Provision 12 May 2023 (indicatori di anomalia)",
+    "source_file": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "09_training_and_awareness.md",
+    "planted_control_quote": "The anti-money laundering training curriculum must cover the EU Anti-Money Laundering Directives, Dutch implementing regulation, Northwind's internal policies, and the typologies published by the Financial Action Task Force.",
+    "rationale": "A training curriculum requirement exists, but its listed content is EU/Dutch/FATF-only. It contains no reference to the D.Lgs 231/2007 Italian regime, the UIF-published anomaly indicators, or the Italian SOS reporting process that Italy-facing staff would need to recognise and act on."
+  },
+  {
+    "id": "GT-21",
+    "obligation_summary": "Retained AML records must be held in the structured data-retention architecture prescribed for Italian-supervised activity, not merely a generic secure archive.",
+    "regulation": "BoI Provision 24 March 2020 (conservazione dei dati e delle informazioni), read with D.Lgs 231/2007 Art. 31",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "jurisdiction_delta",
+    "planted_control_doc": "06_record_retention_and_data_management.md",
+    "planted_control_quote": "All retained records must be stored in the Northwind Document Vault in a format that preserves their integrity and allows retrieval within five business days of a request from a competent authority.",
+    "rationale": "A generic secure-storage-and-retrieval control exists, but it does not implement the specific structured, standardised data-retention architecture that Banca d'Italia's 24 March 2020 provision prescribes for records concerning Italian-supervised activity."
+  },
+  {
+    "id": "GT-22",
+    "obligation_summary": "Obligated intermediaries must periodically transmit aggregate/objective AML data (S.AR.A. -- Segnalazioni AntiRiciclaggio Aggregate) to the Italian FIU (UIF).",
+    "regulation": "D.Lgs 231/2007 Art. 33; UIF Provision 25 August 2020 (disposizioni per l'invio dei dati aggregati)",
+    "source_file": "12_UIF-Provision-25-August-2020_SARA-aggregate-AML-reporting.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "No document in the corpus addresses periodic aggregate or objective reporting of any kind. Northwind's only regulatory-reporting control is case-by-case suspicious activity reporting (and that routes to the Dutch FIU only, per GT-14); the entirely separate S.AR.A. aggregate-reporting duty to UIF is not addressed anywhere."
+  },
+  {
+    "id": "GT-23",
+    "obligation_summary": "Northwind must complete the Banca d'Italia annual AML/CTF self-assessment and supervisory reporting exercise.",
+    "regulation": "BoI Provision 27 November 2024 (amendments to AML supervisory reporting), read with D.Lgs 231/2007 Art. 7",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "The corpus's governance policy describes Board reporting and periodic policy review, but neither references nor implements any Banca d'Italia self-assessment or supervisory reporting exercise. Nothing in the corpus addresses a duty running to Banca d'Italia specifically."
+  },
+  {
+    "id": "GT-24",
+    "obligation_summary": "A dedicated proliferation-financing (weapons of mass destruction) risk assessment must be performed and corresponding mitigating controls adopted.",
+    "regulation": "D.Lgs 231/2007 Art. 16-ter",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "The ML/TF Risk Assessment Policy and Sanctions Screening Policy cover money laundering, terrorist financing, and asset freezing, but neither, nor any other document in the corpus, addresses proliferation-financing risk assessment or targeted financial sanctions evasion controls at all."
+  },
+  {
+    "id": "GT-25",
+    "obligation_summary": "Payment agents and distributors operating in Italy must be registered in the OAM public register maintained for payment/e-money agents.",
+    "regulation": "D.Lgs 231/2007 Art. 45",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "The Outsourcing and Third-Party Risk Policy covers due diligence, written agreements, and performance review of outsourcing providers, but contains no register or notification obligation of any kind, let alone registration with OAM (Organismo Agenti e Mediatori) -- a purely Italian institutional counterpart with no analogue in the corpus."
+  },
+  {
+    "id": "GT-26",
+    "obligation_summary": "Members of the control bodies (e.g. supervisory/statutory auditors) must report suspected AML violations directly to the competent Italian sector authority, not only internally.",
+    "regulation": "D.Lgs 231/2007 Art. 46",
+    "source_file": "01_Legislative-Decree-231-2007_AML_consolidated.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "The AML Governance policy's control-body reporting duty (control 8.6) routes exclusively to the internal Chief Compliance Officer. Art. 46 requires control-body members to report qualifying violations directly to the competent sector authority (e.g. Banca d'Italia); no document in the corpus provides for any external-authority reporting channel for control bodies."
+  },
+  {
+    "id": "GT-27",
+    "obligation_summary": "Transaction monitoring scenarios must incorporate the anomaly indicators (indicatori di anomalia) published by the Italian FIU (UIF).",
+    "regulation": "UIF Provision 12 May 2023 (indicatori di anomalia), read with D.Lgs 231/2007 Art. 35, comma 1",
+    "source_file": "09_UIF-Instructions-18-December-2025_detection-and-reporting-of-suspicious-transactions.pdf",
+    "expected_status": "control_missing",
+    "planted_control_doc": null,
+    "planted_control_quote": null,
+    "rationale": "The Transaction Monitoring Policy describes generic scenario-based alerting calibrated to the enterprise-wide risk assessment, but makes no reference anywhere in the corpus to UIF-published anomaly indicators or any Italy-specific typology library; the monitoring scenario library has no Italian-indicator content to begin with, so there is no existing control to plant a delta against."
+  }
+]

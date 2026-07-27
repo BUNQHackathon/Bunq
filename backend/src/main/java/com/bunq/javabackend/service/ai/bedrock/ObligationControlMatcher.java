@@ -112,14 +112,22 @@ public class ObligationControlMatcher {
                     double confidence = node.path("match_score").asDouble(0.0);
                     String reason = node.path("reason").asString();
                     String mappingType = node.path("mapping_type").asString();
+                    String meetsJurisdictionSpecifics = blankToNull(node.path("meets_jurisdiction_specifics").asString());
+                    String missingSpecific = blankToNull(node.path("missing_specific").asString());
                     results.add(new MatchResult(controlId, confidence, reason,
-                            mappingType != null ? mappingType : "partial"));
+                            mappingType != null ? mappingType : "partial",
+                            meetsJurisdictionSpecifics, missingSpecific));
                 }
             }
         } catch (Exception e) {
             log.warn("Semantic match failed for obligation {}: {}", obl.id(), e.getMessage());
         }
         return results;
+    }
+
+    /** Missing/absent tool-schema fields resolve to "" rather than null; normalize both to null. */
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     /**
@@ -244,8 +252,11 @@ public class ObligationControlMatcher {
                             double confidence = node.path("match_score").asDouble(0.0);
                             String reason = node.path("reason").asString();
                             String mappingType = node.path("mapping_type").asString();
+                            String meetsJurisdictionSpecifics = blankToNull(node.path("meets_jurisdiction_specifics").asString());
+                            String missingSpecific = blankToNull(node.path("missing_specific").asString());
                             matchResults.add(new MatchResult(controlId, confidence, reason,
-                                    mappingType != null ? mappingType : "partial"));
+                                    mappingType != null ? mappingType : "partial",
+                                    meetsJurisdictionSpecifics, missingSpecific));
                         }
                     }
                     results.put(obligationId, matchResults);

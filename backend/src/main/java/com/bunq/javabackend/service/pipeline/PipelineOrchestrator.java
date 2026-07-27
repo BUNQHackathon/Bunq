@@ -25,6 +25,7 @@ import com.bunq.javabackend.service.pipeline.stage.FilterObligationsStage;
 import com.bunq.javabackend.service.pipeline.stage.MapObligationsControlsStage;
 import com.bunq.javabackend.service.pipeline.stage.NarrateStage;
 import com.bunq.javabackend.service.pipeline.stage.SanctionsScreenStage;
+import com.bunq.javabackend.service.infra.RunHeartbeatService;
 import com.bunq.javabackend.service.infra.sse.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,7 @@ public class PipelineOrchestrator {
     private final GapAnalyzeStage gapAnalyzeStage;
     private final GroundCheckStage groundCheckStage;
     private final NarrateStage narrateStage;
+    private final RunHeartbeatService runHeartbeatService;
 
     @Async("pipelineExecutor")
     public void start(String sessionId, PipelineStartRequestDTO request) {
@@ -72,6 +74,10 @@ public class PipelineOrchestrator {
 
         String launchId = request.getLaunchId();
         String jurisdictionCode = request.getJurisdictionCode();
+        boolean heartbeatRegistered = launchId != null && jurisdictionCode != null;
+        if (heartbeatRegistered) {
+            runHeartbeatService.register(launchId, jurisdictionCode);
+        }
 
         try {
             // CREATED -> UPLOADING
@@ -187,6 +193,10 @@ public class PipelineOrchestrator {
             }
             try { sessionService.updateState(sessionId, SessionState.FAILED); } catch (Exception ex) { log.error("Failed to mark run as FAILED", ex); }
             sseEmitterService.complete(sessionId);
+        } finally {
+            if (heartbeatRegistered) {
+                runHeartbeatService.deregister(launchId, jurisdictionCode);
+            }
         }
     }
 

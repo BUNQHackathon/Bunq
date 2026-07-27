@@ -75,6 +75,10 @@ public class GapAnalyzeStage implements Stage {
             // Best (max) mapping confidence per obligation, and which obligations have any mapping at all.
             Map<String, Double> bestConfidenceByObligation = new HashMap<>();
             Set<String> mappedObligationIds = new HashSet<>();
+            // Explicit jurisdiction-delta signal from the matcher: ANY mapping for the obligation
+            // where the judge directly said the control fails a jurisdiction-specific parameter.
+            Set<String> jurisdictionSpecificsUnmetObligationIds = new HashSet<>();
+            Map<String, String> missingSpecificByObligation = new HashMap<>();
             for (Mapping m : mappings) {
                 String oblId = m.getObligationId();
                 if (oblId == null) {
@@ -84,12 +88,21 @@ public class GapAnalyzeStage implements Stage {
                 if (m.getMappingConfidence() != null) {
                     bestConfidenceByObligation.merge(oblId, m.getMappingConfidence(), Math::max);
                 }
+                Map<String, String> meta = m.getMetadata();
+                if (meta != null && "no".equals(meta.get("meets_jurisdiction_specifics"))) {
+                    jurisdictionSpecificsUnmetObligationIds.add(oblId);
+                    String missingSpecific = meta.get("missing_specific");
+                    if (missingSpecific != null && !missingSpecific.isBlank()) {
+                        missingSpecificByObligation.putIfAbsent(oblId, missingSpecific);
+                    }
+                }
             }
 
             // TODO: no degraded-retrieval signal is plumbed into this stage yet; hardcoded false.
             List<Obligation> uncovered = obligations.stream()
                     .filter(o -> GapCoverage.classify(bestConfidenceByObligation.get(o.getId()),
-                            mappedObligationIds.contains(o.getId()), false) != CoverageStatus.SATISFIED)
+                            mappedObligationIds.contains(o.getId()), false,
+                            jurisdictionSpecificsUnmetObligationIds.contains(o.getId())) != CoverageStatus.SATISFIED)
                     .toList();
 
             log.info("GapAnalyzeStage: scoring {} gaps in parallel for session {}", uncovered.size(), ctx.getSessionId());
@@ -102,7 +115,8 @@ public class GapAnalyzeStage implements Stage {
             for (CompletableFuture<Gap> f : futures) {
                 Gap gap = f.join();
                 CoverageStatus status = GapCoverage.classify(bestConfidenceByObligation.get(gap.getObligationId()),
-                        mappedObligationIds.contains(gap.getObligationId()), false);
+                        mappedObligationIds.contains(gap.getObligationId()), false,
+                        jurisdictionSpecificsUnmetObligationIds.contains(gap.getObligationId()));
                 statusCounts.merge(status, 1, Integer::sum);
                 switch (status) {
                     case SUBSTANTIALLY_COVERED, PARTIAL, JURISDICTION_DELTA, NEEDS_REVIEW -> {
@@ -124,6 +138,10 @@ public class GapAnalyzeStage implements Stage {
                 metadata.put("gap_semantics", status.name().toLowerCase());
                 metadata.put("best_mapping_confidence",
                         String.valueOf(bestConfidenceByObligation.getOrDefault(gap.getObligationId(), 0.0)));
+                String missingSpecific = missingSpecificByObligation.get(gap.getObligationId());
+                if (missingSpecific != null) {
+                    metadata.put("missing_specific", missingSpecific);
+                }
                 gap.setMetadata(metadata);
 
                 gapRepository.save(gap);

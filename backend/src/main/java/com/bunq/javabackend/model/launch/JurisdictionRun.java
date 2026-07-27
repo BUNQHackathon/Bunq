@@ -45,6 +45,9 @@ public class JurisdictionRun {
     @Getter(onMethod_ = @DynamoDbAttribute("last_run_at"))
     private String lastRunAt;
 
+    @Getter(onMethod_ = @DynamoDbAttribute("last_heartbeat_at"))
+    private String lastHeartbeatAt;
+
     @Getter(onMethod_ = {@DynamoDbAttribute("status"), @DynamoDbConvertedBy(RunStatusConverter.class)})
     private RunStatus status;
 

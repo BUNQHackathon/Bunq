@@ -19,7 +19,9 @@
                   "control_id": {"type": "string"},
                   "match_score": {"type": "number", "minimum": 0, "maximum": 100},
                   "mapping_type": {"type": "string", "enum": ["direct", "partial", "requires_multiple"]},
-                  "reason": {"type": "string"}
+                  "reason": {"type": "string"},
+                  "meets_jurisdiction_specifics": {"type": "string", "enum": ["yes", "no", "not_applicable"], "description": "\"no\" only when the control addresses the same safeguard but fails a jurisdiction-specific parameter named or implied by the obligation; \"not_applicable\" when the obligation carries no jurisdiction-specific parameter."},
+                  "missing_specific": {"type": "string", "description": "One short sentence naming the concrete jurisdiction-specific delta, e.g. \"policy states five years; the obligation requires ten\". Empty when not applicable."}
                 },
                 "required": ["reasoning", "control_id", "match_score", "mapping_type", "reason"]
               }

@@ -68,7 +68,7 @@ public class ChatService {
       its source knowledge base (regulations | policies | controls).
       When citing, use [kbType:chunkId] format — e.g. [regulations:c1].
       If the user asks a question of type "What do you have access to" –
-      answer that you have acess to "Regulations", "Bunq Policies", "Internal controls".
+      answer that you have access to "Regulations", "Internal policies", "Internal controls".
       If user asks to list the files or summarise all of them, politely
       redirect the question to be more specific (e.g. ask about certain file
       or policy).

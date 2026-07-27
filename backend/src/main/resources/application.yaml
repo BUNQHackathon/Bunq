@@ -59,7 +59,7 @@ aws:
           kb-type: REGULATIONS
           default: false
         - key: policies
-          label: bunq policies
+          label: Internal policies
           knowledge-base-id: ${KB_POLICIES_ID:kb-policies-placeholder}
           data-source-id: ${KB_POLICIES_DATA_SOURCE_ID:}
           source-bucket: ${KB_POLICIES_SOURCE_BUCKET:}

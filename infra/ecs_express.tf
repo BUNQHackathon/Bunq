@@ -149,6 +149,30 @@ resource "aws_ecs_express_gateway_service" "backend" {
       value = local.kb_ids_static["controls"]
     }
     environment {
+      name  = "KB_REGULATIONS_DATA_SOURCE_ID"
+      value = local.kb_data_source_ids_static["regulations"]
+    }
+    environment {
+      name  = "KB_POLICIES_DATA_SOURCE_ID"
+      value = local.kb_data_source_ids_static["policies"]
+    }
+    environment {
+      name  = "KB_CONTROLS_DATA_SOURCE_ID"
+      value = local.kb_data_source_ids_static["controls"]
+    }
+    environment {
+      name  = "KB_REGULATIONS_SOURCE_BUCKET"
+      value = aws_s3_bucket.kb_sources["regulations"].id
+    }
+    environment {
+      name  = "KB_POLICIES_SOURCE_BUCKET"
+      value = aws_s3_bucket.kb_sources["policies"].id
+    }
+    environment {
+      name  = "KB_CONTROLS_SOURCE_BUCKET"
+      value = aws_s3_bucket.kb_sources["controls"].id
+    }
+    environment {
       name  = "SIDECAR_BASE_URL"
       value = "https://${trimprefix(aws_ecs_express_gateway_service.sidecar.ingress_paths[0].endpoint, "https://")}"
     }
