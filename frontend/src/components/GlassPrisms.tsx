@@ -4,8 +4,9 @@ import * as THREE from "three";
 
 const PRISM_COUNT = 14;
 
-const BASE_COLOR = '#ef6a2a';
-const EDGE_COLOR = '#2f4ac4';
+const BASE_COLOR = '#e17244';
+const EDGE_COLOR = '#3556e8';
+const EDGE_STRENGTH = 1.7;
 
 export function GlassPrisms() {
   const ref = useRef<THREE.InstancedMesh>(null!);
@@ -38,7 +39,8 @@ export function GlassPrisms() {
       shader.fragmentShader = shader.fragmentShader.replace(
         '        totalDiffuse = mix( totalDiffuse, transmission.rgb, material.transmission );',
         `        float gExcess = max(transmission.g - max(transmission.r, transmission.b), 0.0);
-        transmission.rgb += gExcess * (vec3(${edge.r.toFixed(4)}, ${edge.g.toFixed(4)}, ${edge.b.toFixed(4)}) - vec3(0.0, 1.0, 0.0));
+        transmission.rgb += gExcess * ${EDGE_STRENGTH.toFixed(2)} * (vec3(${edge.r.toFixed(4)}, ${edge.g.toFixed(4)}, ${edge.b.toFixed(4)}) - vec3(0.0, 1.0, 0.0));
+        transmission.rgb = max(transmission.rgb, vec3(0.0));
         totalDiffuse = mix( totalDiffuse, transmission.rgb, material.transmission );`
       );
       if (shader.fragmentShader === before) console.warn('[prism-tint] anchor not found');
